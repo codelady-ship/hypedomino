@@ -127,8 +127,18 @@ func TestOffendersLoseAndPartnersLoseLess(t *testing.T) {
 	if changes[0][0].K != 40 || changes[0][0].LPDelta != 0 || changes[0][0].Penalty != 10 || changes[0][0].Rank != placing.Rank || changes[0][0].MMR >= 1200 {
 		t.Errorf("placement offender: %+v", changes[0][0])
 	}
-	if c.Place(1412, 0).String() != "Gold IV" || c.Place(1100, 0).String() != "Bronze I" || c.Place(1100, 10).LP != 0 || c.Place(500, 0).Index != 0 {
+	if c.Place(1412, 0, nil).String() != "Gold IV" || c.Place(1100, 0, nil).String() != "Bronze I" || c.Place(1100, 10, nil).LP != 0 || c.Place(500, 0, nil).Index != 0 {
 		t.Error("placement ranks")
+	}
+	reset := 10
+	for mmr, want := range map[int]string{1412: "Gold II", 1290: "Gold IV", 1100: "Bronze I", 1000: "Bronze II"} {
+		if got := c.Place(mmr, 0, &reset); got.String() != want || got.LP != 0 {
+			t.Errorf("returning player at %d: %s, want %s", mmr, got, want)
+		}
+	}
+	top := 27
+	if c.Place(5000, 0, &top).String() != "Diamond I" || c.Place(100, 0, &top).String() != "Emerald I" {
+		t.Error("returning player limits at the top")
 	}
 }
 
@@ -146,6 +156,7 @@ func TestConfigValidationAndParsing(t *testing.T) {
 		"one move":  func(c *rating.Config) { c.LpChangeMax = 90 },
 		"percent":   func(c *rating.Config) { c.PartnerLossReductionPercent = 101 },
 		"placement": func(c *rating.Config) { c.PlacementMatches = 0 },
+		"drop":      func(c *rating.Config) { c.PlacementMaxDropDivisions = -1 },
 		"cap":       func(c *rating.Config) { c.NewPlayerPlacementCap = "Master" },
 		"hour":      func(c *rating.Config) { c.ApexRecalcHourUtc = 24 },
 		"slots":     func(c *rating.Config) { c.ChallengerSlots = -1 },
@@ -203,7 +214,7 @@ func TestASimulatedLadderMatchesTheExpectedCurve(t *testing.T) {
 				played[order[i+side]]++
 				if s.player.Placement && s.player.Matches >= c.PlacementMatches {
 					s.player.Placement = false
-					s.player.Rank = c.Place(s.player.MMR, 0)
+					s.player.Rank = c.Place(s.player.MMR, 0, nil)
 				}
 			}
 		}

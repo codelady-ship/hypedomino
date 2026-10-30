@@ -213,7 +213,7 @@ func (s *Store) record(ctx context.Context, tx pgx.Tx, r Result, config Config, 
 		after.PlacementPenalty += change.Penalty
 		if after.PlacementPlayed >= config.PlacementMatches {
 			after.Placed = true
-			after.Rank = config.Place(after.MMR, after.PlacementPenalty)
+			after.Rank = config.Place(after.MMR, after.PlacementPenalty, before.resetIndex)
 			change.Rank = after.Rank
 		}
 	}

@@ -37,6 +37,8 @@ type Config struct {
 	LpChangeMin                 int               `json:"lpChangeMin"`
 	LpChangeMax                 int               `json:"lpChangeMax"`
 	PlacementMatches            int               `json:"placementMatches"`
+	PlacementMaxDropDivisions   int               `json:"placementMaxDropDivisions"`
+	PlacementMaxClimbDivisions  int               `json:"placementMaxClimbDivisions"`
 	NewPlayerPlacementCap       string            `json:"newPlayerPlacementCap"`
 	SeasonLengthMonths          int               `json:"seasonLengthMonths"`
 	ResetTierDrop               int               `json:"resetTierDrop"`
@@ -70,6 +72,8 @@ func DefaultConfig() Config {
 		LpChangeMin:                 5,
 		LpChangeMax:                 40,
 		PlacementMatches:            5,
+		PlacementMaxDropDivisions:   4,
+		PlacementMaxClimbDivisions:  4,
 		NewPlayerPlacementCap:       "Gold IV",
 		SeasonLengthMonths:          3,
 		ResetTierDrop:               1,
@@ -109,6 +113,8 @@ func (c Config) Validate() error {
 		return fail("lpChangeMax + offenseRatingPenalty must stay below divisionLp")
 	case c.PlacementMatches < 1:
 		return fail("placementMatches must be at least 1")
+	case c.PlacementMaxDropDivisions < 0 || c.PlacementMaxClimbDivisions < 0:
+		return fail("placement drop and climb limits must not be negative")
 	}
 	cap, err := ParseRankIndex(c.NewPlayerPlacementCap)
 	if err != nil {

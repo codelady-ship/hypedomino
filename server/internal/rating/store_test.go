@@ -132,7 +132,7 @@ func TestNewPlayersPlaceAfterTheirPlacementMatches(t *testing.T) {
 		}
 	}
 	r := f.rating(t, a, rules.Mode2v2)
-	if !r.Placed || r.PlacementPlayed != 5 || r.Matches != 5 || r.MMR <= 1200 || r.Rank.String() != rating.DefaultConfig().Place(r.MMR, 0).String() || r.Rank.LP != 0 {
+	if !r.Placed || r.PlacementPlayed != 5 || r.Matches != 5 || r.MMR <= 1200 || r.Rank.String() != rating.DefaultConfig().Place(r.MMR, 0, nil).String() || r.Rank.LP != 0 {
 		t.Fatalf("placed %+v", r)
 	}
 	if r.Rank.Index > 12 {
@@ -227,5 +227,22 @@ func TestTheNextApexRunIsTheComingHour(t *testing.T) {
 		if got := rating.NextApexRun(at, hour); !got.Equal(want) {
 			t.Errorf("hour %d: %s, want %s", hour, got, want)
 		}
+	}
+}
+
+func TestAReturningPlayerPlacesInsideTheResetRange(t *testing.T) {
+	f := newFixture(t)
+	returning, opponent := f.account(t), f.account(t)
+	if _, err := f.pool.Exec(context.Background(), `insert into ratings (account_id, mode, mmr, matches, placement_played, placed, rank_index, lp, reset_index, season_id, updated_at) values ($1, '1v1', 1000, 60, 4, false, 10, 0, 10, 'season.test', $2)`, returning, now); err != nil {
+		t.Fatal(err)
+	}
+	f.set(t, opponent, rules.Mode1v1, 1000, 60, rank(t, "Bronze I", 0))
+	applied, err := f.store.Apply(context.Background(), rating.Result{MatchID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", Mode: rules.Mode1v1, Teams: [2][]rating.Participant{{{Account: returning}}, {{Account: opponent}}}, Winner: 1, At: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := f.rating(t, returning, rules.Mode1v1)
+	if !r.Placed || r.MMR != 980 || r.Rank.String() != "Bronze II" || r.Rank.LP != 0 || applied.Changes[0][0].Rank.String() != "Bronze II" {
+		t.Fatalf("returning player placed %+v %+v", r, applied.Changes[0][0])
 	}
 }

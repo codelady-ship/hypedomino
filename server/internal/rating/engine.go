@@ -130,7 +130,12 @@ func (c Config) reduced(delta int) int {
 	return round(float64(delta) * float64(100-c.PartnerLossReductionPercent) / 100)
 }
 
-func (c Config) Place(mmr, penalty int) Rank {
-	index := min(c.MmrRankIndex(mmr), c.placementCap())
-	return Rank{Index: index, LP: max(0, -penalty)}
+func (c Config) Place(mmr, penalty int, reset *int) Rank {
+	index := c.MmrRankIndex(mmr)
+	if reset == nil {
+		index = min(index, c.placementCap())
+	} else {
+		index = min(max(index, *reset-c.PlacementMaxDropDivisions), *reset+c.PlacementMaxClimbDivisions)
+	}
+	return Rank{Index: min(max(index, 0), MaxDivisionIndex), LP: max(0, -penalty)}
 }

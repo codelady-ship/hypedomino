@@ -158,6 +158,8 @@ Division moves: Gold I 90 LP wins +21: Platinum IV 11 LP. Gold III 10 LP loses -
   4. The result is never below Iron IV and never above Diamond I. LP starts at 0.
 - A player who does not finish placement before the season ends has no final rank for that season.
 
+- Implemented in `server/internal/rating` (#114): `Config.Place` sets the first rank of a season from the MMR after `PlacementMatches`, limited for a returning player to the reset rank of 7.2 minus `PlacementMaxDropDivisions` and plus `PlacementMaxClimbDivisions`, and for a new player to `NewPlayerPlacementCap`; LP starts at 0 after the summed placement penalties. The examples of 7.3 are tests.
+
 ## 6. No dodge
 
 A ranked match has no accept or decline step (R-53), so there is no dodge and no dodge penalty. A player who has not loaded when the loading phase ends starts the match disconnected (R-57) and falls under the leave rules of `docs/penalties.md`: back within `ReconnectGraceSeconds` is no offense, later is a leave.
