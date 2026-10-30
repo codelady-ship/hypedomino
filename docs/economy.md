@@ -145,6 +145,7 @@ At least one field among `coins`, `cosmetics`, `medals` and `passXp` is non-empt
 - One database transaction writes the ledger entry, inventory rows, medal rows and pass XP, or none of them (ADR 0005).
 - Match rewards and first win are computed from mode, result and cap, not stored; the engine builds a bundle with `coins` and `passXp` and applies it the same way.
 - Every grant records its source type, source ref, bundle id and revision, and the config version. Idempotency follows section 5.
+- Implemented in `server/internal/reward` (#102): `Engine.Apply` is the one path, idempotent per account and key, atomic over the ledger, inventory, medal and pass XP hooks, recorded in `reward_grants` and published to the outbox; `Engine.Revoke` reverses a grant for refunds (section 9) and support (`docs/admin.md` 6.2).
 
 ## 5. Ledger
 

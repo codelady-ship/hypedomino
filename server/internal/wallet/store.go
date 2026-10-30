@@ -89,7 +89,7 @@ func NewStore(pool *pgxpool.Pool) *Store {
 	return &Store{pool: pool}
 }
 
-func (e Entry) validate() error {
+func (e Entry) Validate() error {
 	sign, known := signs[e.Reason]
 	switch {
 	case e.Account == "" || e.Key == "" || e.Source.Type == "" || e.Source.Ref == "":
@@ -116,14 +116,22 @@ func scan(row pgx.Row) (Applied, error) {
 }
 
 func (s *Store) Apply(ctx context.Context, entry Entry, now time.Time) (Applied, error) {
-	if err := entry.validate(); err != nil {
-		return Applied{}, err
-	}
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return Applied{}, err
 	}
 	defer tx.Rollback(ctx)
+	applied, err := s.ApplyIn(ctx, tx, entry, now)
+	if err != nil {
+		return Applied{}, err
+	}
+	return applied, tx.Commit(ctx)
+}
+
+func (s *Store) ApplyIn(ctx context.Context, tx pgx.Tx, entry Entry, now time.Time) (Applied, error) {
+	if err := entry.Validate(); err != nil {
+		return Applied{}, err
+	}
 	if _, err := tx.Exec(ctx, `insert into wallets (account_id, updated_at) values ($1, $2) on conflict do nothing`, entry.Account, now); err != nil {
 		return Applied{}, err
 	}
@@ -134,7 +142,7 @@ func (s *Store) Apply(ctx context.Context, entry Entry, now time.Time) (Applied,
 	earlier, err := scan(tx.QueryRow(ctx, `select `+appliedColumns+` from ledger_entries where account_id = $1 and idempotency_key = $2`, entry.Account, entry.Key))
 	if err == nil {
 		earlier.Repeated = true
-		return earlier, tx.Commit(ctx)
+		return earlier, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return Applied{}, err
@@ -155,7 +163,7 @@ func (s *Store) Apply(ctx context.Context, entry Entry, now time.Time) (Applied,
 	if _, err := tx.Exec(ctx, `update wallets set balance = $2, updated_at = $3 where account_id = $1`, entry.Account, after, now); err != nil {
 		return Applied{}, err
 	}
-	return applied, tx.Commit(ctx)
+	return applied, nil
 }
 
 func (s *Store) Balance(ctx context.Context, account string) (int64, error) {

@@ -48,6 +48,7 @@ type Item struct {
 	ID           string   `json:"id"`
 	Type         string   `json:"type"`
 	Revision     int      `json:"revision"`
+	Rarity       string   `json:"rarityId"`
 	Animated     bool     `json:"animated"`
 	Availability string   `json:"availability"`
 	Sources      []Source `json:"sources"`

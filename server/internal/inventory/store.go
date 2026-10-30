@@ -91,6 +91,19 @@ func (s *Store) Owns(ctx context.Context, account, id string) (bool, error) {
 }
 
 func (s *Store) Grant(ctx context.Context, account, id string, source cosmetics.Source, now time.Time) (bool, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback(ctx)
+	granted, err := s.GrantIn(ctx, tx, account, id, source, now)
+	if err != nil {
+		return false, err
+	}
+	return granted, tx.Commit(ctx)
+}
+
+func (s *Store) GrantIn(ctx context.Context, tx pgx.Tx, account, id string, source cosmetics.Source, now time.Time) (bool, error) {
 	item, ok := s.catalog.Item(id)
 	switch {
 	case !ok:
@@ -100,7 +113,7 @@ func (s *Store) Grant(ctx context.Context, account, id string, source cosmetics.
 	case !item.Grantable(source):
 		return false, fmt.Errorf("%w: %s %s does not grant %s", ErrSourceNotListed, source.Type, source.Ref, id)
 	}
-	tag, err := s.pool.Exec(ctx, `insert into inventory_items (account_id, item_id, source_type, source_ref, granted_at) values ($1, $2, $3, $4, $5) on conflict do nothing`,
+	tag, err := tx.Exec(ctx, `insert into inventory_items (account_id, item_id, source_type, source_ref, granted_at) values ($1, $2, $3, $4, $5) on conflict do nothing`,
 		account, id, source.Type, source.Ref, now)
 	if err != nil {
 		return false, err
@@ -108,7 +121,7 @@ func (s *Store) Grant(ctx context.Context, account, id string, source cosmetics.
 	if tag.RowsAffected() == 1 {
 		return true, nil
 	}
-	tag, err = s.pool.Exec(ctx, `update inventory_items set source_type = $3, source_ref = $4, granted_at = $5, revoked_at = null where account_id = $1 and item_id = $2 and revoked_at is not null`,
+	tag, err = tx.Exec(ctx, `update inventory_items set source_type = $3, source_ref = $4, granted_at = $5, revoked_at = null where account_id = $1 and item_id = $2 and revoked_at is not null`,
 		account, id, source.Type, source.Ref, now)
 	if err != nil {
 		return false, err
@@ -117,14 +130,21 @@ func (s *Store) Grant(ctx context.Context, account, id string, source cosmetics.
 }
 
 func (s *Store) Revoke(ctx context.Context, account, id string, now time.Time) error {
-	if item, ok := s.catalog.Item(id); ok && item.Default() {
-		return ErrDefaultItem
-	}
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
+	if err := s.RevokeIn(ctx, tx, account, id, now); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func (s *Store) RevokeIn(ctx context.Context, tx pgx.Tx, account, id string, now time.Time) error {
+	if item, ok := s.catalog.Item(id); ok && item.Default() {
+		return ErrDefaultItem
+	}
 	tag, err := tx.Exec(ctx, `update inventory_items set revoked_at = $3 where account_id = $1 and item_id = $2 and revoked_at is null`, account, id, now)
 	if err != nil {
 		return err
@@ -136,12 +156,10 @@ func (s *Store) Revoke(ctx context.Context, account, id string, now time.Time) e
 	if err != nil {
 		return err
 	}
-	if found {
-		if err := s.save(ctx, tx, account, s.resolve(ctx, tx, account, loadout), now); err != nil {
-			return err
-		}
+	if !found {
+		return nil
 	}
-	return tx.Commit(ctx)
+	return s.save(ctx, tx, account, s.resolve(ctx, tx, account, loadout), now)
 }
 
 func (s *Store) Equip(ctx context.Context, account, slot string, ids []string, now time.Time) (profile.Loadout, error) {
