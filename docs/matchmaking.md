@@ -13,6 +13,8 @@ Owner scope: #48 (queue), #52 (leaver rules), #118 (quality tuning). Rules refer
 
 - The pool is scanned on every tick, oldest entry first. For the oldest entry the server collects, in join order, the other entries whose MMR is within the narrower of the two players' windows. When the mode's number of players is reached the match forms; otherwise the entry waits and the scan continues with the next oldest.
 - A player's window starts at `MmrWindowStart` and grows by `MmrWindowStep` every `MmrWindowStepSeconds` of waiting, up to `MmrWindowMax`.
+- Ranked queues only (#118): two placed players also need rank indexes (`docs/ranking.md` section 2) at most `RankWindowDivisions` apart, so a Gold II player never meets a Diamond player however close their MMR. A player still in placement has no rank and is matched by MMR alone; 0 disables the rank check.
+- Only a match formed from a ranked queue reaches the rating store (`Match.Ranked`); casual matches and custom rooms (R-55, R-56) change nothing in `docs/ranking.md`.
 - Casual queues only: an entry that has waited `CasualBotFillSeconds` forms a match with the players found so far and server bots in the remaining seats. Ranked queues never seat a bot (section 9 of `docs/ranking.md`); a value of 0 disables bot fill.
 - Seats: the players are shuffled and seated in seat order (1v1: X, Y; 2v2: N, E, S, W, so N and S are one team and E and W the other). Bots take the seats left.
 - A formed match is never cancelled because a player did not load; it starts after the loading phase without them (R-57).
@@ -25,6 +27,7 @@ Owner scope: #48 (queue), #52 (leaver rules), #118 (quality tuning). Rules refer
 | `MmrWindowStep` | 50 | Growth of the window per step |
 | `MmrWindowStepSeconds` | 10 | Length of a step |
 | `MmrWindowMax` | 400 | Largest window |
+| `RankWindowDivisions` | 8 | Largest rank index distance between two placed players in a ranked queue; 0 disables |
 | `CasualBotFillSeconds` | 30 | Wait before a casual entry is completed with bots; 0 disables |
 
-The engine is `server/internal/matchmaking`: `Form` is a pure function over the entries of one tick (table tests in `matchmaking_test.go`), `Pool` is the in-process queue around it. The Redis-backed queue that survives a restart and spans nodes is #51 and feeds the same `Form`.
+The engine is `server/internal/matchmaking`: `Form` is a pure function over the entries of one tick (table tests in `matchmaking_test.go`), `Pool` is the in-process queue around it. The Redis-backed queue that survives a restart and spans nodes is #51 and feeds the same `Form`. A ranked entry's MMR, rank and placement state come from `rating.Store.Queue` (#118), `InitialMmr` and unplaced for an account without a rating in the mode; the test in `server/internal/rating/queue_test.go` runs a formed ranked match through `rating.Store.Apply` and checks that a casual match is never applied.

@@ -253,3 +253,73 @@ func TestAnAccountInARunningMatchCannotQueue(t *testing.T) {
 		t.Fatal("the guarded account was queued")
 	}
 }
+
+func ranked(account string, mode rules.Mode, mmr, rank int, waited time.Duration) Entry {
+	e := entry(account, mode, QueueRanked, mmr, waited)
+	e.Rank, e.Placed = rank, true
+	return e
+}
+
+func TestPlacedRankedPlayersStayWithinTheRankWindow(t *testing.T) {
+	config := DefaultConfig()
+	entries := []Entry{
+		ranked("gold", rules.Mode1v1, 1400, 13, time.Hour),
+		ranked("diamond", rules.Mode1v1, 1420, 24, time.Hour),
+		ranked("platinum", rules.Mode1v1, 1450, 19, time.Hour),
+	}
+	matches, remaining := Form(config, entries, start, seeded(1))
+	if len(matches) != 1 || len(remaining) != 1 || remaining[0].Account != "diamond" {
+		t.Fatalf("matches %+v remaining %+v", matches, remaining)
+	}
+	if _, ok := accounts(matches[0])["gold"]; !ok {
+		t.Fatalf("gold is not seated: %+v", matches[0])
+	}
+	placing := entry("placing", rules.Mode1v1, QueueRanked, 1420, time.Hour)
+	matches, remaining = Form(config, []Entry{ranked("gold", rules.Mode1v1, 1400, 13, time.Hour), ranked("diamond", rules.Mode1v1, 1420, 24, time.Hour), placing}, start, seeded(1))
+	if len(matches) != 1 || len(remaining) != 1 || remaining[0].Account != "diamond" {
+		t.Fatalf("placement: matches %+v remaining %+v", matches, remaining)
+	}
+	casual := []Entry{entry("gold", rules.Mode1v1, QueueRanked, 1400, time.Hour), entry("diamond", rules.Mode1v1, QueueRanked, 1420, time.Hour)}
+	casual[0].Rank, casual[0].Placed, casual[1].Rank, casual[1].Placed = 13, true, 24, true
+	if matches, _ := Form(config, casual, start, seeded(1)); len(matches) != 0 {
+		t.Fatalf("casual entries obey the rank window: %+v", matches)
+	}
+	for i := range casual {
+		casual[i].Queue = QueueCasual
+	}
+	if matches, _ := Form(config, casual, start, seeded(1)); len(matches) != 1 {
+		t.Fatalf("casual queue ignores ranks: %+v", matches)
+	}
+	config.RankWindowDivisions = 0
+	if matches, _ := Form(config, entries, start, seeded(1)); len(matches) != 1 || len(accounts(matches[0])) != 2 {
+		t.Fatalf("disabled rank window: %+v", matches)
+	}
+}
+
+func TestAFormedMatchKnowsItsQueueAndTeams(t *testing.T) {
+	entries := []Entry{
+		ranked("a", rules.Mode2v2, 1200, 10, time.Minute),
+		ranked("b", rules.Mode2v2, 1200, 10, time.Minute),
+		ranked("c", rules.Mode2v2, 1200, 10, time.Minute),
+		ranked("d", rules.Mode2v2, 1200, 10, time.Minute),
+		entry("e", rules.Mode1v1, QueueCasual, 1200, time.Minute),
+		entry("f", rules.Mode1v1, QueueCasual, 1200, time.Minute),
+	}
+	matches, _ := Form(DefaultConfig(), entries, start, seeded(3))
+	if len(matches) != 2 {
+		t.Fatalf("matches %+v", matches)
+	}
+	for _, match := range matches {
+		teams := match.Teams()
+		switch match.Mode {
+		case rules.Mode2v2:
+			if !match.Ranked() || len(teams[0]) != 2 || len(teams[1]) != 2 {
+				t.Fatalf("2v2 %+v teams %v", match, teams)
+			}
+		case rules.Mode1v1:
+			if match.Ranked() || len(teams[0]) != 1 || len(teams[1]) != 1 {
+				t.Fatalf("1v1 %+v teams %v", match, teams)
+			}
+		}
+	}
+}
