@@ -3,6 +3,7 @@ package rating_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -244,5 +245,61 @@ func TestAReturningPlayerPlacesInsideTheResetRange(t *testing.T) {
 	r := f.rating(t, returning, rules.Mode1v1)
 	if !r.Placed || r.MMR != 980 || r.Rank.String() != "Bronze II" || r.Rank.LP != 0 || applied.Changes[0][0].Rank.String() != "Bronze II" {
 		t.Fatalf("returning player placed %+v %+v", r, applied.Changes[0][0])
+	}
+}
+
+type fakeBoards struct {
+	updates []string
+}
+
+func (f *fakeBoards) Update(_ context.Context, season string, mode rules.Mode, entries []rating.Entry) error {
+	for _, e := range entries {
+		f.updates = append(f.updates, fmt.Sprintf("%s %s %s %s %d", season, mode, e.Account, e.Rank, e.Wins))
+	}
+	return nil
+}
+
+func TestPlacedPlayersReachTheBoardsAfterEveryChange(t *testing.T) {
+	f := newFixture(t)
+	boards := &fakeBoards{}
+	f.store.SetBoards(boards, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	a, b, fresh := f.account(t), f.account(t), f.account(t)
+	f.set(t, a, rules.Mode1v1, 1300, 30, rank(t, "Silver I", 40))
+	f.set(t, b, rules.Mode1v1, 1250, 30, rank(t, "Silver I", 0))
+	if _, err := f.store.Apply(context.Background(), rating.Result{MatchID: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", Mode: rules.Mode1v1, Teams: [2][]rating.Participant{{{Account: a}}, {{Account: b}}}, Winner: 0, At: now}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.store.Apply(context.Background(), rating.Result{MatchID: "cccccccc-cccc-cccc-cccc-cccccccccccc", Mode: rules.Mode1v1, Teams: [2][]rating.Participant{{{Account: fresh}}, {{Account: b}}}, Winner: 1, At: now.Add(time.Minute)}); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"season.test 1v1 " + a + " Silver I 1", "season.test 1v1 " + b + " Silver II 0", "season.test 1v1 " + b + " Silver II 1"}
+	if len(boards.updates) != len(want) {
+		t.Fatalf("updates %v", boards.updates)
+	}
+	for i := range want {
+		if boards.updates[i] != want[i] {
+			t.Errorf("update %d: %s, want %s", i, boards.updates[i], want[i])
+		}
+	}
+	var entries []rating.Entry
+	if err := f.store.Placed(context.Background(), "season.test", rules.Mode1v1, func(e rating.Entry) error {
+		entries = append(entries, e)
+		return nil
+	}); err != nil || len(entries) != 2 {
+		t.Fatalf("placed %v %v", entries, err)
+	}
+	if err := f.store.Placed(context.Background(), "season.missing", rules.Mode1v1, func(rating.Entry) error { return nil }); !errors.Is(err, rating.ErrSeasonUnknown) {
+		t.Fatalf("unknown season: %v", err)
+	}
+	end := now.Add(60 * 24 * time.Hour)
+	if _, err := f.store.CloseSeason(context.Background(), "season.test", rules.Mode1v1, end); err != nil {
+		t.Fatal(err)
+	}
+	var frozen []rating.Entry
+	if err := f.store.Placed(context.Background(), "season.test", rules.Mode1v1, func(e rating.Entry) error {
+		frozen = append(frozen, e)
+		return nil
+	}); err != nil || len(frozen) != 2 || frozen[0].Account != a || frozen[0].Rank.String() != "Silver I" || !frozen[0].LPAt.Before(frozen[1].LPAt) {
+		t.Fatalf("frozen %+v %v", frozen, err)
 	}
 }

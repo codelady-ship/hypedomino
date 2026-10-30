@@ -264,6 +264,8 @@ Every local leaderboard uses the same order. Apex recalculation (section 3.2) us
 - The season-end snapshot freezes every board of the season. Past seasons stay readable.
 - Every row of every board opens that player's public profile (`docs/privacy.md` section 5): nickname, equipped cosmetics, rank and the emblem showcase (8.4). A player can browse the global board and any country or region board, not only their own.
 
+- Implemented in `server/internal/leaderboard` (#116): the global board per season and mode as a Redis sorted set in the order of 8.1 (score: rank index, apex tier, LP; member: time the LP was set, wins, account id), updated by the rating store on every change and rebuilt from PostgreSQL when missing; `GET /leaderboard/{mode}` serves the top `LeaderboardTopSize` and the viewer's position with neighbours. Country, region and friends boards are #117.
+
 ### 8.3 Leaderboard emblems
 
 Owner decision (2026-10-26). A season-end finish near the top of a board earns a permanent emblem.

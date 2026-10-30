@@ -205,7 +205,7 @@ func (s *Store) CloseSeason(ctx context.Context, id string, mode rules.Mode, now
 	if err != nil {
 		return Closed{}, err
 	}
-	apex, err := s.assignApex(ctx, tx, mode, config)
+	apex, _, err := s.assignApex(ctx, tx, mode, config)
 	if err != nil {
 		return Closed{}, err
 	}

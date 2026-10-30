@@ -143,12 +143,13 @@ type Modes struct {
 }
 
 type Snapshot struct {
-	Schema int   `json:"schema"`
-	Modes  Modes `json:"modes"`
+	Schema             int   `json:"schema"`
+	LeaderboardTopSize int   `json:"leaderboardTopSize"`
+	Modes              Modes `json:"modes"`
 }
 
 func Default() *Snapshot {
-	return &Snapshot{Schema: Schema, Modes: Modes{OneVsOne: DefaultConfig(), TwoVsTwo: DefaultConfig()}}
+	return &Snapshot{Schema: Schema, LeaderboardTopSize: 200, Modes: Modes{OneVsOne: DefaultConfig(), TwoVsTwo: DefaultConfig()}}
 }
 
 func (s *Snapshot) Mode(mode rules.Mode) (Config, bool) {
@@ -164,6 +165,9 @@ func (s *Snapshot) Mode(mode rules.Mode) (Config, bool) {
 func (s *Snapshot) Validate() error {
 	if s.Schema != Schema {
 		return fmt.Errorf("%w: schema %d, want %d", ErrInvalidConfig, s.Schema, Schema)
+	}
+	if s.LeaderboardTopSize < 1 {
+		return fmt.Errorf("%w: leaderboardTopSize must be at least 1", ErrInvalidConfig)
 	}
 	if err := s.Modes.OneVsOne.Validate(); err != nil {
 		return fmt.Errorf("1v1: %w", err)

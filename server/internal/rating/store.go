@@ -58,6 +58,7 @@ type Rating struct {
 	apexTier         *string
 	season           *string
 	resetIndex       *int
+	version          int64
 }
 
 type Recalculated struct {
@@ -67,9 +68,49 @@ type Recalculated struct {
 	Master      int
 }
 
+type Entry struct {
+	Account string    `json:"account_id"`
+	Rank    Rank      `json:"rank"`
+	Tier    string    `json:"tier"`
+	Wins    int       `json:"wins"`
+	LPAt    time.Time `json:"lp_at"`
+	Version int64     `json:"-"`
+}
+
+type Boards interface {
+	Update(ctx context.Context, season string, mode rules.Mode, entries []Entry) error
+}
+
 type Store struct {
 	pool    *pgxpool.Pool
 	configs *snapshot.Watcher[*Snapshot]
+	boards  Boards
+	logger  *slog.Logger
+}
+
+func (s *Store) SetBoards(boards Boards, logger *slog.Logger) {
+	s.boards, s.logger = boards, logger
+}
+
+func (s *Store) TopSize() int {
+	current, _, ok := s.configs.Current()
+	if !ok {
+		return 0
+	}
+	return current.LeaderboardTopSize
+}
+
+func (r Rating) entry() Entry {
+	return Entry{Account: r.Account, Rank: r.Rank, Tier: r.Tier, Wins: r.Wins, LPAt: r.LPAt, Version: r.version}
+}
+
+func (s *Store) publish(ctx context.Context, season string, mode rules.Mode, entries []Entry) {
+	if s.boards == nil || len(entries) == 0 {
+		return
+	}
+	if err := s.boards.Update(ctx, season, mode, entries); err != nil && s.logger != nil {
+		s.logger.Error("leaderboard update failed", "season", season, "mode", mode.String(), "error", err)
+	}
 }
 
 func NewWatcher(pool *pgxpool.Pool, logger *slog.Logger) *snapshot.Watcher[*Snapshot] {
@@ -161,20 +202,29 @@ func (s *Store) Apply(ctx context.Context, r Result) (Applied, error) {
 	if err != nil {
 		return Applied{}, err
 	}
+	var entries []Entry
 	for team := range changes {
 		for i := range changes[team] {
 			if late {
 				changes[team][i].LPDelta, changes[team][i].Penalty, changes[team][i].Rank = 0, 0, changes[team][i].RankBefore
 			}
-			if err := s.record(ctx, tx, r, config, ratings[changes[team][i].Account], &changes[team][i], late); err != nil {
+			after, err := s.record(ctx, tx, r, config, ratings[changes[team][i].Account], &changes[team][i], late)
+			if err != nil {
 				return Applied{}, err
+			}
+			if after.Placed && !late {
+				entries = append(entries, after.entry())
 			}
 		}
 	}
-	return Applied{ConfigVersion: version, Changes: changes, Late: late, Season: season.ID}, tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return Applied{}, err
+	}
+	s.publish(ctx, season.ID, r.Mode, entries)
+	return Applied{ConfigVersion: version, Changes: changes, Late: late, Season: season.ID}, nil
 }
 
-const columns = `account_id, mode, mmr, matches, wins, placement_played, placement_penalty, placed, rank_index, lp, apex_tier, lp_at, season_id, reset_index`
+const columns = `account_id, mode, mmr, matches, wins, placement_played, placement_penalty, placed, rank_index, lp, apex_tier, lp_at, season_id, reset_index, updated_at`
 
 func (s *Store) lock(ctx context.Context, tx pgx.Tx, r Result, config Config, season Season) (map[string]Rating, error) {
 	accounts := make([]string, 0, 4)
@@ -202,7 +252,7 @@ func (s *Store) lock(ctx context.Context, tx pgx.Tx, r Result, config Config, se
 	return ratings, nil
 }
 
-func (s *Store) record(ctx context.Context, tx pgx.Tx, r Result, config Config, before Rating, change *Change, late bool) error {
+func (s *Store) record(ctx context.Context, tx pgx.Tx, r Result, config Config, before Rating, change *Change, late bool) (Rating, error) {
 	after := before
 	after.MMR, after.Matches, after.Rank = change.MMR, before.Matches+1, change.Rank
 	if change.Won && !late {
@@ -221,14 +271,19 @@ func (s *Store) record(ctx context.Context, tx pgx.Tx, r Result, config Config, 
 		after.LPAt = r.At
 	}
 	after.apexTier = apexTier(before, after)
+	after.Tier = after.Rank.Tier()
+	if after.apexTier != nil {
+		after.Tier = TierName(*after.apexTier)
+	}
+	after.version = r.At.UnixMilli()
 	if _, err := tx.Exec(ctx, `update ratings set mmr = $3, matches = $4, wins = $5, placement_played = $6, placement_penalty = $7, placed = $8, rank_index = $9, lp = $10, apex_tier = $11, lp_at = $12, updated_at = $13, season_id = $14 where account_id = $1 and mode = $2`,
 		before.Account, r.Mode.String(), after.MMR, after.Matches, after.Wins, after.PlacementPlayed, after.PlacementPenalty, after.Placed, after.Rank.Index, after.Rank.LP, after.apexTier, nullable(after.LPAt), r.At, after.Season); err != nil {
-		return err
+		return Rating{}, err
 	}
 	_, err := tx.Exec(ctx, `insert into rating_changes (match_id, account_id, won, offender, placement, k, expected, mmr_before, mmr_after, lp_delta, rank_before, lp_before, rank_after, lp_after)
 		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
 		r.MatchID, change.Account, change.Won, change.Offender, change.Placement, change.K, change.Expected, change.MMRBefore, change.MMR, change.LPDelta, change.RankBefore.Index, change.RankBefore.LP, change.Rank.Index, change.Rank.LP)
-	return err
+	return after, err
 }
 
 func apexTier(before, after Rating) *string {
@@ -252,9 +307,11 @@ func nullable(at time.Time) *time.Time {
 func scan(row pgx.Row) (Rating, error) {
 	var r Rating
 	var at *time.Time
-	if err := row.Scan(&r.Account, &r.Mode, &r.MMR, &r.Matches, &r.Wins, &r.PlacementPlayed, &r.PlacementPenalty, &r.Placed, &r.Rank.Index, &r.Rank.LP, &r.apexTier, &at, &r.season, &r.resetIndex); err != nil {
+	var updated time.Time
+	if err := row.Scan(&r.Account, &r.Mode, &r.MMR, &r.Matches, &r.Wins, &r.PlacementPlayed, &r.PlacementPenalty, &r.Placed, &r.Rank.Index, &r.Rank.LP, &r.apexTier, &at, &r.season, &r.resetIndex, &updated); err != nil {
 		return Rating{}, err
 	}
+	r.version = updated.UnixMilli()
 	if r.season != nil {
 		r.Season = *r.season
 	}
@@ -296,17 +353,39 @@ func (s *Store) RecalculateApex(ctx context.Context, mode rules.Mode) (Recalcula
 	if !locked {
 		return Recalculated{Skipped: true}, nil
 	}
-	result, err := s.assignApex(ctx, tx, mode, config)
+	result, changed, err := s.assignApex(ctx, tx, mode, config)
 	if err != nil {
 		return Recalculated{}, err
 	}
-	return result, tx.Commit(ctx)
-}
-
-func (s *Store) assignApex(ctx context.Context, tx pgx.Tx, mode rules.Mode, config Config) (Recalculated, error) {
-	rows, err := tx.Query(ctx, `select account_id, lp, apex_tier from ratings where mode = $1 and placed and rank_index = $2 order by lp desc, lp_at asc nulls last, wins desc, account_id asc for update`, mode.String(), ApexIndex)
+	entries, season, err := s.entries(ctx, tx, mode, changed)
 	if err != nil {
 		return Recalculated{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return Recalculated{}, err
+	}
+	s.publish(ctx, season, mode, entries)
+	return result, nil
+}
+
+func (s *Store) entries(ctx context.Context, tx pgx.Tx, mode rules.Mode, accounts []string) ([]Entry, string, error) {
+	var entries []Entry
+	var season string
+	for _, account := range accounts {
+		rating, err := scan(tx.QueryRow(ctx, `select `+columns+` from ratings where account_id = $1 and mode = $2`, account, mode.String()))
+		if err != nil {
+			return nil, "", err
+		}
+		entries = append(entries, rating.entry())
+		season = rating.Season
+	}
+	return entries, season, nil
+}
+
+func (s *Store) assignApex(ctx context.Context, tx pgx.Tx, mode rules.Mode, config Config) (Recalculated, []string, error) {
+	rows, err := tx.Query(ctx, `select account_id, lp, apex_tier from ratings where mode = $1 and placed and rank_index = $2 order by lp desc, lp_at asc nulls last, wins desc, account_id asc for update`, mode.String(), ApexIndex)
+	if err != nil {
+		return Recalculated{}, nil, err
 	}
 	type apex struct {
 		account string
@@ -318,15 +397,16 @@ func (s *Store) assignApex(ctx context.Context, tx pgx.Tx, mode rules.Mode, conf
 		var p apex
 		if err := rows.Scan(&p.account, &p.lp, &p.tier); err != nil {
 			rows.Close()
-			return Recalculated{}, err
+			return Recalculated{}, nil, err
 		}
 		players = append(players, p)
 	}
 	rows.Close()
 	if rows.Err() != nil {
-		return Recalculated{}, rows.Err()
+		return Recalculated{}, nil, rows.Err()
 	}
 	var result Recalculated
+	var changed []string
 	challenger, grandmaster := config.ChallengerSlots, config.GrandmasterSlots
 	for _, p := range players {
 		tier := ApexMaster
@@ -344,10 +424,11 @@ func (s *Store) assignApex(ctx context.Context, tx pgx.Tx, mode rules.Mode, conf
 			continue
 		}
 		if _, err := tx.Exec(ctx, `update ratings set apex_tier = $3 where account_id = $1 and mode = $2`, p.account, mode.String(), tier); err != nil {
-			return Recalculated{}, err
+			return Recalculated{}, nil, err
 		}
+		changed = append(changed, p.account)
 	}
-	return result, nil
+	return result, changed, nil
 }
 
 func NextApexRun(now time.Time, hourUTC int) time.Time {
