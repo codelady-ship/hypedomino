@@ -122,6 +122,7 @@ var statuses = []struct {
 }{
 	{ErrRequest, http.StatusBadRequest, ErrRequest.Error()},
 	{ErrNotEligible, http.StatusForbidden, ErrNotEligible.Error()},
+	{ErrBlocked, http.StatusForbidden, ErrBlocked.Error()},
 	{ErrUnknownOffer, http.StatusNotFound, ErrUnknownOffer.Error()},
 	{wallet.ErrInsufficient, http.StatusPaymentRequired, "wallet.insufficient"},
 	{ErrUnavailable, http.StatusConflict, ErrUnavailable.Error()},

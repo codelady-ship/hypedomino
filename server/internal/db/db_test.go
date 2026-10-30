@@ -61,7 +61,7 @@ func has(names []string, want string) bool {
 	return false
 }
 
-const head = 7
+const head = 8
 
 func TestUpFromEmptyToHeadDownToZeroAndUpAgain(t *testing.T) {
 	url := dbtest.Empty(t)
@@ -84,7 +84,7 @@ func TestUpFromEmptyToHeadDownToZeroAndUpAgain(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pool.Close()
-	for _, want := range []string{"accounts", "auth_identities", "profiles", "inventory_items", "wallets", "ledger_entries", "matches", "match_participants", "matches_default", "match_participants_default", "match_events", "match_events_default", "outbox", "reward_grants", "config_snapshots", "goose_db_version"} {
+	for _, want := range []string{"accounts", "auth_identities", "profiles", "inventory_items", "wallets", "ledger_entries", "matches", "match_participants", "matches_default", "match_participants_default", "match_events", "match_events_default", "outbox", "reward_grants", "config_snapshots", "purchases", "purchase_notices", "goose_db_version"} {
 		if !has(tables(t, pool), want) {
 			t.Fatalf("table %s missing after up: %v", want, tables(t, pool))
 		}
@@ -191,10 +191,10 @@ func TestWalletAndLedgerConstraints(t *testing.T) {
 	_, pool := dbtest.Fresh(t)
 	ctx := context.Background()
 	a, b := account(t, pool), account(t, pool)
-	if _, err := pool.Exec(ctx, "insert into wallets (account_id, balance) values ($1, -1)", a); !check(err) {
-		t.Fatalf("negative balance accepted: %v", err)
+	if _, err := pool.Exec(ctx, "insert into wallets (account_id, balance) values ($1, -1)", a); err != nil {
+		t.Fatalf("a refund may leave a negative balance (migration 00008): %v", err)
 	}
-	if _, err := pool.Exec(ctx, "insert into wallets (account_id) values ($1), ($2)", a, b); err != nil {
+	if _, err := pool.Exec(ctx, "insert into wallets (account_id) values ($1)", b); err != nil {
 		t.Fatal(err)
 	}
 	entry := "insert into ledger_entries (account_id, amount, reason, source_type, source_ref, idempotency_key, config_version, balance_after) values ($1, $2, $3, 'match', 'm1', $4, 1, $5)"
@@ -213,8 +213,8 @@ func TestWalletAndLedgerConstraints(t *testing.T) {
 	if _, err := pool.Exec(ctx, entry, b, 500, "purchase", "purchase:play:tx-1", 550); !unique(err) {
 		t.Fatalf("a purchase transaction credited to two accounts: %v", err)
 	}
-	if _, err := pool.Exec(ctx, entry, a, -600, "shop_purchase", "spend:r1", -50); !check(err) {
-		t.Fatalf("negative balance after accepted: %v", err)
+	if _, err := pool.Exec(ctx, entry, a, -2000, "refund_revoke", "refund:play:n1", -1450); err != nil {
+		t.Fatalf("a refund revoke below zero refused (migration 00008): %v", err)
 	}
 }
 

@@ -153,7 +153,7 @@ func (s *Store) ApplyIn(ctx context.Context, tx pgx.Tx, entry Entry, now time.Ti
 		return Applied{}, err
 	}
 	after := balance + entry.Amount
-	if after < 0 {
+	if after < 0 && entry.Amount < 0 && entry.Reason != RefundRevoke {
 		return Applied{}, fmt.Errorf("%w: %d available, %d needed", ErrInsufficient, balance, -entry.Amount)
 	}
 	applied, err := scan(tx.QueryRow(ctx, `insert into ledger_entries (account_id, amount, reason, source_type, source_ref, idempotency_key, config_version, balance_after, created_at)

@@ -14,6 +14,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
 	"github.com/Alievs-corp/hypedomino/server/internal/inventory"
 	"github.com/Alievs-corp/hypedomino/server/internal/profile"
+	"github.com/Alievs-corp/hypedomino/server/internal/purchase"
 	"github.com/Alievs-corp/hypedomino/server/internal/reward"
 	"github.com/Alievs-corp/hypedomino/server/internal/session"
 	"github.com/Alievs-corp/hypedomino/server/internal/shop"
@@ -42,6 +43,10 @@ type Config struct {
 	ShopCatalog     string
 	ConfigPoll      time.Duration
 	Reward          reward.Config
+	Purchase        purchase.Config
+	Play            purchase.GoogleConfig
+	Apple           purchase.AppleConfig
+	PushSecret      string
 }
 
 func DefaultConfig() Config {
@@ -61,6 +66,7 @@ func DefaultConfig() Config {
 		Shop:            shop.DefaultConfig(),
 		ConfigPoll:      10 * time.Second,
 		Reward:          reward.DefaultConfig(),
+		Purchase:        purchase.DefaultConfig(),
 		Rarities:        cosmetics.DefaultRarities(),
 	}
 }
@@ -217,6 +223,23 @@ func ConfigFromEnv(lookup Lookup) (Config, error) {
 	}
 	if config.Reward.DuplicateCompensationPercent < 0 || config.Reward.DuplicateCompensationPercent > 100 {
 		r.errs = append(r.errs, errors.New("HD_DUPLICATE_COMPENSATION_PERCENT: between 0 and 100"))
+	}
+	r.text("HD_PLAY_PACKAGE", &config.Play.PackageName)
+	r.text("HD_PLAY_SERVICE_ACCOUNT", &config.Play.ServiceAccountFile)
+	r.text("HD_PLAY_NOTIFICATION_TOKEN", &config.PushSecret)
+	r.text("HD_APPLE_BUNDLE_ID", &config.Apple.BundleID)
+	r.flag("HD_STORE_SANDBOX", &config.Play.AllowTest)
+	config.Apple.AllowSandbox = config.Play.AllowTest
+	r.integer("HD_REFUNDS_BEFORE_PURCHASE_BLOCK", &config.Purchase.RefundsBeforePurchaseBlock)
+	r.integer("HD_REFUND_WINDOW_DAYS", &config.Purchase.RefundWindowDays)
+	if (config.Play.PackageName == "") != (config.Play.ServiceAccountFile == "") {
+		r.errs = append(r.errs, errors.New("HD_PLAY_PACKAGE and HD_PLAY_SERVICE_ACCOUNT: both or neither"))
+	}
+	if config.Play.PackageName != "" && config.PushSecret == "" {
+		r.errs = append(r.errs, errors.New("HD_PLAY_NOTIFICATION_TOKEN: required with HD_PLAY_PACKAGE"))
+	}
+	if err := config.Purchase.Validate(); err != nil {
+		r.errs = append(r.errs, fmt.Errorf("HD_REFUNDS_BEFORE_PURCHASE_BLOCK and HD_REFUND_WINDOW_DAYS: %w", err))
 	}
 	if config.Inventory.EmojiSlots < 1 || config.Inventory.ActionSlots < 1 {
 		r.errs = append(r.errs, errors.New("HD_EMOJI_SLOTS and HD_ACTION_SLOTS: at least 1"))

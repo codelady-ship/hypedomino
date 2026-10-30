@@ -156,6 +156,10 @@
         {
           "type": "rank_reward",
           "ref": "rank.season_1.top_tier"
+        },
+        {
+          "type": "first_purchase",
+          "ref": "bundle.first_purchase"
         }
       ],
       "artSource": "ai_assisted",

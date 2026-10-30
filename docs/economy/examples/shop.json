@@ -75,6 +75,12 @@
       "nameKey": "shop.offer.pass_premium"
     }
   ],
+  "firstPurchase": {
+    "id": "bundle.first_purchase",
+    "revision": 1,
+    "coins": 500,
+    "cosmetics": ["frame.season_1_top"]
+  },
   "rotations": [
     { "period": "daily", "start": "2026-01-01T00:00:00Z", "offers": ["offer.avatar_comet_fox"] },
     { "period": "weekly", "start": "2025-12-29T00:00:00Z", "offers": ["offer.table_night_market"] }

@@ -301,6 +301,14 @@ func (e *Engine) Revoke(ctx context.Context, account, key string, reason wallet.
 		return Report{}, err
 	}
 	defer tx.Rollback(ctx)
+	report, err := e.RevokeIn(ctx, tx, account, key, reason, revokeKey, now)
+	if err != nil {
+		return Report{}, err
+	}
+	return report, tx.Commit(ctx)
+}
+
+func (e *Engine) RevokeIn(ctx context.Context, tx pgx.Tx, account, key string, reason wallet.Reason, revokeKey string, now time.Time) (Report, error) {
 	report, err := load(ctx, tx, account, key)
 	if err != nil {
 		return Report{}, err
@@ -333,5 +341,5 @@ func (e *Engine) Revoke(ctx context.Context, account, key string, reason wallet.
 		return Report{}, err
 	}
 	report.RevokedAt, report.RevokeKey = now, revokeKey
-	return report, tx.Commit(ctx)
+	return report, nil
 }

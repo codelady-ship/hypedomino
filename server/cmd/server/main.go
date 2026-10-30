@@ -21,6 +21,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
 	"github.com/Alievs-corp/hypedomino/server/internal/inventory"
 	"github.com/Alievs-corp/hypedomino/server/internal/profile"
+	"github.com/Alievs-corp/hypedomino/server/internal/purchase"
 	"github.com/Alievs-corp/hypedomino/server/internal/reward"
 	"github.com/Alievs-corp/hypedomino/server/internal/secrand"
 	"github.com/Alievs-corp/hypedomino/server/internal/session"
@@ -110,10 +111,41 @@ func build(ctx context.Context, config app.Config, logger *slog.Logger, sessions
 		}
 	}
 	go offers.Run(ctx, config.ConfigPoll)
-	store := shop.NewHandler(tokens, shop.NewStore(pool, walletStore, inventoryStore, engine, offers, config.Shop), logger, time.Now)
+	shopStore := shop.NewStore(pool, walletStore, inventoryStore, engine, offers, config.Shop)
+	store := shop.NewHandler(tokens, shopStore, logger, time.Now)
 	a.Handle("/shop", store)
 	a.Handle("/shop/", store)
+	validators, google, apple, err := stores(config)
+	if err != nil {
+		pool.Close()
+		return nil, nil, err
+	}
+	purchases := purchase.NewStore(pool, walletStore, engine, offers, validators, config.Purchase, logger)
+	shopStore.Guard(purchases)
+	receipts := purchase.NewHandler(tokens, purchases, google, apple, config.PushSecret, logger, time.Now)
+	a.Handle("POST /shop/complete", receipts)
+	a.Handle("POST /store/", receipts)
 	return a, pool.Close, nil
+}
+
+func stores(config app.Config) (map[purchase.Platform]purchase.Validator, purchase.Notifier, purchase.Notifier, error) {
+	validators := map[purchase.Platform]purchase.Validator{}
+	var google, apple purchase.Notifier
+	if config.Play.PackageName != "" {
+		play, err := purchase.NewGoogle(config.Play)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("HD_PLAY_SERVICE_ACCOUNT: %w", err)
+		}
+		validators[purchase.PlatformGoogle], google = play, play
+	}
+	if config.Apple.BundleID != "" {
+		ios, err := purchase.NewApple(config.Apple)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("HD_APPLE_BUNDLE_ID: %w", err)
+		}
+		validators[purchase.PlatformApple], apple = ios, ios
+	}
+	return validators, google, apple, nil
 }
 
 func loadCatalog(path string) (*cosmetics.Catalog, error) {

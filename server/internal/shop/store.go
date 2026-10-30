@@ -26,7 +26,12 @@ var (
 	ErrCoinsOnly    = errors.New("offer.coins_only")
 	ErrUnsupported  = errors.New("offer.unsupported")
 	ErrRequest      = errors.New("request.invalid")
+	ErrBlocked      = errors.New("purchase.blocked")
 )
+
+type Gate interface {
+	Blocked(ctx context.Context, account string, now time.Time) (bool, error)
+}
 
 const MaxRequestID = 64
 
@@ -39,6 +44,11 @@ type Store struct {
 	engine    *reward.Engine
 	catalog   *snapshot.Watcher[*Catalog]
 	config    Config
+	gate      Gate
+}
+
+func (s *Store) Guard(gate Gate) {
+	s.gate = gate
 }
 
 func NewStore(pool *pgxpool.Pool, wallet *wallet.Store, inventory *inventory.Store, engine *reward.Engine, catalog *snapshot.Watcher[*Catalog], config Config) *Store {
@@ -94,12 +104,13 @@ func AccountToken(account string) string {
 
 type standing struct {
 	created   time.Time
+	blocked   bool
 	purchases int
 	counts    map[string]int
 	owns      func(id string) (bool, error)
 }
 
-func (s *Store) standing(ctx context.Context, q wallet.Querier, account string, owns func(id string) (bool, error)) (standing, error) {
+func (s *Store) standing(ctx context.Context, q wallet.Querier, account string, owns func(id string) (bool, error), now time.Time) (standing, error) {
 	st := standing{owns: owns}
 	if err := q.QueryRow(ctx, `select created_at from accounts where id = $1`, account).Scan(&st.created); err != nil {
 		return st, err
@@ -109,6 +120,11 @@ func (s *Store) standing(ctx context.Context, q wallet.Querier, account string, 
 		return st, err
 	}
 	st.purchases = purchases
+	if s.gate != nil {
+		if st.blocked, err = s.gate.Blocked(ctx, account, now); err != nil {
+			return st, err
+		}
+	}
 	st.counts, err = reward.CountsIn(ctx, q, account, SourceType)
 	return st, err
 }
@@ -138,6 +154,8 @@ func (s *Store) status(offer Offer, st standing, now time.Time) (status, error) 
 	switch {
 	case offer.Kind == KindPass || offer.Kind == KindPassLevels:
 		out.refusal = ErrUnsupported
+	case offer.ProductID != "" && st.blocked:
+		out.refusal = ErrBlocked
 	case offer.LimitPerAccount > 0 && out.bought >= offer.LimitPerAccount:
 		out.refusal = ErrLimit
 	case offer.Eligibility.MaxAccountAgeHours > 0 && age > time.Duration(offer.Eligibility.MaxAccountAgeHours)*time.Hour:
@@ -163,7 +181,7 @@ func (s *Store) View(ctx context.Context, account string, now time.Time) (View, 
 	for _, o := range owned {
 		held[o.ID] = true
 	}
-	st, err := s.standing(ctx, s.pool, account, func(id string) (bool, error) { return held[id], nil })
+	st, err := s.standing(ctx, s.pool, account, func(id string) (bool, error) { return held[id], nil }, now)
 	if err != nil {
 		return View{}, err
 	}
@@ -246,7 +264,7 @@ func (s *Store) Buy(ctx context.Context, account, offerID, requestID string, now
 	if !errors.Is(err, reward.ErrUnknownGrant) {
 		return Purchase{}, err
 	}
-	st, err := s.standing(ctx, tx, account, func(id string) (bool, error) { return s.inventory.OwnsIn(ctx, tx, account, id) })
+	st, err := s.standing(ctx, tx, account, func(id string) (bool, error) { return s.inventory.OwnsIn(ctx, tx, account, id) }, now)
 	if err != nil {
 		return Purchase{}, err
 	}
@@ -279,7 +297,7 @@ func (s *Store) Begin(ctx context.Context, account, offerID string, now time.Tim
 	if offer.ProductID == "" {
 		return Checkout{}, ErrCoinsOnly
 	}
-	st, err := s.standing(ctx, s.pool, account, func(id string) (bool, error) { return s.inventory.Owns(ctx, account, id) })
+	st, err := s.standing(ctx, s.pool, account, func(id string) (bool, error) { return s.inventory.Owns(ctx, account, id) }, now)
 	if err != nil {
 		return Checkout{}, err
 	}

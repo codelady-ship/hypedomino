@@ -205,10 +205,11 @@ type Rotation struct {
 }
 
 type Catalog struct {
-	Schema    int        `json:"schema"`
-	Offers    []Offer    `json:"offers"`
-	Rotations []Rotation `json:"rotations"`
-	index     map[string]Offer
+	Schema        int            `json:"schema"`
+	Offers        []Offer        `json:"offers"`
+	Rotations     []Rotation     `json:"rotations"`
+	FirstPurchase *reward.Bundle `json:"firstPurchase,omitempty"`
+	index         map[string]Offer
 }
 
 func Parser(config Config) func(raw []byte) (*Catalog, error) {
@@ -240,6 +241,14 @@ func Parse(raw []byte, config Config) (*Catalog, error) {
 	}
 	if err := catalog.validateRotations(config); err != nil {
 		return nil, err
+	}
+	if catalog.FirstPurchase != nil {
+		if err := catalog.FirstPurchase.Validate(); err != nil {
+			return nil, fmt.Errorf("%w: first purchase bonus: %v", ErrInvalid, err)
+		}
+		if len(catalog.FirstPurchase.Medals) > 0 {
+			return nil, fmt.Errorf("%w: first purchase bonus carries a medal", ErrInvalid)
+		}
 	}
 	sort.SliceStable(catalog.Rotations, func(i, j int) bool {
 		return catalog.Rotations[i].Start.Before(catalog.Rotations[j].Start)

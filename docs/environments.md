@@ -83,6 +83,13 @@ Today no code on `main` reads an environment variable. The server variables belo
 | `HD_SHOP_RESET_HOUR_UTC` | No | server | `0` | `0` | No | from #104 |
 | `HD_CONFIG_POLL` | No | server | `10s` | `10s` | No | from #104 |
 | `HD_DUPLICATE_COMPENSATION_PERCENT` | No | server | `20` | `20` | No | from #104 |
+| `HD_PLAY_PACKAGE` | No | server | empty (Google purchases off) | `com.example.hypedomino` | No | from #106 |
+| `HD_PLAY_SERVICE_ACCOUNT` | With `HD_PLAY_PACKAGE` | server | empty | `/run/secrets/play-service-account.json` | Yes, the file it names | from #106 |
+| `HD_PLAY_NOTIFICATION_TOKEN` | With `HD_PLAY_PACKAGE` | server | empty | `<random-32-bytes>` | Yes | from #106 |
+| `HD_APPLE_BUNDLE_ID` | No | server | empty (Apple purchases off) | `com.example.hypedomino` | No | from #106 |
+| `HD_STORE_SANDBOX` | No | server | `false` (`true` in dev and staging) | `false` | No | from #106 |
+| `HD_REFUNDS_BEFORE_PURCHASE_BLOCK` | No | server | `3` | `3` | No | from #106 |
+| `HD_REFUND_WINDOW_DAYS` | No | server | `365` | `365` | No | from #106 |
 
 The gateway limits and the reconnect grace are environment variables only until admin config serves them (#210, `docs/penalties.md` section 8); then the admin value wins and the variable is removed in the same PR.
 
@@ -96,7 +103,7 @@ The gateway limits and the reconnect grace are environment variables only until 
 
 ### 2.3 Not read yet
 
-The admin panel and the client read no environment variable. Store receipt validation credentials (#106) and crash reporting (#182) add their variables when the code that reads them lands. That PR adds the row here with all columns filled and the secret to section 3 for each environment.
+The admin panel and the client read no environment variable. Crash reporting (#182) adds its variables when the code that reads them lands. That PR adds the row here with all columns filled and the secret to section 3 for each environment.
 
 ## 3. Where secrets live
 

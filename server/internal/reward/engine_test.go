@@ -238,10 +238,25 @@ func TestRevokeTakesBackCoinsItemsAndMedalsOnce(t *testing.T) {
 	if _, err := f.wallet.Apply(ctx, wallet.Entry{Account: spent, Amount: -100, Reason: wallet.Rename, Source: wallet.Source{Type: "rename", Ref: "r"}, Key: "spend:r"}, start); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := engine.Revoke(ctx, spent, "event:spring_cup:r4", wallet.RefundRevoke, "refund:google:t10", start); !errors.Is(err, wallet.ErrInsufficient) {
-		t.Fatalf("revoke of spent coins: %v", err)
+	if _, err := engine.Revoke(ctx, spent, "event:spring_cup:r4", wallet.Rename, "rename:revoke", start); !errors.Is(err, wallet.ErrInsufficient) {
+		t.Fatalf("revoke of spent coins with a plain debit: %v", err)
 	}
 	if loaded, err := engine.Get(ctx, spent, "event:spring_cup:r4"); err != nil || loaded.Revoked() {
 		t.Fatalf("a refused revoke was recorded %+v %v", loaded, err)
+	}
+	if _, err := engine.Revoke(ctx, spent, "event:spring_cup:r4", wallet.RefundRevoke, "refund:google:t10", start); err != nil {
+		t.Fatalf("refund revoke of spent coins: %v", err)
+	}
+	if balance, err := f.wallet.Balance(ctx, spent); err != nil || balance != -100 {
+		t.Fatalf("balance after a refund revoke of spent coins %d %v", balance, err)
+	}
+	if _, err := f.wallet.Apply(ctx, wallet.Entry{Account: spent, Amount: -1, Reason: wallet.Rename, Source: wallet.Source{Type: "rename", Ref: "r"}, Key: "spend:r2"}, start); !errors.Is(err, wallet.ErrInsufficient) {
+		t.Fatalf("spend from a negative balance: %v", err)
+	}
+	if _, err := f.wallet.Apply(ctx, wallet.Entry{Account: spent, Amount: 150, Reason: wallet.MatchReward, Source: wallet.Source{Type: "match", Ref: "m"}, Key: "earn:m"}, start); err != nil {
+		t.Fatal(err)
+	}
+	if balance, _ := f.wallet.Balance(ctx, spent); balance != 50 {
+		t.Fatalf("balance after earning back %d", balance)
 	}
 }

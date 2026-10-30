@@ -78,6 +78,13 @@ func TestConfigReadsEveryVariable(t *testing.T) {
 		"HD_SHOP_RESET_HOUR_UTC":            "6",
 		"HD_CONFIG_POLL":                    "30s",
 		"HD_DUPLICATE_COMPENSATION_PERCENT": "25",
+		"HD_PLAY_PACKAGE":                   "com.example.hypedomino",
+		"HD_PLAY_SERVICE_ACCOUNT":           "/etc/hypedomino/play.json",
+		"HD_PLAY_NOTIFICATION_TOKEN":        "push-secret",
+		"HD_APPLE_BUNDLE_ID":                "com.example.hypedomino",
+		"HD_STORE_SANDBOX":                  "true",
+		"HD_REFUNDS_BEFORE_PURCHASE_BLOCK":  "2",
+		"HD_REFUND_WINDOW_DAYS":             "90",
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -115,6 +122,9 @@ func TestConfigReadsEveryVariable(t *testing.T) {
 	if config.ShopCatalog != "/etc/hypedomino/shop.json" || config.Shop.DailySlots != 5 || config.Shop.WeeklySlots != 3 || config.Shop.ResetHourUTC != 6 || config.ConfigPoll != 30*time.Second || config.Reward.DuplicateCompensationPercent != 25 {
 		t.Fatalf("shop config %q %+v %s %+v", config.ShopCatalog, config.Shop, config.ConfigPoll, config.Reward)
 	}
+	if config.Play.PackageName != "com.example.hypedomino" || config.Play.ServiceAccountFile != "/etc/hypedomino/play.json" || !config.Play.AllowTest || config.PushSecret != "push-secret" || config.Apple.BundleID != "com.example.hypedomino" || !config.Apple.AllowSandbox || config.Purchase.RefundsBeforePurchaseBlock != 2 || config.Purchase.RefundWindowDays != 90 {
+		t.Fatalf("purchase config %+v %+v %+v", config.Play, config.Apple, config.Purchase)
+	}
 	if len(config.Rarities) != 6 || config.Rarities["cosmic"] != 6 {
 		t.Fatalf("rarities %v", config.Rarities)
 	}
@@ -138,11 +148,13 @@ func TestConfigReportsEveryBadValueAtOnce(t *testing.T) {
 		"HD_SHOP_RESET_HOUR_UTC":            "24",
 		"HD_CONFIG_POLL":                    "100ms",
 		"HD_DUPLICATE_COMPENSATION_PERCENT": "101",
+		"HD_PLAY_PACKAGE":                   "com.example.hypedomino",
+		"HD_REFUND_WINDOW_DAYS":             "0",
 	}))
 	if err == nil {
 		t.Fatal("bad values were accepted")
 	}
-	for _, name := range []string{"HD_LOG_LEVEL", "HD_DRAIN_TIMEOUT", "HD_WRITE_QUEUE", "HD_INTENT_BURST", "HD_HELLO_TIMEOUT", "HD_SCALE_OUT_AT", "capacity", "HD_NICKNAME_ALLOW_MIXED_SCRIPT", "HD_NICKNAME_MAX_LENGTH", "HD_EMOJI_SLOTS", "HD_RARITY_ORDINALS", "HD_SHOP_RESET_HOUR_UTC", "HD_CONFIG_POLL", "HD_DUPLICATE_COMPENSATION_PERCENT"} {
+	for _, name := range []string{"HD_LOG_LEVEL", "HD_DRAIN_TIMEOUT", "HD_WRITE_QUEUE", "HD_INTENT_BURST", "HD_HELLO_TIMEOUT", "HD_SCALE_OUT_AT", "capacity", "HD_NICKNAME_ALLOW_MIXED_SCRIPT", "HD_NICKNAME_MAX_LENGTH", "HD_EMOJI_SLOTS", "HD_RARITY_ORDINALS", "HD_SHOP_RESET_HOUR_UTC", "HD_CONFIG_POLL", "HD_DUPLICATE_COMPENSATION_PERCENT", "HD_PLAY_PACKAGE", "HD_REFUND_WINDOW_DAYS"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("error does not name %s: %v", name, err)
 		}
