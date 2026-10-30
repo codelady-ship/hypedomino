@@ -36,12 +36,22 @@ var (
 )
 
 type Season struct {
-	ID        string     `json:"id"`
-	NameKey   string     `json:"name_key"`
-	Start     time.Time  `json:"start"`
-	End       time.Time  `json:"end"`
-	Closed1v1 *time.Time `json:"closed_1v1,omitempty"`
-	Closed2v2 *time.Time `json:"closed_2v2,omitempty"`
+	ID          string     `json:"id"`
+	NameKey     string     `json:"name_key"`
+	Start       time.Time  `json:"start"`
+	End         time.Time  `json:"end"`
+	Closed1v1   *time.Time `json:"closed_1v1,omitempty"`
+	Closed2v2   *time.Time `json:"closed_2v2,omitempty"`
+	NoRewards   bool       `json:"no_rewards,omitempty"`
+	Rewarded1v1 *time.Time `json:"rewarded_1v1,omitempty"`
+	Rewarded2v2 *time.Time `json:"rewarded_2v2,omitempty"`
+}
+
+func (s Season) RewardedFor(mode rules.Mode) bool {
+	if mode == rules.Mode2v2 {
+		return s.Rewarded2v2 != nil
+	}
+	return s.Rewarded1v1 != nil
 }
 
 func (s Season) ClosedFor(mode rules.Mode) bool {
@@ -70,11 +80,11 @@ type Closed struct {
 	Apex    Recalculated
 }
 
-const seasonColumns = `id, name_key, starts_at, ends_at, closed_1v1_at, closed_2v2_at`
+const seasonColumns = `id, name_key, starts_at, ends_at, closed_1v1_at, closed_2v2_at, not rewards, rewarded_1v1_at, rewarded_2v2_at`
 
 func scanSeason(row pgx.Row) (Season, error) {
 	var s Season
-	if err := row.Scan(&s.ID, &s.NameKey, &s.Start, &s.End, &s.Closed1v1, &s.Closed2v2); err != nil {
+	if err := row.Scan(&s.ID, &s.NameKey, &s.Start, &s.End, &s.Closed1v1, &s.Closed2v2, &s.NoRewards, &s.Rewarded1v1, &s.Rewarded2v2); err != nil {
 		return Season{}, err
 	}
 	s.Start, s.End = s.Start.UTC(), s.End.UTC()
@@ -109,7 +119,7 @@ func (s *Store) CreateSeason(ctx context.Context, season Season, now time.Time) 
 
 func insertSeason(ctx context.Context, tx pgx.Tx, season Season, now time.Time) (Season, error) {
 	season.Start, season.End = season.Start.UTC(), season.End.UTC()
-	_, err := tx.Exec(ctx, `insert into ranked_seasons (id, name_key, starts_at, ends_at, created_at) values ($1, $2, $3, $4, $5)`, season.ID, season.NameKey, season.Start, season.End, now)
+	_, err := tx.Exec(ctx, `insert into ranked_seasons (id, name_key, starts_at, ends_at, rewards, created_at) values ($1, $2, $3, $4, $5, $6)`, season.ID, season.NameKey, season.Start, season.End, !season.NoRewards, now)
 	switch {
 	case err != nil && strings.Contains(err.Error(), "23P01"):
 		return Season{}, fmt.Errorf("%w: %s", ErrSeasonOverlap, season.ID)
@@ -118,7 +128,7 @@ func insertSeason(ctx context.Context, tx pgx.Tx, season Season, now time.Time) 
 	case err != nil:
 		return Season{}, err
 	}
-	return Season{ID: season.ID, NameKey: season.NameKey, Start: season.Start, End: season.End}, nil
+	return Season{ID: season.ID, NameKey: season.NameKey, Start: season.Start, End: season.End, NoRewards: season.NoRewards}, nil
 }
 
 func (s *Store) ExtendSeason(ctx context.Context, id string, end time.Time) (Season, error) {
@@ -342,6 +352,16 @@ func (s *Store) RunSeasonEnd(ctx context.Context, logger *slog.Logger, every tim
 		}
 		for _, c := range closed {
 			logger.Info("season closed", "placed", c.Placed, "next", c.Next, "challenger", c.Apex.Challenger, "grandmaster", c.Apex.Grandmaster)
+		}
+		if s.rewards == nil {
+			continue
+		}
+		distributed, err := s.DistributeDue(ctx, now())
+		if err != nil {
+			logger.Error("season rewards failed", "error", err)
+		}
+		for _, d := range distributed {
+			logger.Info("season rewards distributed", "season", d.Season, "mode", d.Mode.String(), "rewarded", d.Rewarded)
 		}
 	}
 }

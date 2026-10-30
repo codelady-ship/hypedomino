@@ -59,6 +59,15 @@ func (r Rank) MarshalText() ([]byte, error) {
 	return []byte(r.String()), nil
 }
 
+func KnownTier(name string) bool {
+	for _, tier := range tiers {
+		if tier == name {
+			return true
+		}
+	}
+	return name == TierMaster || name == TierGrandmaster || name == TierChallenger
+}
+
 func TierName(apex string) string {
 	switch apex {
 	case ApexChallenger:

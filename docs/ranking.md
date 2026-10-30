@@ -172,7 +172,8 @@ A ranked match has no accept or decline step (R-53), so there is no dodge and no
 - Section 3 structure, `PlacementMatches`, the reset table and the apex slot rules are frozen while a season runs. MMR and LP coefficients (section 4) can change mid-season and apply to matches that start after the publish; each match records the config version it used (ADR 0006).
 - Season end runs once per mode and is idempotent (#115): final apex recalculation, leaderboard snapshot, final ranks stored for rewards (#120), reset ranks computed for the next season.
 
-- Implemented in `server/internal/rating` (#115): seasons are rows of `ranked_seasons` (`cmd/ranked-season` until #143), contiguous by construction; the end runs once per mode when the end time has passed (apex recalculation, `season_results` snapshot in the order of 8.1, reset ranks, the next season created with `SeasonLengthMonths` if none exists), a result of a closed season changes MMR only, and `state` is derived from the times and the per-mode close marks. Rank rewards and emblems from the snapshot are #120; the Redis leaderboards are #116.
+- Implemented in `server/internal/rating` (#115): seasons are rows of `ranked_seasons` (`cmd/ranked-season` until #143), contiguous by construction; the end runs once per mode when the end time has passed (apex recalculation, `season_results` snapshot in the order of 8.1, reset ranks, the next season created with `SeasonLengthMonths` if none exists), a result of a closed season changes MMR only, and `state` is derived from the times and the per-mode close marks. The Redis leaderboards are #116.
+- Season rewards (#120): once a mode is closed, `rating.Store.DistributeRewards` walks the `season_results` snapshot in position order and, per player in its own transaction, claims a `season_rewards` row (the primary key makes the grant happen once), grants `RankRewardCoins` of the final tier plus the `RankRewards` bundle of that tier through the reward engine (key `rank:<seasonId>:<mode>`, source `rank_reward` with the bundle id), and awards the emblems of 8.3; the mode is then marked rewarded and a lost mark only replays the skip. A season created with `-no-rewards` (beta, soft launch) is marked rewarded without a grant. `GET /ranked/rewards` is the player's mailbox (`unseen` count, `POST /ranked/rewards/seen` clears it) and `GET /ranked/emblems` lists the emblems.
 
 ### 7.2 Soft reset
 
@@ -275,6 +276,7 @@ Owner decision (2026-10-26). A season-end finish near the top of a board earns a
 - An emblem records mode, season, board (global, country code or region id) and bracket. It is awarded once by the idempotent season-end job (#115) from the frozen snapshot, never from a live position, and is kept for the account's lifetime.
 - Shadowbanned accounts are not on public boards (`docs/anti-cheat.md` section 3), so they earn no emblem. An emblem awarded through a position later found to be cheated is revoked by an admin with an audited reason (#209).
 - Emblem art is one static asset per bracket and board scope (global, local), with the season and the country or region shown as text, not baked into art (#178).
+- Implemented in `server/internal/rating` (#120): positions on the global, country and region boards come from the frozen `season_results` order (country and region positions are counted inside the snapshot), the best bracket of `EmblemBrackets` per board is written to `leaderboard_emblems` by the season reward run, once per account, mode, season and board; `revoked_at` and `revoke_reason` are reserved for the admin revocation of #209.
 
 ### 8.4 Profile emblem showcase
 
@@ -325,6 +327,7 @@ Every key has one value per mode (1v1, 2v2); both start at the same default. Str
 | `SeasonResetTable` | generated, section 7.3 | 7.2 |
 | `LeaderboardTopSize` | 200 | 8.2 |
 | `LeaderboardRegions` | set by the owner before launch | 8.2 |
+| `RankRewards` | none; per final tier a reward bundle | 7.1, `docs/economy.md` 2.6 |
 | `CountryChangeCooldown` | 180 days | 8.2 |
 | `EmblemBrackets` | 1, 50, 100, 200 | 8.3 |
 | `ProfileEmblemSlots` | 3 | 8.4 |

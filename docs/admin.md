@@ -368,7 +368,7 @@ Rules are `docs/economy.md` section 8. Batch generation creates `single_use` cod
 | `start`, `end` | UTC; the next season starts at this season's end (`docs/ranking.md` 7.1) |
 | `config` | `docs/ranking.md` section 10 keys, one value per mode |
 | `resetTable` | `SeasonResetTable` rows, generated from `ResetTierDrop`, `ResetFloor`, `ResetCeiling` and editable per row |
-| `rankRewards` | Per mode and final tier: bundle id (#120); coins from `RankRewardCoins` |
+| `rankRewards` | Per mode and final tier: the reward bundle (#120), published as `rankRewards` of the mode in the `rating` config; coins from `RankRewardCoins` |
 | `state` | Server: `draft`, `scheduled`, `live`, `ending`, `closed` |
 
 Everything is editable until start (#143). While live, only the non-structural keys of `docs/ranking.md` 7.1 change, and the end may move later, never earlier; the next season moves with it. `LeaderboardRegions` and `LeaderboardTopSize` are ranking config (5.14). Season end runs once per mode (#115); the admin sees its progress and cannot run it twice.

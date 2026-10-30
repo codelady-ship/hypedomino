@@ -155,7 +155,7 @@
       "sources": [
         {
           "type": "rank_reward",
-          "ref": "rank.season_1.top_tier"
+          "ref": "bundle.rank_season_1_gold"
         },
         {
           "type": "first_purchase",

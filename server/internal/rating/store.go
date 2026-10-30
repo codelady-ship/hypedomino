@@ -87,6 +87,7 @@ type Store struct {
 	pool    *pgxpool.Pool
 	configs *snapshot.Watcher[*Snapshot]
 	boards  Boards
+	rewards Rewarder
 	logger  *slog.Logger
 }
 

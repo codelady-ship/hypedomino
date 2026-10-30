@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"math/rand"
+	"os"
 	"reflect"
 	"sort"
 	"testing"
@@ -184,7 +185,7 @@ func TestConfigValidationAndParsing(t *testing.T) {
 	if _, ok := regions.Region("TR"); ok {
 		t.Error("unmapped country has a region")
 	}
-	for _, raw := range []string{`{`, `{"schema":2}`, `{"schema":1,"modes":{"1v1":{"divisionLp":0}}}`, `{"schema":1,"leaderboardRegions":{"EU":["DE"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["de"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["DE"],"west":["DE"]}}`} {
+	for _, raw := range []string{`{`, `{"schema":2}`, `{"schema":1,"modes":{"1v1":{"divisionLp":0}}}`, `{"schema":1,"leaderboardRegions":{"EU":["DE"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["de"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["DE"],"west":["DE"]}}`, `{"schema":1,"rankRewardCoins":{"Wood":5}}`, `{"schema":1,"rankRewardCoins":{"Gold":-1}}`, `{"schema":1,"emblemBrackets":[50,1]}`, `{"schema":1,"modes":{"1v1":{"rankRewards":{"Wood":{"id":"bundle.x","revision":1,"coins":5}}}}}`, `{"schema":1,"modes":{"1v1":{"rankRewards":{"Gold":{"id":"bundle.x","revision":1}}}}}`} {
 		if _, err := rating.Parse([]byte(raw)); !errors.Is(err, rating.ErrInvalidConfig) {
 			t.Errorf("%s: %v", raw, err)
 		}
@@ -284,5 +285,19 @@ func TestTheResetTableFollowsTheSpecAndItsOverrides(t *testing.T) {
 	c.ResetFloor, c.ResetCeiling = "Diamond IV", "Bronze IV"
 	if err := c.Validate(); !errors.Is(err, rating.ErrInvalidConfig) {
 		t.Errorf("floor above ceiling: %v", err)
+	}
+}
+
+func TestTheExampleConfigParses(t *testing.T) {
+	raw, err := os.ReadFile("../../../docs/ranking/examples/rating.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := rating.Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bundle, ok := snapshot.Modes.OneVsOne.RankRewards["Gold"]; !ok || bundle.ID != "bundle.rank_season_1_gold" || snapshot.RankRewardCoins["Challenger"] != 5000 || len(snapshot.EmblemBrackets) != 4 {
+		t.Fatalf("example %+v", snapshot)
 	}
 }

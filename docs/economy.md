@@ -80,6 +80,8 @@ Season length, levels and the XP curve: `docs/pass-missions-medals.md` section 2
 
 At season end every placed player gets coins for their final rank in each mode, once per season and mode (`docs/ranking.md` 7.1, #120). `RankRewardCoins` by final tier: Iron 100, Bronze 200, Silver 400, Gold 700, Platinum 1000, Emerald 1500, Diamond 2000, Master 3000, Grandmaster 4000, Challenger 5000. Cosmetic rank rewards are bundles in #120's table. No final rank in a mode, no reward for that mode.
 
+- Implemented in `server/internal/rating` (#120): `RankRewardCoins` per tier and `RankRewards` (a bundle per mode and final tier) are the `rating` config; the season reward run grants both as one reward engine grant with key `rank:<seasonId>:<mode>`, so a player is paid once per season and mode whatever happens to the job in between.
+
 ### 2.7 Events and duplicates
 
 - A live event grants reward bundles from its own config. Its coins count in the section 10 monitors. Event cosmetics are sold for coins in the event shop section (6.1).

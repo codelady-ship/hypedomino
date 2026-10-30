@@ -39,6 +39,7 @@ func run(ctx context.Context, args []string, env func(string) string, out io.Wri
 	nameKey := flags.String("name-key", "", "game string key of the season name")
 	start := flags.String("start", "", "start, RFC 3339 UTC")
 	end := flags.String("end", "", "end, RFC 3339 UTC")
+	noRewards := flags.Bool("no-rewards", false, "grant no rank rewards or emblems at the end (beta and soft-launch seasons)")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func run(ctx context.Context, args []string, env func(string) string, out io.Wri
 	store := rating.NewStore(pool, rating.NewWatcher(pool, slog.New(slog.NewTextHandler(io.Discard, nil))))
 	switch args[0] {
 	case "create":
-		season := rating.Season{ID: *id, NameKey: *nameKey}
+		season := rating.Season{ID: *id, NameKey: *nameKey, NoRewards: *noRewards}
 		if season.Start, err = time.Parse(time.RFC3339, *start); err != nil {
 			return fmt.Errorf("-start: %w", err)
 		}

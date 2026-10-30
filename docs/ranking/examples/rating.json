@@ -1,7 +1,15 @@
 {
   "schema": 1,
+  "emblemBrackets": [1, 50, 100, 200],
   "modes": {
     "1v1": {
+      "rankRewards": {
+        "Gold": {
+          "id": "bundle.rank_season_1_gold",
+          "revision": 1,
+          "cosmetics": ["frame.season_1_top"]
+        }
+      },
       "divisionLp": 100,
       "demotionLp": 75,
       "apexRecalcHourUtc": 0,
