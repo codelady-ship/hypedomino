@@ -15,6 +15,7 @@ Owner scope: #48 (queue), #52 (leaver rules), #118 (quality tuning). Rules refer
 - A player's window starts at `MmrWindowStart` and grows by `MmrWindowStep` every `MmrWindowStepSeconds` of waiting, up to `MmrWindowMax`.
 - Ranked queues only (#118): two placed players also need rank indexes (`docs/ranking.md` section 2) at most `RankWindowDivisions` apart, so a Gold II player never meets a Diamond player however close their MMR. A player still in placement has no rank and is matched by MMR alone; 0 disables the rank check.
 - Only a match formed from a ranked queue reaches the rating store (`Match.Ranked`); casual matches and custom rooms (R-55, R-56) change nothing in `docs/ranking.md`.
+- Ranked queues only (#121): an entry carries the accounts it must not meet again (`rating.Store.Avoid`: met `RepeatPairMax` times within `RepeatPairWindowHours`, `docs/ranking.md` section 11); the scan skips a pair when either side lists the other.
 - Casual queues only: an entry that has waited `CasualBotFillSeconds` forms a match with the players found so far and server bots in the remaining seats. Ranked queues never seat a bot (section 9 of `docs/ranking.md`); a value of 0 disables bot fill.
 - Seats: the players are shuffled and seated in seat order (1v1: X, Y; 2v2: N, E, S, W, so N and S are one team and E and W the other). Bots take the seats left.
 - A formed match is never cancelled because a player did not load; it starts after the loading phase without them (R-57).

@@ -161,6 +161,7 @@ type Snapshot struct {
 	LeaderboardRegions map[string][]string `json:"leaderboardRegions,omitempty"`
 	RankRewardCoins    map[string]int64    `json:"rankRewardCoins"`
 	EmblemBrackets     []int               `json:"emblemBrackets"`
+	Abuse              Abuse               `json:"abuse"`
 	Modes              Modes               `json:"modes"`
 }
 
@@ -188,6 +189,7 @@ func Default() *Snapshot {
 		LeaderboardTopSize: 200,
 		RankRewardCoins:    map[string]int64{"Iron": 100, "Bronze": 200, "Silver": 400, "Gold": 700, "Platinum": 1000, "Emerald": 1500, "Diamond": 2000, TierMaster: 3000, TierGrandmaster: 4000, TierChallenger: 5000},
 		EmblemBrackets:     []int{1, 50, 100, 200},
+		Abuse:              DefaultAbuse(),
 		Modes:              Modes{OneVsOne: DefaultConfig(), TwoVsTwo: DefaultConfig()},
 	}
 }
@@ -233,6 +235,9 @@ func (s *Snapshot) Validate() error {
 		if bracket < 1 || (i > 0 && bracket <= s.EmblemBrackets[i-1]) {
 			return fmt.Errorf("%w: emblemBrackets must be increasing positions", ErrInvalidConfig)
 		}
+	}
+	if err := s.Abuse.Validate(); err != nil {
+		return err
 	}
 	if err := s.Modes.OneVsOne.Validate(); err != nil {
 		return fmt.Errorf("1v1: %w", err)

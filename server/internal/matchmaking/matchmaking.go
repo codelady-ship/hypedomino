@@ -53,6 +53,7 @@ type Entry struct {
 	Mmr        int
 	Rank       int
 	Placed     bool
+	Avoid      []string
 	EnqueuedAt time.Time
 	SearchFrom time.Time
 }
@@ -140,7 +141,7 @@ func formBucket(config Config, key bucket, entries []Entry, now time.Time, rando
 			if len(group) == players {
 				break
 			}
-			if other == index || taken[other] || entries[other].SearchFrom.After(now) {
+			if other == index || taken[other] || entries[other].SearchFrom.After(now) || avoids(anchor, entries[other]) {
 				continue
 			}
 			tolerance := min(window, Window(config, now.Sub(entries[other].EnqueuedAt)))
@@ -167,6 +168,20 @@ func formBucket(config Config, key bucket, entries []Entry, now time.Time, rando
 		}
 	}
 	return matches, remaining
+}
+
+func avoids(a, b Entry) bool {
+	for _, account := range a.Avoid {
+		if account == b.Account {
+			return true
+		}
+	}
+	for _, account := range b.Avoid {
+		if account == a.Account {
+			return true
+		}
+	}
+	return false
 }
 
 func rankClose(config Config, queue Queue, a, b Entry) bool {

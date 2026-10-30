@@ -185,7 +185,7 @@ func TestConfigValidationAndParsing(t *testing.T) {
 	if _, ok := regions.Region("TR"); ok {
 		t.Error("unmapped country has a region")
 	}
-	for _, raw := range []string{`{`, `{"schema":2}`, `{"schema":1,"modes":{"1v1":{"divisionLp":0}}}`, `{"schema":1,"leaderboardRegions":{"EU":["DE"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["de"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["DE"],"west":["DE"]}}`, `{"schema":1,"rankRewardCoins":{"Wood":5}}`, `{"schema":1,"rankRewardCoins":{"Gold":-1}}`, `{"schema":1,"emblemBrackets":[50,1]}`, `{"schema":1,"modes":{"1v1":{"rankRewards":{"Wood":{"id":"bundle.x","revision":1,"coins":5}}}}}`, `{"schema":1,"modes":{"1v1":{"rankRewards":{"Gold":{"id":"bundle.x","revision":1}}}}}`} {
+	for _, raw := range []string{`{`, `{"schema":2}`, `{"schema":1,"modes":{"1v1":{"divisionLp":0}}}`, `{"schema":1,"leaderboardRegions":{"EU":["DE"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["de"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["DE"],"west":["DE"]}}`, `{"schema":1,"rankRewardCoins":{"Wood":5}}`, `{"schema":1,"rankRewardCoins":{"Gold":-1}}`, `{"schema":1,"emblemBrackets":[50,1]}`, `{"schema":1,"modes":{"1v1":{"rankRewards":{"Wood":{"id":"bundle.x","revision":1,"coins":5}}}}}`, `{"schema":1,"modes":{"1v1":{"rankRewards":{"Gold":{"id":"bundle.x","revision":1}}}}}`, `{"schema":1,"abuse":{"repeatPairMax":0}}`, `{"schema":1,"abuse":{"feedingSharePercent":50}}`, `{"schema":1,"abuse":{"winTradeSharePercent":60}}`} {
 		if _, err := rating.Parse([]byte(raw)); !errors.Is(err, rating.ErrInvalidConfig) {
 			t.Errorf("%s: %v", raw, err)
 		}

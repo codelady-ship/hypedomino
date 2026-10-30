@@ -237,6 +237,9 @@ func (s *Store) Apply(ctx context.Context, r Result) (Applied, error) {
 		return Applied{}, err
 	}
 	s.publish(ctx, season.ID, r.Mode, entries)
+	if err := s.inspect(ctx, r); err != nil && s.logger != nil {
+		s.logger.Error("rating abuse inspection failed", "match", r.MatchID, "error", err)
+	}
 	return Applied{ConfigVersion: version, Changes: changes, Late: late, Season: season.ID}, nil
 }
 

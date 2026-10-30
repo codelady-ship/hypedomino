@@ -323,3 +323,22 @@ func TestAFormedMatchKnowsItsQueueAndTeams(t *testing.T) {
 		}
 	}
 }
+
+func TestPlayersWhoMetTooOftenAreKeptApart(t *testing.T) {
+	a := ranked("a", rules.Mode1v1, 1200, 10, time.Hour)
+	a.Avoid = []string{"b"}
+	b := ranked("b", rules.Mode1v1, 1200, 10, time.Hour)
+	c := ranked("c", rules.Mode1v1, 1200, 10, time.Minute)
+	matches, remaining := Form(DefaultConfig(), []Entry{a, b, c}, start, seeded(1))
+	if len(matches) != 1 || len(remaining) != 1 || remaining[0].Account != "b" {
+		t.Fatalf("matches %+v remaining %+v", matches, remaining)
+	}
+	if _, ok := accounts(matches[0])["a"]; !ok {
+		t.Fatalf("a not seated %+v", matches[0])
+	}
+	b.Avoid = []string{"a"}
+	a.Avoid = nil
+	if matches, _ := Form(DefaultConfig(), []Entry{a, b}, start, seeded(1)); len(matches) != 0 {
+		t.Fatalf("the other side's list is ignored: %+v", matches)
+	}
+}

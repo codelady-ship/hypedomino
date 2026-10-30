@@ -152,6 +152,8 @@ Risk is the impact if the countermeasures did not exist. Every vector is verifie
 | Response | Flag and review. Confirmed collusion: shadowban or temporary ban, rating changes from the affected matches reverted by an admin |
 | Issues | #209, #212; detection details in #183 (Epic 16), #121 (Epic 10), #110 (Epic 9) |
 
+- Implemented in `server/internal/rating` (#121): the repeat limit of the same pair in ranked matchmaking and the `pair_frequency`, `feeding` and `win_trade` pair signals of `docs/ranking.md` section 11, stored in `rating_signals` and published on the `rating_signals` outbox topic with `CollusionWeight` applied by the risk score of #209.
+
 ### V-10. Automated play
 
 | | |

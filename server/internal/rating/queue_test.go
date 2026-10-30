@@ -14,11 +14,11 @@ import (
 
 func (f *fixture) enqueue(t *testing.T, pool *matchmaking.Pool, account string, mode rules.Mode, queue matchmaking.Queue, at time.Time) {
 	t.Helper()
-	q, err := f.store.Queue(context.Background(), account, mode)
+	q, err := f.store.Queue(context.Background(), account, mode, now)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := pool.Enqueue(matchmaking.Entry{Account: account, Mode: mode, Queue: queue, Region: "eu", Mmr: q.Mmr, Rank: q.Rank, Placed: q.Placed, EnqueuedAt: at}); err != nil {
+	if err := pool.Enqueue(matchmaking.Entry{Account: account, Mode: mode, Queue: queue, Region: "eu", Mmr: q.Mmr, Rank: q.Rank, Placed: q.Placed, Avoid: q.Avoid, EnqueuedAt: at}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -39,7 +39,7 @@ func TestARankedQueueFormsFromRatingsAndOnlyRankedMatchesAreApplied(t *testing.T
 	f.set(t, gold, rules.Mode1v1, 1400, 30, rank(t, "Gold II", 40))
 	f.set(t, diamond, rules.Mode1v1, 1420, 30, rank(t, "Diamond IV", 10))
 	f.set(t, silver, rules.Mode1v1, 1380, 30, rank(t, "Silver I", 0))
-	if q, err := f.store.Queue(context.Background(), fresh, rules.Mode1v1); err != nil || q.Placed || q.Mmr != 1200 {
+	if q, err := f.store.Queue(context.Background(), fresh, rules.Mode1v1, now); err != nil || q.Placed || q.Mmr != 1200 {
 		t.Fatalf("fresh queue entry %+v %v", q, err)
 	}
 	pool := matchmaking.NewPool(matchmaking.DefaultConfig(), rand.New(rand.NewPCG(1, 1)))

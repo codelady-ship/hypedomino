@@ -12,7 +12,7 @@ Related: `docs/rules.md` R-43 to R-55 (match result, timer, AFK, leavers, ranked
 - A match cancelled by the server (server fault, region outage) changes nothing for anyone.
 - A match counts toward the season in which it started.
 - Applying a match result is idempotent by match id: replaying the same match end never changes MMR or LP twice.
-- Matchmaking quality (MMR window, wait expansion) is #48 and #118. Abuse detection (win-trading, boosting) is #121. Season rewards are #120.
+- Matchmaking quality (MMR window, wait expansion) is #48 and #118. Abuse detection (win-trading, boosting) is section 11 (#121). Season rewards are #120.
 
 ## 2. Terms
 
@@ -293,6 +293,16 @@ Owner decision on #8 (2026-10-26).
 - The server bot takes a seat in a ranked match only to replace a player during the match (R-50 to R-52). Its MMR and LP handling is section 4.5.
 - Bot fill after a long wait (#48, config) applies to casual queues only (R-56). Nothing in this document is read or written by a casual match.
 
+## 11. Rating abuse
+
+Rules of #121. Win trading and boosting work through the same pair of accounts, so every rule looks at pairs.
+
+- Repeat limit: two accounts that met in `RepeatPairMax` (default 3) ranked matches of a mode within `RepeatPairWindowHours` (default 24) are not matched again in that mode until the window has passed, whatever their MMR. The queue entry carries the accounts to avoid (`docs/matchmaking.md` section 2).
+- Pair signals: after every applied ranked result, each opponent pair of the match is counted over `PairWindowHours` (default 168). From `PairMinMatches` (default 6) matches a `pair_frequency` signal is recorded for both accounts; when one side won at least `FeedingSharePercent` (default 80) of them it is `feeding` (the loser feeds, the winner is boosted); when both sides won at least `WinTradeSharePercent` (default 35) it is `win_trade`. A signal carries the counterpart, the matches, the wins, the offenses (leaves and AFK of either side, the throw pattern that replaces a dodge, section 6) and the window, is updated as the counts grow and is published on the `rating_signals` outbox topic for the risk score (`docs/anti-cheat.md` 5, `CollusionWeight`).
+- A signal never changes a rating by itself: the response is the risk score, review and an admin's reversal (`docs/anti-cheat.md` V-9, #209).
+
+- Implemented in `server/internal/rating` (#121): `abuse` keys of the `rating` config, `Store.Avoid` and `Store.Queue` for the queue, `rating_signals` table, `Store.Signals` per account and the outbox rows; the admin analysis screen reads `rating_signals` (admin epic).
+
 ## 10. Config
 
 Every key has one value per mode (1v1, 2v2); both start at the same default. Structural keys (section 7.1) are frozen while a season runs.
@@ -328,6 +338,9 @@ Every key has one value per mode (1v1, 2v2); both start at the same default. Str
 | `LeaderboardTopSize` | 200 | 8.2 |
 | `LeaderboardRegions` | set by the owner before launch | 8.2 |
 | `RankRewards` | none; per final tier a reward bundle | 7.1, `docs/economy.md` 2.6 |
+| `RepeatPairWindowHours`, `RepeatPairMax` | 24, 3 | 11 |
+| `PairWindowHours`, `PairMinMatches` | 168, 6 | 11 |
+| `FeedingSharePercent`, `WinTradeSharePercent` | 80, 35 | 11 |
 | `CountryChangeCooldown` | 180 days | 8.2 |
 | `EmblemBrackets` | 1, 50, 100, 200 | 8.3 |
 | `ProfileEmblemSlots` | 3 | 8.4 |
