@@ -18,6 +18,11 @@ var ErrInvalidConfig = errors.New("rating: invalid config")
 type Config struct {
 	DivisionLp                  int     `json:"divisionLp"`
 	DemotionLp                  int     `json:"demotionLp"`
+	ApexRecalcHourUtc           int     `json:"apexRecalcHourUtc"`
+	ChallengerSlots             int     `json:"challengerSlots"`
+	ChallengerMinLp             int     `json:"challengerMinLp"`
+	GrandmasterSlots            int     `json:"grandmasterSlots"`
+	GrandmasterMinLp            int     `json:"grandmasterMinLp"`
 	InitialMmr                  int     `json:"initialMmr"`
 	MmrScale                    int     `json:"mmrScale"`
 	MmrK                        int     `json:"mmrK"`
@@ -41,6 +46,11 @@ func DefaultConfig() Config {
 	return Config{
 		DivisionLp:                  100,
 		DemotionLp:                  75,
+		ApexRecalcHourUtc:           0,
+		ChallengerSlots:             50,
+		ChallengerMinLp:             500,
+		GrandmasterSlots:            200,
+		GrandmasterMinLp:            200,
 		InitialMmr:                  1200,
 		MmrScale:                    400,
 		MmrK:                        20,
@@ -70,6 +80,10 @@ func (c Config) Validate() error {
 		return fail("divisionLp must be at least 1")
 	case c.DemotionLp < 0 || c.DemotionLp >= c.DivisionLp:
 		return fail("demotionLp must be between 0 and divisionLp - 1")
+	case c.ApexRecalcHourUtc < 0 || c.ApexRecalcHourUtc > 23:
+		return fail("apexRecalcHourUtc must be an hour of the day")
+	case c.ChallengerSlots < 0 || c.GrandmasterSlots < 0 || c.ChallengerMinLp < 0 || c.GrandmasterMinLp < 0:
+		return fail("apex slots and minimum LP must not be negative")
 	case c.MmrScale < 1 || c.MmrK < 1 || c.MmrKProvisional < 1 || c.MmrProvisionalMatches < 0:
 		return fail("mmrScale, mmrK and mmrKProvisional must be at least 1 and mmrProvisionalMatches at least 0")
 	case c.RankMmrStep < 1:

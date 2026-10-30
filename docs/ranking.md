@@ -144,7 +144,7 @@ The seat played by the bot after R-51 or R-52 keeps its human player's MMR in `R
 
 Division moves: Gold I 90 LP wins +21: Platinum IV 11 LP. Gold III 10 LP loses -18: Gold IV 75 LP. Iron IV 10 LP loses -18: Iron IV 0 LP.
 
-- Implemented in `server/internal/rating` (#112): sections 3.1, 3.2 (Master by LP; the Grandmaster and Challenger recalculation is #113), 4 and the worked examples are table-driven tests; coefficients are the `rating` config snapshot domain with one `Config` per mode (`docs/ranking/examples/rating.json`), and every applied match records the version it used.
+- Implemented in `server/internal/rating` (#112): sections 3.1, 3.2, 4 and the worked examples are table-driven tests; coefficients are the `rating` config snapshot domain with one `Config` per mode (`docs/ranking/examples/rating.json`), and every applied match records the version it used. Grandmaster and Challenger (#113) are recomputed per mode by `rating.Store.RecalculateApex` once a day at `ApexRecalcHourUtc` under an advisory lock, in the order of 8.1 without its apex part (LP, then the server time of the match that set the LP, ranked wins, account id); the season-end run is #115.
 
 ## 5. Placement
 

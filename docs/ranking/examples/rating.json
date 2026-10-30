@@ -4,6 +4,11 @@
     "1v1": {
       "divisionLp": 100,
       "demotionLp": 75,
+      "apexRecalcHourUtc": 0,
+      "challengerSlots": 50,
+      "challengerMinLp": 500,
+      "grandmasterSlots": 200,
+      "grandmasterMinLp": 200,
       "initialMmr": 1200,
       "mmrScale": 400,
       "mmrK": 20,
@@ -25,6 +30,11 @@
     "2v2": {
       "divisionLp": 100,
       "demotionLp": 75,
+      "apexRecalcHourUtc": 0,
+      "challengerSlots": 50,
+      "challengerMinLp": 500,
+      "grandmasterSlots": 200,
+      "grandmasterMinLp": 200,
       "initialMmr": 1200,
       "mmrScale": 400,
       "mmrK": 20,

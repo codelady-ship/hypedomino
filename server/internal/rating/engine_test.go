@@ -146,6 +146,8 @@ func TestConfigValidationAndParsing(t *testing.T) {
 		"percent":   func(c *rating.Config) { c.PartnerLossReductionPercent = 101 },
 		"placement": func(c *rating.Config) { c.PlacementMatches = 0 },
 		"cap":       func(c *rating.Config) { c.NewPlayerPlacementCap = "Master" },
+		"hour":      func(c *rating.Config) { c.ApexRecalcHourUtc = 24 },
+		"slots":     func(c *rating.Config) { c.ChallengerSlots = -1 },
 	} {
 		c := rating.DefaultConfig()
 		mutate(&c)

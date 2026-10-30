@@ -10,6 +10,12 @@ const (
 	MaxDivisionIndex = 27
 	ApexIndex        = 28
 	TierMaster       = "Master"
+	TierGrandmaster  = "Grandmaster"
+	TierChallenger   = "Challenger"
+
+	ApexMaster      = "master"
+	ApexGrandmaster = "grandmaster"
+	ApexChallenger  = "challenger"
 )
 
 var (
@@ -51,6 +57,16 @@ func (r Rank) String() string {
 
 func (r Rank) MarshalText() ([]byte, error) {
 	return []byte(r.String()), nil
+}
+
+func TierName(apex string) string {
+	switch apex {
+	case ApexChallenger:
+		return TierChallenger
+	case ApexGrandmaster:
+		return TierGrandmaster
+	}
+	return TierMaster
 }
 
 func ParseRankIndex(name string) (int, error) {

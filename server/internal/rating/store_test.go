@@ -157,3 +157,71 @@ func TestAPublishedConfigChangesTheNextMatch(t *testing.T) {
 		t.Fatalf("recorded version %d %v", recorded, err)
 	}
 }
+
+func (f *fixture) apex(t *testing.T, lp, wins int, at time.Time) string {
+	t.Helper()
+	account := f.account(t)
+	if _, err := f.pool.Exec(context.Background(), `insert into ratings (account_id, mode, mmr, matches, wins, placement_played, placed, rank_index, lp, lp_at, updated_at) values ($1, '1v1', 2000, 100, $2, 5, true, 28, $3, $4, $4)`, account, wins, lp, at); err != nil {
+		t.Fatal(err)
+	}
+	return account
+}
+
+func TestApexTiersAreRecalculatedInLeaderboardOrder(t *testing.T) {
+	f := newFixture(t)
+	if _, err := snapshot.Publish(context.Background(), f.pool, rating.Domain, []byte(`{"schema":1,"modes":{"1v1":{"challengerSlots":2,"challengerMinLp":300,"grandmasterSlots":2,"grandmasterMinLp":100},"2v2":{}}}`)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.watcher.Load(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	top := f.apex(t, 500, 10, now)
+	early := f.apex(t, 400, 10, now.Add(-time.Hour))
+	late := f.apex(t, 400, 50, now)
+	mid := f.apex(t, 250, 10, now)
+	low := f.apex(t, 150, 10, now)
+	floor := f.apex(t, 10, 10, now)
+	diamond := f.account(t)
+	f.set(t, diamond, rules.Mode1v1, 1900, 100, rank(t, "Diamond I", 90))
+	result, err := f.store.RecalculateApex(context.Background(), rules.Mode1v1)
+	if err != nil || result.Skipped || result.Challenger != 2 || result.Grandmaster != 2 || result.Master != 2 {
+		t.Fatalf("recalculated %+v %v", result, err)
+	}
+	want := map[string]string{top: rating.TierChallenger, early: rating.TierChallenger, late: rating.TierGrandmaster, mid: rating.TierGrandmaster, low: rating.TierMaster, floor: rating.TierMaster, diamond: "Diamond"}
+	for account, tier := range want {
+		if got := f.rating(t, account, rules.Mode1v1).Tier; got != tier {
+			t.Errorf("%s: tier %s, want %s", account, got, tier)
+		}
+	}
+	again, err := f.store.RecalculateApex(context.Background(), rules.Mode1v1)
+	if err != nil || again != result {
+		t.Fatalf("second run %+v %v", again, err)
+	}
+	if other, err := f.store.RecalculateApex(context.Background(), rules.Mode2v2); err != nil || other != (rating.Recalculated{}) {
+		t.Fatalf("empty mode %+v %v", other, err)
+	}
+	applied, err := f.store.Apply(context.Background(), rating.Result{MatchID: "55555555-5555-5555-5555-555555555555", Mode: rules.Mode1v1, Teams: [2][]rating.Participant{{{Account: diamond}}, {{Account: floor}}}, Winner: 0, At: now.Add(time.Hour)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	promoted, demoted := f.rating(t, diamond, rules.Mode1v1), f.rating(t, floor, rules.Mode1v1)
+	if !promoted.Rank.Apex() || promoted.Tier != rating.TierMaster || promoted.Wins != 1 || !promoted.LPAt.Equal(now.Add(time.Hour)) {
+		t.Errorf("promoted %+v %+v", promoted, applied.Changes[0][0])
+	}
+	if demoted.Rank.String() != "Diamond I" || demoted.Tier != "Diamond" || demoted.Wins != 10 || !demoted.LPAt.Equal(now.Add(time.Hour)) {
+		t.Errorf("demoted %+v %+v", demoted, applied.Changes[1][0])
+	}
+	kept := f.rating(t, top, rules.Mode1v1)
+	if kept.Tier != rating.TierChallenger || !kept.LPAt.Equal(now) {
+		t.Errorf("untouched %+v", kept)
+	}
+}
+
+func TestTheNextApexRunIsTheComingHour(t *testing.T) {
+	at := time.Date(2026, 10, 30, 12, 30, 0, 0, time.UTC)
+	for hour, want := range map[int]time.Time{0: time.Date(2026, 10, 31, 0, 0, 0, 0, time.UTC), 12: time.Date(2026, 10, 31, 12, 0, 0, 0, time.UTC), 13: time.Date(2026, 10, 30, 13, 0, 0, 0, time.UTC)} {
+		if got := rating.NextApexRun(at, hour); !got.Equal(want) {
+			t.Errorf("hour %d: %s, want %s", hour, got, want)
+		}
+	}
+}
