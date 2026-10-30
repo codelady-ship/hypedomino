@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "modes": {
+    "1v1": {
+      "divisionLp": 100,
+      "demotionLp": 75,
+      "initialMmr": 1200,
+      "mmrScale": 400,
+      "mmrK": 20,
+      "mmrKProvisional": 40,
+      "mmrProvisionalMatches": 20,
+      "rankMmrBase": 800,
+      "rankMmrStep": 40,
+      "lpBase": 20,
+      "lpGapScale": 200,
+      "lpFactorMin": 0.5,
+      "lpFactorMax": 1.5,
+      "lpChangeMin": 5,
+      "lpChangeMax": 40,
+      "placementMatches": 5,
+      "newPlayerPlacementCap": "Gold IV",
+      "offenseRatingPenalty": 10,
+      "partnerLossReductionPercent": 50
+    },
+    "2v2": {
+      "divisionLp": 100,
+      "demotionLp": 75,
+      "initialMmr": 1200,
+      "mmrScale": 400,
+      "mmrK": 20,
+      "mmrKProvisional": 40,
+      "mmrProvisionalMatches": 20,
+      "rankMmrBase": 800,
+      "rankMmrStep": 40,
+      "lpBase": 20,
+      "lpGapScale": 200,
+      "lpFactorMin": 0.5,
+      "lpFactorMax": 1.5,
+      "lpChangeMin": 5,
+      "lpChangeMax": 40,
+      "placementMatches": 5,
+      "newPlayerPlacementCap": "Gold IV",
+      "offenseRatingPenalty": 10,
+      "partnerLossReductionPercent": 50
+    }
+  }
+}

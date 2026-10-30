@@ -144,6 +144,8 @@ The seat played by the bot after R-51 or R-52 keeps its human player's MMR in `R
 
 Division moves: Gold I 90 LP wins +21: Platinum IV 11 LP. Gold III 10 LP loses -18: Gold IV 75 LP. Iron IV 10 LP loses -18: Iron IV 0 LP.
 
+- Implemented in `server/internal/rating` (#112): sections 3.1, 3.2 (Master by LP; the Grandmaster and Challenger recalculation is #113), 4 and the worked examples are table-driven tests; coefficients are the `rating` config snapshot domain with one `Config` per mode (`docs/ranking/examples/rating.json`), and every applied match records the version it used.
+
 ## 5. Placement
 
 - The first `PlacementMatches` (default 5) ranked matches of a season in a mode are placement matches. Until they are done the player has no visible rank in that mode and is not on its leaderboards.

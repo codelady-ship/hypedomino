@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/db"
+	"github.com/Alievs-corp/hypedomino/server/internal/rating"
 	"github.com/Alievs-corp/hypedomino/server/internal/shop"
 	"github.com/Alievs-corp/hypedomino/server/internal/snapshot"
 )
@@ -20,7 +21,7 @@ func main() {
 	domain := flags.String("domain", shop.Domain, "config domain to publish")
 	file := flags.String("file", "", "JSON file with the new snapshot")
 	flags.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: config-publish -domain shop -file shop.json")
+		fmt.Fprintln(os.Stderr, "usage: config-publish -domain shop|rating -file shop.json")
 		flags.PrintDefaults()
 	}
 	flags.Parse(os.Args[1:])
@@ -64,6 +65,9 @@ func validate(domain string, raw []byte) error {
 	switch domain {
 	case shop.Domain:
 		_, err := shop.Parse(raw, shop.DefaultConfig())
+		return err
+	case rating.Domain:
+		_, err := rating.Parse(raw)
 		return err
 	}
 	return fmt.Errorf("%w: %s", errDomain, domain)
