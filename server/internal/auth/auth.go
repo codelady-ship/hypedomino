@@ -22,6 +22,7 @@ type Verifier interface {
 
 type Accounts interface {
 	SignIn(ctx context.Context, identity idtoken.Identity) (account.Account, bool, error)
+	AdoptCountry(ctx context.Context, id, code string) error
 }
 
 type Tokens interface {
@@ -37,12 +38,13 @@ type Connections interface {
 }
 
 type Handler struct {
-	verifier    Verifier
-	accounts    Accounts
-	tokens      Tokens
-	connections Connections
-	logger      *slog.Logger
-	mux         *http.ServeMux
+	countryHeader string
+	verifier      Verifier
+	accounts      Accounts
+	tokens        Tokens
+	connections   Connections
+	logger        *slog.Logger
+	mux           *http.ServeMux
 }
 
 func New(verifier Verifier, accounts Accounts, tokens Tokens, connections Connections, logger *slog.Logger) *Handler {
@@ -124,6 +126,12 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.refuse(w, err)
 		return
+	}
+	if a.Country == "" && h.countryHeader != "" {
+		if err := h.accounts.AdoptCountry(r.Context(), a.ID, strings.ToUpper(strings.TrimSpace(r.Header.Get(h.countryHeader)))); err != nil {
+			h.refuse(w, err)
+			return
+		}
 	}
 	pair, err := h.tokens.Issue(r.Context(), a.ID, request.DeviceID)
 	if err != nil {
@@ -252,4 +260,8 @@ func reply(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(body)
+}
+
+func (h *Handler) SetCountryHeader(name string) {
+	h.countryHeader = name
 }

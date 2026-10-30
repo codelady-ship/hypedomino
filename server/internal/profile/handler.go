@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/account"
 	"github.com/Alievs-corp/hypedomino/server/internal/token"
 )
 
@@ -22,20 +23,33 @@ type Profiles interface {
 	RenameAvailableAt(p Profile) (time.Time, bool)
 }
 
+type Countries interface {
+	Country(ctx context.Context, id string) (account.Country, error)
+	SetCountry(ctx context.Context, id, code string, now time.Time, cooldown time.Duration) (account.Country, error)
+}
+
 type Handler struct {
-	verifier token.Verifier
-	profiles Profiles
-	logger   *slog.Logger
-	now      func() time.Time
-	mux      *http.ServeMux
+	verifier  token.Verifier
+	profiles  Profiles
+	countries Countries
+	cooldown  time.Duration
+	logger    *slog.Logger
+	now       func() time.Time
+	mux       *http.ServeMux
 }
 
 func NewHandler(verifier token.Verifier, profiles Profiles, logger *slog.Logger, now func() time.Time) *Handler {
 	h := &Handler{verifier: verifier, profiles: profiles, logger: logger, now: now, mux: http.NewServeMux()}
 	h.mux.HandleFunc("GET /profile/me", h.me)
 	h.mux.HandleFunc("PUT /profile/nickname", h.nickname)
+	h.mux.HandleFunc("GET /profile/country", h.country)
+	h.mux.HandleFunc("PUT /profile/country", h.setCountry)
 	h.mux.HandleFunc("GET /profile/{account}", h.public)
 	return h
+}
+
+func (h *Handler) SetCountries(countries Countries, cooldown time.Duration) {
+	h.countries, h.cooldown = countries, cooldown
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

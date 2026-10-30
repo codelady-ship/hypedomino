@@ -174,7 +174,17 @@ func TestConfigValidationAndParsing(t *testing.T) {
 	if !reflect.DeepEqual(snapshot.Modes.OneVsOne, rating.DefaultConfig()) || snapshot.Modes.TwoVsTwo.LpBase != 25 || snapshot.Modes.TwoVsTwo.LpChangeMax != 40 {
 		t.Errorf("overlay %+v", snapshot.Modes)
 	}
-	for _, raw := range []string{`{`, `{"schema":2}`, `{"schema":1,"modes":{"1v1":{"divisionLp":0}}}`} {
+	regions, err := rating.Parse([]byte(`{"schema":1,"leaderboardRegions":{"caucasus":["AZ","GE"],"eu":["DE"]},"modes":{}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if region, ok := regions.Region("GE"); !ok || region != "caucasus" || !regions.KnownRegion("eu") || regions.KnownRegion("asia") {
+		t.Errorf("regions %+v", regions.LeaderboardRegions)
+	}
+	if _, ok := regions.Region("TR"); ok {
+		t.Error("unmapped country has a region")
+	}
+	for _, raw := range []string{`{`, `{"schema":2}`, `{"schema":1,"modes":{"1v1":{"divisionLp":0}}}`, `{"schema":1,"leaderboardRegions":{"EU":["DE"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["de"]}}`, `{"schema":1,"leaderboardRegions":{"eu":["DE"],"west":["DE"]}}`} {
 		if _, err := rating.Parse([]byte(raw)); !errors.Is(err, rating.ErrInvalidConfig) {
 			t.Errorf("%s: %v", raw, err)
 		}

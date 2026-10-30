@@ -117,3 +117,54 @@ func TestAnIdentityWithoutASubjectIsInvalid(t *testing.T) {
 		t.Fatalf("no provider: %v", err)
 	}
 }
+
+func TestCountryIsAdoptedOnceAndChangedWithinTheCooldown(t *testing.T) {
+	_, pool := dbtest.Fresh(t)
+	store := account.New(pool)
+	ctx := context.Background()
+	a, _, err := store.SignIn(ctx, idtoken.Identity{Provider: idtoken.ProviderGoogle, Subject: "g-c", Email: "c@example.com", EmailVerified: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c, err := store.Country(ctx, a.ID); err != nil || c.Code != "" {
+		t.Fatalf("fresh %+v %v", c, err)
+	}
+	if err := store.AdoptCountry(ctx, a.ID, "az"); err != nil {
+		t.Fatal(err)
+	}
+	if c, _ := store.Country(ctx, a.ID); c.Code != "" {
+		t.Fatalf("lowercase adopted: %+v", c)
+	}
+	if err := store.AdoptCountry(ctx, a.ID, "AZ"); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AdoptCountry(ctx, a.ID, "TR"); err != nil {
+		t.Fatal(err)
+	}
+	if c, _ := store.Country(ctx, a.ID); c.Code != "AZ" || !c.ChangedAt.IsZero() {
+		t.Fatalf("adoption overwritten: %+v", c)
+	}
+	now := time.Date(2026, 10, 30, 12, 0, 0, 0, time.UTC)
+	if _, err := store.SetCountry(ctx, a.ID, "A1", now, time.Hour); !errors.Is(err, account.ErrCountryInvalid) {
+		t.Fatalf("invalid code: %v", err)
+	}
+	c, err := store.SetCountry(ctx, a.ID, "TR", now, time.Hour)
+	if err != nil || c.Code != "TR" || !c.ChangedAt.Equal(now) {
+		t.Fatalf("set %+v %v", c, err)
+	}
+	if _, err := store.SetCountry(ctx, a.ID, "DE", now.Add(30*time.Minute), time.Hour); !errors.Is(err, account.ErrCountryCooldown) {
+		t.Fatalf("cooldown: %v", err)
+	}
+	if c, err := store.SetCountry(ctx, a.ID, "TR", now.Add(30*time.Minute), time.Hour); err != nil || c.Code != "TR" {
+		t.Fatalf("same country inside the cooldown: %+v %v", c, err)
+	}
+	if c, err := store.SetCountry(ctx, a.ID, "DE", now.Add(2*time.Hour), time.Hour); err != nil || c.Code != "DE" {
+		t.Fatalf("after the cooldown: %+v %v", c, err)
+	}
+	if _, err := store.SetCountry(ctx, "00000000-0000-0000-0000-000000000000", "DE", now, time.Hour); !errors.Is(err, account.ErrUnknown) {
+		t.Fatalf("unknown account: %v", err)
+	}
+	if _, err := store.Country(ctx, "00000000-0000-0000-0000-000000000000"); !errors.Is(err, account.ErrUnknown) {
+		t.Fatalf("unknown account country: %v", err)
+	}
+}

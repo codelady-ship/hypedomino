@@ -259,12 +259,12 @@ Every local leaderboard uses the same order. Apex recalculation (section 3.2) us
 | Region | Players whose leaderboard country belongs to that region. `LeaderboardRegions` maps each region to its countries; a country belongs to at most one region. |
 | Friends | The global order filtered to the viewer and their friends (social epic) |
 
-- A player's leaderboard country is their account country (#117: profile, IP fallback) at their first ranked match of the season in the mode. It stays fixed for that season and mode, so moving country cannot be used to top a smaller board. Players without a country appear on the global and friends boards only.
+- A player's leaderboard country is their account country (#117: profile, IP fallback) at their first ranked match of the season in the mode played while the account has a country. It stays fixed for that season and mode, so moving country cannot be used to top a smaller board. Players without a country appear on the global and friends boards only.
 - Each board shows the top `LeaderboardTopSize` (default 200) and the viewer's own position and neighbours, whatever their position.
 - The season-end snapshot freezes every board of the season. Past seasons stay readable.
 - Every row of every board opens that player's public profile (`docs/privacy.md` section 5): nickname, equipped cosmetics, rank and the emblem showcase (8.4). A player can browse the global board and any country or region board, not only their own.
 
-- Implemented in `server/internal/leaderboard` (#116): the global board per season and mode as a Redis sorted set in the order of 8.1 (score: rank index, apex tier, LP; member: time the LP was set, wins, account id), updated by the rating store on every change and rebuilt from PostgreSQL when missing; `GET /leaderboard/{mode}` serves the top `LeaderboardTopSize` and the viewer's position with neighbours. Country, region and friends boards are #117.
+- Implemented in `server/internal/leaderboard` (#116): the global board per season and mode as a Redis sorted set in the order of 8.1 (score: rank index, apex tier, LP; member: time the LP was set, wins, account id), updated by the rating store on every change and rebuilt from PostgreSQL when missing; `GET /leaderboard/{mode}` serves the top `LeaderboardTopSize` and the viewer's position with neighbours. Country and region boards (#117): the same sets per board (`country:<CC>`, `region:<id>` from `LeaderboardRegions`) fed by the same update and rebuild paths; the leaderboard country is frozen in `ratings.board_country` at the first ranked result played while the account has a country, snapshotted into `season_results` and cleared for the next season; the account country is set from the profile (`PUT /profile/country`, one change per `CountryChangeCooldown`, default 180 days) or adopted from the connection country at sign-in. Friends boards are #153.
 
 ### 8.3 Leaderboard emblems
 
@@ -325,6 +325,7 @@ Every key has one value per mode (1v1, 2v2); both start at the same default. Str
 | `SeasonResetTable` | generated, section 7.3 | 7.2 |
 | `LeaderboardTopSize` | 200 | 8.2 |
 | `LeaderboardRegions` | set by the owner before launch | 8.2 |
+| `CountryChangeCooldown` | 180 days | 8.2 |
 | `EmblemBrackets` | 1, 50, 100, 200 | 8.3 |
 | `ProfileEmblemSlots` | 3 | 8.4 |
 

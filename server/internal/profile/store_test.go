@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	os.Exit(dbtest.Main(m))
 }
 
-func account(t *testing.T, pool *pgxpool.Pool) string {
+func newAccount(t *testing.T, pool *pgxpool.Pool) string {
 	t.Helper()
 	var id string
 	if err := pool.QueryRow(context.Background(), `insert into accounts default values returning id`).Scan(&id); err != nil {
@@ -34,7 +34,7 @@ func TestTheFirstNicknameCreatesTheProfileAndIsUniqueOnItsFoldedForm(t *testing.
 	_, pool := dbtest.Fresh(t)
 	store := profile.NewStore(pool, profile.DefaultConfig())
 	ctx := context.Background()
-	ayla, other := account(t, pool), account(t, pool)
+	ayla, other := newAccount(t, pool), newAccount(t, pool)
 	if _, found, err := store.Get(ctx, ayla); err != nil || found {
 		t.Fatalf("profile before setup: %v %v", found, err)
 	}
@@ -67,7 +67,7 @@ func TestRenamesKeepHistoryHoldTheOldNameAndCoolDown(t *testing.T) {
 	config.NicknameRelease = 24 * time.Hour
 	store := profile.NewStore(pool, config)
 	ctx := context.Background()
-	ayla, other := account(t, pool), account(t, pool)
+	ayla, other := newAccount(t, pool), newAccount(t, pool)
 	if _, err := store.SetNickname(ctx, ayla, "Ayla", start); err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestConcurrentSetupsOfTheSameNicknameLetOneWin(t *testing.T) {
 	ctx := context.Background()
 	accounts := make([]string, 6)
 	for index := range accounts {
-		accounts[index] = account(t, pool)
+		accounts[index] = newAccount(t, pool)
 	}
 	var wg sync.WaitGroup
 	errs := make([]error, len(accounts))
@@ -136,7 +136,7 @@ func TestSuggestionsAreFreeAndMatchesUpdateTheStatistics(t *testing.T) {
 	if err != nil || !strings.HasPrefix(suggestion, "Player") || len(suggestion) != 12 {
 		t.Fatalf("suggestion %q %v", suggestion, err)
 	}
-	ayla := account(t, pool)
+	ayla := newAccount(t, pool)
 	if err := store.RecordMatch(ctx, ayla, "1v1", true, start); !errors.Is(err, profile.ErrUnknownAccount) {
 		t.Fatalf("recording before setup: %v", err)
 	}

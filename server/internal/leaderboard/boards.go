@@ -11,12 +11,15 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/account"
 	"github.com/Alievs-corp/hypedomino/server/internal/rating"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
 const (
-	BoardGlobal = "global"
+	BoardGlobal   = "global"
+	countryPrefix = "country:"
+	regionPrefix  = "region:"
 
 	lpCap    = 999_999_999
 	winsCap  = 999_999_999
@@ -31,6 +34,11 @@ var (
 
 type Source interface {
 	Placed(ctx context.Context, season string, mode rules.Mode, visit func(rating.Entry) error) error
+}
+
+type Regions interface {
+	Region(country string) (string, bool)
+	KnownRegion(region string) bool
 }
 
 type Config struct {
@@ -53,13 +61,53 @@ type Row struct {
 type Boards struct {
 	client     redis.UniversalClient
 	source     Source
+	regions    Regions
 	config     Config
 	mu         sync.Mutex
 	rebuilding map[string]bool
 }
 
-func New(client redis.UniversalClient, source Source, config Config) *Boards {
-	return &Boards{client: client, source: source, config: config, rebuilding: map[string]bool{}}
+func New(client redis.UniversalClient, source Source, regions Regions, config Config) *Boards {
+	return &Boards{client: client, source: source, regions: regions, config: config, rebuilding: map[string]bool{}}
+}
+
+func (b *Boards) boardsOf(e rating.Entry) []string {
+	boards := []string{BoardGlobal}
+	if e.Country == "" {
+		return boards
+	}
+	boards = append(boards, countryPrefix+e.Country)
+	if region, ok := b.regions.Region(e.Country); ok {
+		boards = append(boards, regionPrefix+region)
+	}
+	return boards
+}
+
+func (b *Boards) lists(e rating.Entry, board string) bool {
+	switch {
+	case board == BoardGlobal:
+		return true
+	case e.Country == "":
+		return false
+	case strings.HasPrefix(board, countryPrefix):
+		return e.Country == strings.TrimPrefix(board, countryPrefix)
+	case strings.HasPrefix(board, regionPrefix):
+		region, ok := b.regions.Region(e.Country)
+		return ok && region == strings.TrimPrefix(board, regionPrefix)
+	}
+	return false
+}
+
+func (b *Boards) known(board string) bool {
+	switch {
+	case board == BoardGlobal:
+		return true
+	case strings.HasPrefix(board, countryPrefix):
+		return account.ValidCountry(strings.TrimPrefix(board, countryPrefix))
+	case strings.HasPrefix(board, regionPrefix):
+		return b.regions.KnownRegion(strings.TrimPrefix(board, regionPrefix))
+	}
+	return false
 }
 
 func (b *Boards) keys(season string, mode rules.Mode, board string) (set, members, versions string) {
@@ -137,28 +185,35 @@ return old and 1 or 0
 `)
 
 func (b *Boards) Update(ctx context.Context, season string, mode rules.Mode, entries []rating.Entry) error {
-	set, members, versions := b.keys(season, mode, BoardGlobal)
 	ttl := int(b.config.TTL.Seconds())
 	for _, e := range entries {
-		if err := updateScript.Run(ctx, b.client, []string{set, members, versions}, e.Account, member(e), score(e), e.Version, ttl).Err(); err != nil {
-			return err
+		for _, board := range b.boardsOf(e) {
+			set, members, versions := b.keys(season, mode, board)
+			if err := updateScript.Run(ctx, b.client, []string{set, members, versions}, e.Account, member(e), score(e), e.Version, ttl).Err(); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (b *Boards) Remove(ctx context.Context, season string, mode rules.Mode, accounts []string) error {
-	set, members, versions := b.keys(season, mode, BoardGlobal)
-	for _, account := range accounts {
-		if err := removeScript.Run(ctx, b.client, []string{set, members, versions}, account).Err(); err != nil {
-			return err
+func (b *Boards) Remove(ctx context.Context, season string, mode rules.Mode, entries []rating.Entry) error {
+	for _, e := range entries {
+		for _, board := range b.boardsOf(e) {
+			set, members, versions := b.keys(season, mode, board)
+			if err := removeScript.Run(ctx, b.client, []string{set, members, versions}, e.Account).Err(); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (b *Boards) Rebuild(ctx context.Context, season string, mode rules.Mode) (int, error) {
-	set, members, versions := b.keys(season, mode, BoardGlobal)
+func (b *Boards) Rebuild(ctx context.Context, season string, mode rules.Mode, board string) (int, error) {
+	if !b.known(board) {
+		return 0, fmt.Errorf("%w: %s", ErrUnknownBoard, board)
+	}
+	set, members, versions := b.keys(season, mode, board)
 	b.mu.Lock()
 	if b.rebuilding[set] {
 		b.mu.Unlock()
@@ -184,6 +239,9 @@ func (b *Boards) Rebuild(ctx context.Context, season string, mode rules.Mode) (i
 		return err
 	}
 	err := b.source.Placed(ctx, season, mode, func(e rating.Entry) error {
+		if !b.lists(e, board) {
+			return nil
+		}
 		m := member(e)
 		pipe.ZAdd(ctx, tempSet, redis.Z{Score: score(e), Member: m})
 		pipe.HSet(ctx, tempMembers, e.Account, m)
@@ -219,7 +277,7 @@ func (b *Boards) Rebuild(ctx context.Context, season string, mode rules.Mode) (i
 }
 
 func (b *Boards) ensure(ctx context.Context, season string, mode rules.Mode, board string) (string, string, error) {
-	if board != BoardGlobal {
+	if !b.known(board) {
 		return "", "", fmt.Errorf("%w: %s", ErrUnknownBoard, board)
 	}
 	set, members, _ := b.keys(season, mode, board)
@@ -228,7 +286,7 @@ func (b *Boards) ensure(ctx context.Context, season string, mode rules.Mode, boa
 		return "", "", fmt.Errorf("%w: %v", ErrUnavailable, err)
 	}
 	if exists == 0 {
-		if _, err := b.Rebuild(ctx, season, mode); err != nil {
+		if _, err := b.Rebuild(ctx, season, mode, board); err != nil {
 			return "", "", err
 		}
 	}

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
@@ -143,9 +145,28 @@ type Modes struct {
 }
 
 type Snapshot struct {
-	Schema             int   `json:"schema"`
-	LeaderboardTopSize int   `json:"leaderboardTopSize"`
-	Modes              Modes `json:"modes"`
+	Schema             int                 `json:"schema"`
+	LeaderboardTopSize int                 `json:"leaderboardTopSize"`
+	LeaderboardRegions map[string][]string `json:"leaderboardRegions,omitempty"`
+	Modes              Modes               `json:"modes"`
+}
+
+var regionID = regexp.MustCompile(`^[a-z0-9_]+$`)
+
+func (s *Snapshot) Region(country string) (string, bool) {
+	for region, countries := range s.LeaderboardRegions {
+		for _, c := range countries {
+			if c == country {
+				return region, true
+			}
+		}
+	}
+	return "", false
+}
+
+func (s *Snapshot) KnownRegion(region string) bool {
+	_, ok := s.LeaderboardRegions[region]
+	return ok
 }
 
 func Default() *Snapshot {
@@ -168,6 +189,21 @@ func (s *Snapshot) Validate() error {
 	}
 	if s.LeaderboardTopSize < 1 {
 		return fmt.Errorf("%w: leaderboardTopSize must be at least 1", ErrInvalidConfig)
+	}
+	seen := map[string]string{}
+	for region, countries := range s.LeaderboardRegions {
+		if !regionID.MatchString(region) {
+			return fmt.Errorf("%w: region id %q", ErrInvalidConfig, region)
+		}
+		for _, country := range countries {
+			if len(country) != 2 || strings.ToUpper(country) != country {
+				return fmt.Errorf("%w: country %q of region %s", ErrInvalidConfig, country, region)
+			}
+			if other, dup := seen[country]; dup && other != region {
+				return fmt.Errorf("%w: %s belongs to %s and %s", ErrInvalidConfig, country, other, region)
+			}
+			seen[country] = region
+		}
 	}
 	if err := s.Modes.OneVsOne.Validate(); err != nil {
 		return fmt.Errorf("1v1: %w", err)

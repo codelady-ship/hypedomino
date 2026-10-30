@@ -214,7 +214,7 @@ func (s *Store) CloseSeason(ctx context.Context, id string, mode rules.Mode, now
 		return Closed{}, err
 	}
 	if _, err := tx.Exec(ctx, `update ratings set season_id = $3, placed = false, placement_played = 0, placement_penalty = 0, lp = 0, wins = 0, apex_tier = null, lp_at = null, updated_at = $4,
-		rank_index = coalesce(reset_index, 0) where mode = $1 and (season_id = $2 or season_id is null)`, mode.String(), id, next.ID, now); err != nil {
+		rank_index = coalesce(reset_index, 0), board_country = null where mode = $1 and (season_id = $2 or season_id is null)`, mode.String(), id, next.ID, now); err != nil {
 		return Closed{}, err
 	}
 	column := "closed_1v1_at"
@@ -249,7 +249,7 @@ func (s *Store) nextSeason(ctx context.Context, tx pgx.Tx, season Season, config
 }
 
 func (s *Store) snapshotSeason(ctx context.Context, tx pgx.Tx, season Season, mode rules.Mode, config Config) (int, error) {
-	rows, err := tx.Query(ctx, `select account_id, rank_index, apex_tier, lp, wins, mmr from ratings where mode = $1 and (season_id = $2 or season_id is null) and placed
+	rows, err := tx.Query(ctx, `select account_id, rank_index, apex_tier, lp, wins, mmr, board_country from ratings where mode = $1 and (season_id = $2 or season_id is null) and placed
 		order by rank_index desc, case apex_tier when $3 then 0 when $4 then 1 else 2 end, lp desc, lp_at asc nulls last, wins desc, account_id asc for update`, mode.String(), season.ID, ApexChallenger, ApexGrandmaster)
 	if err != nil {
 		return 0, err
@@ -262,13 +262,13 @@ func (s *Store) snapshotSeason(ctx context.Context, tx pgx.Tx, season Season, mo
 	for rows.Next() {
 		var account string
 		var index, lp, wins, mmr int
-		var apex *string
-		if err := rows.Scan(&account, &index, &apex, &lp, &wins, &mmr); err != nil {
+		var apex, country *string
+		if err := rows.Scan(&account, &index, &apex, &lp, &wins, &mmr, &country); err != nil {
 			rows.Close()
 			return 0, err
 		}
 		reset := config.ResetIndex(index)
-		results = append(results, []any{season.ID, mode.String(), account, len(results) + 1, index, apex, lp, wins, mmr, reset})
+		results = append(results, []any{season.ID, mode.String(), account, len(results) + 1, index, apex, lp, wins, mmr, reset, country})
 		resets = append(resets, struct {
 			account string
 			reset   int
@@ -278,7 +278,7 @@ func (s *Store) snapshotSeason(ctx context.Context, tx pgx.Tx, season Season, mo
 	if rows.Err() != nil {
 		return 0, rows.Err()
 	}
-	columns := []string{"season_id", "mode", "account_id", "position", "rank_index", "apex_tier", "lp", "wins", "mmr", "reset_index"}
+	columns := []string{"season_id", "mode", "account_id", "position", "rank_index", "apex_tier", "lp", "wins", "mmr", "reset_index", "country"}
 	if _, err := tx.CopyFrom(ctx, pgx.Identifier{"season_results"}, columns, pgx.CopyFromRows(results)); err != nil {
 		return 0, err
 	}

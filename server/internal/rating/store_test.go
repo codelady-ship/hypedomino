@@ -303,3 +303,64 @@ func TestPlacedPlayersReachTheBoardsAfterEveryChange(t *testing.T) {
 		t.Fatalf("frozen %+v %v", frozen, err)
 	}
 }
+
+func (f *fixture) setCountry(t *testing.T, account, code string) {
+	t.Helper()
+	if _, err := f.pool.Exec(context.Background(), `update accounts set country = $2 where id = $1`, account, code); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func (f *fixture) countries(t *testing.T, season string) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	if err := f.store.Placed(context.Background(), season, rules.Mode1v1, func(e rating.Entry) error {
+		out[e.Account] = e.Country
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func TestTheBoardCountryIsFixedForTheSeason(t *testing.T) {
+	f := newFixture(t)
+	boards := &fakeBoards{}
+	f.store.SetBoards(boards, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	az, stateless := f.account(t), f.account(t)
+	f.setCountry(t, az, "AZ")
+	f.set(t, az, rules.Mode1v1, 1300, 30, rank(t, "Silver I", 40))
+	f.set(t, stateless, rules.Mode1v1, 1250, 30, rank(t, "Silver I", 0))
+	play := func(id string, at time.Time) {
+		t.Helper()
+		if _, err := f.store.Apply(context.Background(), rating.Result{MatchID: id, Mode: rules.Mode1v1, Teams: [2][]rating.Participant{{{Account: az}}, {{Account: stateless}}}, Winner: 0, At: at}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	play("dddddddd-dddd-dddd-dddd-dddddddddddd", now)
+	if got := f.countries(t, "season.test"); got[az] != "AZ" || got[stateless] != "" {
+		t.Fatalf("first match countries %v", got)
+	}
+	f.setCountry(t, az, "DE")
+	f.setCountry(t, stateless, "GE")
+	play("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", now.Add(time.Minute))
+	if got := f.countries(t, "season.test"); got[az] != "AZ" || got[stateless] != "GE" {
+		t.Fatalf("open season countries %v", got)
+	}
+	if r := f.rating(t, az, rules.Mode1v1); r.Country != "AZ" {
+		t.Fatalf("rating country %q", r.Country)
+	}
+	end := now.Add(60 * 24 * time.Hour)
+	if _, err := f.store.CloseSeason(context.Background(), "season.test", rules.Mode1v1, end); err != nil {
+		t.Fatal(err)
+	}
+	if got := f.countries(t, "season.test"); got[az] != "AZ" || got[stateless] != "GE" {
+		t.Fatalf("frozen countries %v", got)
+	}
+	for i := 0; i < 5; i++ {
+		play(fmt.Sprintf("ffffffff-ffff-ffff-ffff-ffffffffff%02d", i), end.Add(time.Duration(i+1)*time.Minute))
+	}
+	if got := f.countries(t, end.Format("season.2006_01")); got[az] != "DE" || got[stateless] != "GE" {
+		t.Fatalf("next season countries %v", got)
+	}
+}

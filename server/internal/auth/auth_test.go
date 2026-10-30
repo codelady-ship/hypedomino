@@ -43,9 +43,10 @@ func (v *fakeVerifier) Verify(_ context.Context, provider idtoken.Provider, toke
 }
 
 type fakeAccounts struct {
-	states map[string]error
-	known  map[string]bool
-	calls  int
+	adopted []string
+	states  map[string]error
+	known   map[string]bool
+	calls   int
 }
 
 func (a *fakeAccounts) SignIn(_ context.Context, identity idtoken.Identity) (account.Account, bool, error) {
@@ -304,5 +305,46 @@ func TestOversizedBodiesAndOtherMethodsAreRefused(t *testing.T) {
 	}
 	if f.accounts.calls != 0 {
 		t.Fatalf("accounts were consulted %d times", f.accounts.calls)
+	}
+}
+
+func (a *fakeAccounts) AdoptCountry(_ context.Context, id, code string) error {
+	a.adopted = append(a.adopted, id+"="+code)
+	return nil
+}
+
+func TestSignInAdoptsTheCountryHeaderOnce(t *testing.T) {
+	f := newFixture(t)
+	handler := auth.New(f.verifier, f.accounts, f.tokens, f.connections, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	handler.SetCountryHeader("CF-IPCountry")
+	server := httptest.NewServer(handler)
+	defer server.Close()
+	post := func(nonce, country string) int {
+		t.Helper()
+		f.verifier.nonce = nonce
+		request, _ := http.NewRequest(http.MethodPost, server.URL+"/auth/signin", strings.NewReader(`{"provider":"google","id_token":"good","nonce":"`+nonce+`","device_id":"install-1"}`))
+		request.Header.Set("Content-Type", "application/json")
+		if country != "" {
+			request.Header.Set("CF-IPCountry", country)
+		}
+		resp, err := http.DefaultClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	if status := post("n1", " az "); status != http.StatusOK {
+		t.Fatalf("sign-in %d", status)
+	}
+	if status := post("n2", ""); status != http.StatusOK {
+		t.Fatalf("sign-in without header %d", status)
+	}
+	if want := []string{"google-sub-1=AZ", "google-sub-1="}; strings.Join(f.accounts.adopted, " ") != strings.Join(want, " ") {
+		t.Fatalf("adopted %v", f.accounts.adopted)
+	}
+	f.accounts.adopted = nil
+	if status, _ := f.post("/auth/signin", `{"provider":"google","id_token":"good","nonce":"n3","device_id":"install-1"}`); status != http.StatusOK || len(f.accounts.adopted) != 0 {
+		t.Fatalf("without a configured header: %d %v", status, f.accounts.adopted)
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/account"
 	"github.com/Alievs-corp/hypedomino/server/internal/profile"
 	"github.com/Alievs-corp/hypedomino/server/internal/token"
 )
@@ -216,5 +217,81 @@ func TestThePublicProfileShowsOnlyAllowedFields(t *testing.T) {
 	own := body["stats"].(map[string]any)
 	if status != http.StatusOK || body["xp"] != float64(1200) || own["wins"] != float64(7) || own["streak"] != float64(2) || own["modes"].(map[string]any)["1v1"] == nil {
 		t.Fatalf("own profile answered %d %v", status, body)
+	}
+}
+
+type fakeCountries struct {
+	codes   map[string]account.Country
+	changed time.Time
+}
+
+func (f *fakeCountries) Country(_ context.Context, id string) (account.Country, error) {
+	c, ok := f.codes[id]
+	if !ok {
+		return account.Country{}, account.ErrUnknown
+	}
+	return c, nil
+}
+
+func (f *fakeCountries) SetCountry(_ context.Context, id, code string, now time.Time, cooldown time.Duration) (account.Country, error) {
+	switch {
+	case !account.ValidCountry(code):
+		return account.Country{}, account.ErrCountryInvalid
+	case id == "cooling":
+		return account.Country{}, account.ErrCountryCooldown
+	}
+	c := account.Country{Code: code, ChangedAt: now}
+	f.codes[id] = c
+	return c, nil
+}
+
+func TestTheCountryRoutesReadAndChangeTheAccountCountry(t *testing.T) {
+	now := time.Date(2026, 10, 30, 12, 0, 0, 0, time.UTC)
+	countries := &fakeCountries{codes: map[string]account.Country{"acc-1": {Code: "AZ"}, "cooling": {Code: "TR", ChangedAt: now.Add(-time.Hour)}}}
+	handler := profile.NewHandler(fakeVerifier{}, &fakeProfiles{profiles: map[string]profile.Profile{}, taken: map[string]bool{}, now: now}, slog.New(slog.NewTextHandler(io.Discard, nil)), func() time.Time { return now })
+	handler.SetCountries(countries, 24*time.Hour)
+	call := func(method, access, body string) (int, map[string]any) {
+		t.Helper()
+		request := httptest.NewRequest(method, "/profile/country", strings.NewReader(body))
+		request.Header.Set("Authorization", "Bearer "+access)
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, request)
+		var decoded map[string]any
+		json.Unmarshal(recorder.Body.Bytes(), &decoded)
+		return recorder.Code, decoded
+	}
+	if status, body := call(http.MethodGet, "access:acc-1", ""); status != http.StatusOK || body["country"] != "AZ" || body["change_available_at"] != nil {
+		t.Fatalf("get: %d %v", status, body)
+	}
+	if status, body := call(http.MethodGet, "access:cooling", ""); status != http.StatusOK || body["country"] != "TR" || body["change_available_at"] != now.Add(23*time.Hour).Format(time.RFC3339) {
+		t.Fatalf("get cooling: %d %v", status, body)
+	}
+	if status, body := call(http.MethodPut, "access:acc-1", `{"country":" tr "}`); status != http.StatusOK || body["country"] != "TR" || body["change_available_at"] != now.Add(24*time.Hour).Format(time.RFC3339) {
+		t.Fatalf("put: %d %v", status, body)
+	}
+	for _, c := range []struct {
+		access, body string
+		status       int
+		err          string
+	}{
+		{"access:acc-1", `{"country":"Azerbaijan"}`, http.StatusBadRequest, "country.invalid"},
+		{"access:acc-1", `{"country":`, http.StatusBadRequest, "malformed"},
+		{"access:cooling", `{"country":"DE"}`, http.StatusConflict, "country.cooldown"},
+		{"access:ghost", `{"country":"DE"}`, http.StatusOK, ""},
+	} {
+		if status, body := call(http.MethodPut, c.access, c.body); status != c.status || (c.err != "" && body["error"] != c.err) {
+			t.Errorf("%s %s: %d %v, want %d %s", c.access, c.body, status, body, c.status, c.err)
+		}
+	}
+	if status, body := call(http.MethodGet, "access:nobody", ""); status != http.StatusNotFound || body["error"] != "not_found" {
+		t.Fatalf("unknown account: %d %v", status, body)
+	}
+	bare := profile.NewHandler(fakeVerifier{}, &fakeProfiles{profiles: map[string]profile.Profile{}, taken: map[string]bool{}, now: now}, slog.New(slog.NewTextHandler(io.Discard, nil)), func() time.Time { return now })
+	request := httptest.NewRequest(http.MethodGet, "/profile/country", nil)
+	request.Header.Set("Authorization", "Bearer access:acc-1")
+	recorder := httptest.NewRecorder()
+	bare.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("without countries: %d", recorder.Code)
 	}
 }

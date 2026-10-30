@@ -93,8 +93,13 @@ func build(ctx context.Context, config app.Config, logger *slog.Logger, sessions
 		return nil, nil, fmt.Errorf("HD_TOKEN_KEYS: %w", err)
 	}
 	sessions.Authenticate(tokens)
-	a.Handle("POST /auth/", auth.New(verifier, account.New(pool), tokens, sessions, logger))
-	a.Handle("/profile/", profile.NewHandler(tokens, profile.NewStore(pool, config.Profile), logger, time.Now))
+	accounts := account.New(pool)
+	signIn := auth.New(verifier, accounts, tokens, sessions, logger)
+	signIn.SetCountryHeader(config.CountryHeader)
+	a.Handle("POST /auth/", signIn)
+	profiles := profile.NewHandler(tokens, profile.NewStore(pool, config.Profile), logger, time.Now)
+	profiles.SetCountries(accounts, config.CountryCooldown)
+	a.Handle("/profile/", profiles)
 	catalog, err := loadCatalog(config.Cosmetics)
 	if err != nil {
 		pool.Close()
@@ -122,7 +127,7 @@ func build(ctx context.Context, config app.Config, logger *slog.Logger, sessions
 	go ratings.RunSeasonEnd(ctx, logger, config.SeasonPoll, time.Now)
 	var reader leaderboard.Reader
 	if client != nil {
-		boards := leaderboard.New(client, ratings, leaderboard.DefaultConfig())
+		boards := leaderboard.New(client, ratings, ratings, leaderboard.DefaultConfig())
 		ratings.SetBoards(boards, logger)
 		reader = boards
 	}
