@@ -40,6 +40,11 @@ var signs = map[Reason]int{
 	AdminAdjust: 0,
 }
 
+func Known(reason Reason) bool {
+	_, known := signs[reason]
+	return known
+}
+
 var (
 	ErrInvalid       = errors.New("wallet: invalid entry")
 	ErrUnknownReason = errors.New("wallet: unknown reason")
@@ -166,9 +171,24 @@ func (s *Store) ApplyIn(ctx context.Context, tx pgx.Tx, entry Entry, now time.Ti
 	return applied, nil
 }
 
+type Querier interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
 func (s *Store) Balance(ctx context.Context, account string) (int64, error) {
+	return s.BalanceIn(ctx, s.pool, account)
+}
+
+func (s *Store) CountIn(ctx context.Context, q Querier, account string, reason Reason) (int, error) {
+	var count int
+	err := q.QueryRow(ctx, `select count(*) from ledger_entries where account_id = $1 and reason = $2`, account, reason).Scan(&count)
+	return count, err
+}
+
+func (s *Store) BalanceIn(ctx context.Context, q Querier, account string) (int64, error) {
 	var balance int64
-	err := s.pool.QueryRow(ctx, `select balance from wallets where account_id = $1`, account).Scan(&balance)
+	err := q.QueryRow(ctx, `select balance from wallets where account_id = $1`, account).Scan(&balance)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, nil
 	}

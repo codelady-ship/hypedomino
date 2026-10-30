@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "id": "offer.avatar_comet_fox",
+      "kind": "cosmetic",
+      "section": "daily_rotation",
+      "priceCoins": 400,
+      "bundle": {
+        "id": "bundle.avatar_comet_fox",
+        "revision": 1,
+        "cosmetics": ["avatar.comet_fox"]
+      },
+      "window": { "start": "2026-01-01T00:00:00Z" },
+      "limitPerAccount": 1,
+      "nameKey": "shop.offer.avatar_comet_fox"
+    },
+    {
+      "id": "offer.table_night_market",
+      "kind": "cosmetic",
+      "section": "weekly_rotation",
+      "priceCoins": 3000,
+      "bundle": {
+        "id": "bundle.table_night_market",
+        "revision": 1,
+        "cosmetics": ["table.night_market"]
+      },
+      "window": { "start": "2026-01-01T00:00:00Z", "end": "2027-01-01T00:00:00Z" },
+      "limitPerAccount": 1,
+      "nameKey": "shop.offer.table_night_market",
+      "referencePriceCoins": 3500
+    },
+    {
+      "id": "offer.starter",
+      "kind": "bundle",
+      "section": "featured",
+      "productId": "offer_starter",
+      "bundle": {
+        "id": "bundle.starter",
+        "revision": 1,
+        "coins": 1500,
+        "cosmetics": ["avatar.comet_fox"]
+      },
+      "window": { "start": "2026-01-01T00:00:00Z" },
+      "limitPerAccount": 1,
+      "eligibility": { "maxAccountAgeHours": 168, "firstPurchaseOnly": true },
+      "nameKey": "shop.offer.starter",
+      "regionalOverrideNote": "none"
+    },
+    {
+      "id": "offer.coins_tier1",
+      "kind": "coins",
+      "section": "coins",
+      "productId": "coins_tier1",
+      "bundle": { "id": "bundle.coins_tier1", "revision": 1, "coins": 500 },
+      "window": { "start": "2026-01-01T00:00:00Z" },
+      "nameKey": "shop.offer.coins_tier1"
+    },
+    {
+      "id": "offer.coins_tier2",
+      "kind": "coins",
+      "section": "coins",
+      "productId": "coins_tier2",
+      "bundle": { "id": "bundle.coins_tier2", "revision": 1, "coins": 2750 },
+      "window": { "start": "2026-01-01T00:00:00Z" },
+      "nameKey": "shop.offer.coins_tier2"
+    },
+    {
+      "id": "offer.pass_premium",
+      "kind": "pass",
+      "section": "pass",
+      "productId": "pass_premium",
+      "window": { "start": "2026-01-01T00:00:00Z" },
+      "limitPerAccount": 1,
+      "nameKey": "shop.offer.pass_premium"
+    }
+  ],
+  "rotations": [
+    { "period": "daily", "start": "2026-01-01T00:00:00Z", "offers": ["offer.avatar_comet_fox"] },
+    { "period": "weekly", "start": "2025-12-29T00:00:00Z", "offers": ["offer.table_night_market"] }
+  ]
+}

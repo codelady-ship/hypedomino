@@ -14,7 +14,9 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
 	"github.com/Alievs-corp/hypedomino/server/internal/inventory"
 	"github.com/Alievs-corp/hypedomino/server/internal/profile"
+	"github.com/Alievs-corp/hypedomino/server/internal/reward"
 	"github.com/Alievs-corp/hypedomino/server/internal/session"
+	"github.com/Alievs-corp/hypedomino/server/internal/shop"
 	"github.com/Alievs-corp/hypedomino/server/internal/token"
 )
 
@@ -36,6 +38,10 @@ type Config struct {
 	Cosmetics       string
 	Rarities        cosmetics.Rarities
 	Inventory       inventory.Config
+	Shop            shop.Config
+	ShopCatalog     string
+	ConfigPoll      time.Duration
+	Reward          reward.Config
 }
 
 func DefaultConfig() Config {
@@ -52,6 +58,9 @@ func DefaultConfig() Config {
 		Token:           token.DefaultConfig(),
 		Profile:         profile.DefaultConfig(),
 		Inventory:       inventory.DefaultConfig(),
+		Shop:            shop.DefaultConfig(),
+		ConfigPoll:      10 * time.Second,
+		Reward:          reward.DefaultConfig(),
 		Rarities:        cosmetics.DefaultRarities(),
 	}
 }
@@ -194,6 +203,21 @@ func ConfigFromEnv(lookup Lookup) (Config, error) {
 	}
 	r.integer("HD_EMOJI_SLOTS", &config.Inventory.EmojiSlots)
 	r.integer("HD_ACTION_SLOTS", &config.Inventory.ActionSlots)
+	r.text("HD_SHOP_CATALOG", &config.ShopCatalog)
+	r.integer("HD_SHOP_DAILY_SLOTS", &config.Shop.DailySlots)
+	r.integer("HD_SHOP_WEEKLY_SLOTS", &config.Shop.WeeklySlots)
+	r.integer("HD_SHOP_RESET_HOUR_UTC", &config.Shop.ResetHourUTC)
+	r.duration("HD_CONFIG_POLL", &config.ConfigPoll)
+	r.integer("HD_DUPLICATE_COMPENSATION_PERCENT", &config.Reward.DuplicateCompensationPercent)
+	if err := config.Shop.Validate(); err != nil {
+		r.errs = append(r.errs, fmt.Errorf("HD_SHOP_DAILY_SLOTS, HD_SHOP_WEEKLY_SLOTS and HD_SHOP_RESET_HOUR_UTC: %w", err))
+	}
+	if config.ConfigPoll < time.Second {
+		r.errs = append(r.errs, errors.New("HD_CONFIG_POLL: at least 1s"))
+	}
+	if config.Reward.DuplicateCompensationPercent < 0 || config.Reward.DuplicateCompensationPercent > 100 {
+		r.errs = append(r.errs, errors.New("HD_DUPLICATE_COMPENSATION_PERCENT: between 0 and 100"))
+	}
 	if config.Inventory.EmojiSlots < 1 || config.Inventory.ActionSlots < 1 {
 		r.errs = append(r.errs, errors.New("HD_EMOJI_SLOTS and HD_ACTION_SLOTS: at least 1"))
 	}

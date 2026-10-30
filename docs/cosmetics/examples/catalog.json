@@ -105,6 +105,10 @@
           "ref": "offer.avatar_comet_fox"
         },
         {
+          "type": "shop",
+          "ref": "offer.starter"
+        },
+        {
           "type": "event",
           "ref": "event.spring_cup"
         }

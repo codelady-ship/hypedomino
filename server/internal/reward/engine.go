@@ -109,7 +109,13 @@ func (g Grant) validate() error {
 	if g.Account == "" || g.Key == "" || g.Source.Type == "" || g.Source.Type == cosmetics.SourceDefault {
 		return fmt.Errorf("%w: account, key and a non-default source are required", ErrInvalidGrant)
 	}
-	probe := wallet.Entry{Account: g.Account, Amount: 1, Reason: g.Reason, Source: wallet.Source{Type: g.Source.Type, Ref: g.Source.Ref}, Key: g.Key}
+	if !wallet.Known(g.Reason) {
+		return fmt.Errorf("%w: unknown reason %q", ErrInvalidGrant, g.Reason)
+	}
+	if g.Bundle.Coins == 0 {
+		return nil
+	}
+	probe := wallet.Entry{Account: g.Account, Amount: g.Bundle.Coins, Reason: g.Reason, Source: wallet.Source{Type: g.Source.Type, Ref: g.Source.Ref}, Key: g.Key}
 	if err := probe.Validate(); err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalidGrant, err)
 	}
@@ -117,21 +123,38 @@ func (g Grant) validate() error {
 }
 
 func (e *Engine) Apply(ctx context.Context, grant Grant, now time.Time) (Report, error) {
-	if err := grant.validate(); err != nil {
-		return Report{}, err
-	}
 	tx, err := e.pool.Begin(ctx)
 	if err != nil {
 		return Report{}, err
 	}
 	defer tx.Rollback(ctx)
-	if _, err := tx.Exec(ctx, `select pg_advisory_xact_lock(hashtext($1))`, grant.Account); err != nil {
+	report, err := e.ApplyIn(ctx, tx, grant, now)
+	if err != nil {
+		return Report{}, err
+	}
+	return report, tx.Commit(ctx)
+}
+
+func LockIn(ctx context.Context, tx pgx.Tx, account string) error {
+	_, err := tx.Exec(ctx, `select pg_advisory_xact_lock(hashtext($1))`, account)
+	return err
+}
+
+func GetIn(ctx context.Context, tx pgx.Tx, account, key string) (Report, error) {
+	return load(ctx, tx, account, key)
+}
+
+func (e *Engine) ApplyIn(ctx context.Context, tx pgx.Tx, grant Grant, now time.Time) (Report, error) {
+	if err := grant.validate(); err != nil {
+		return Report{}, err
+	}
+	if err := LockIn(ctx, tx, grant.Account); err != nil {
 		return Report{}, err
 	}
 	earlier, err := load(ctx, tx, grant.Account, grant.Key)
 	if err == nil {
 		earlier.Repeated = true
-		return earlier, tx.Commit(ctx)
+		return earlier, nil
 	}
 	if !errors.Is(err, ErrUnknownGrant) {
 		return Report{}, err
@@ -192,7 +215,29 @@ func (e *Engine) Apply(ctx context.Context, grant Grant, now time.Time) (Report,
 	if err := e.record(ctx, tx, &report); err != nil {
 		return Report{}, err
 	}
-	return report, tx.Commit(ctx)
+	return report, nil
+}
+
+func (e *Engine) Config() Config {
+	return e.config
+}
+
+func CountsIn(ctx context.Context, q wallet.Querier, account, sourceType string) (map[string]int, error) {
+	rows, err := q.Query(ctx, `select source_ref, count(*) from reward_grants where account_id = $1 and source_type = $2 and revoked_at is null group by source_ref`, account, sourceType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	counts := map[string]int{}
+	for rows.Next() {
+		var ref string
+		var count int
+		if err := rows.Scan(&ref, &count); err != nil {
+			return nil, err
+		}
+		counts[ref] = count
+	}
+	return counts, rows.Err()
 }
 
 func (e *Engine) record(ctx context.Context, tx pgx.Tx, report *Report) error {

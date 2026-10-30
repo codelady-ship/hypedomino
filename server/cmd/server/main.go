@@ -21,8 +21,11 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
 	"github.com/Alievs-corp/hypedomino/server/internal/inventory"
 	"github.com/Alievs-corp/hypedomino/server/internal/profile"
+	"github.com/Alievs-corp/hypedomino/server/internal/reward"
 	"github.com/Alievs-corp/hypedomino/server/internal/secrand"
 	"github.com/Alievs-corp/hypedomino/server/internal/session"
+	"github.com/Alievs-corp/hypedomino/server/internal/shop"
+	"github.com/Alievs-corp/hypedomino/server/internal/snapshot"
 	"github.com/Alievs-corp/hypedomino/server/internal/token"
 	"github.com/Alievs-corp/hypedomino/server/internal/wallet"
 )
@@ -92,10 +95,24 @@ func build(ctx context.Context, config app.Config, logger *slog.Logger, sessions
 		pool.Close()
 		return nil, nil, err
 	}
-	items := inventory.NewHandler(tokens, inventory.NewStore(pool, catalog, config.Inventory), logger, time.Now)
+	inventoryStore := inventory.NewStore(pool, catalog, config.Inventory)
+	items := inventory.NewHandler(tokens, inventoryStore, logger, time.Now)
 	a.Handle("/inventory", items)
 	a.Handle("/inventory/", items)
-	a.Handle("/wallet", wallet.NewHandler(tokens, wallet.NewStore(pool), logger))
+	walletStore := wallet.NewStore(pool)
+	a.Handle("/wallet", wallet.NewHandler(tokens, walletStore, logger))
+	engine := reward.NewEngine(pool, walletStore, inventoryStore, nil, nil, config.Reward)
+	offers := snapshot.New(pool, shop.Domain, shop.Parser(config.Shop), logger)
+	if config.ShopCatalog != "" {
+		if err := offers.SeedFile(config.ShopCatalog); err != nil {
+			pool.Close()
+			return nil, nil, fmt.Errorf("HD_SHOP_CATALOG: %w", err)
+		}
+	}
+	go offers.Run(ctx, config.ConfigPoll)
+	store := shop.NewHandler(tokens, shop.NewStore(pool, walletStore, inventoryStore, engine, offers, config.Shop), logger, time.Now)
+	a.Handle("/shop", store)
+	a.Handle("/shop/", store)
 	return a, pool.Close, nil
 }
 

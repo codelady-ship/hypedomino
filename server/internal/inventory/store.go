@@ -80,6 +80,14 @@ func (s *Store) Owned(ctx context.Context, account string) ([]Owned, error) {
 }
 
 func (s *Store) Owns(ctx context.Context, account, id string) (bool, error) {
+	return s.ownsIn(ctx, s.pool, account, id)
+}
+
+func (s *Store) OwnsIn(ctx context.Context, tx pgx.Tx, account, id string) (bool, error) {
+	return s.ownsIn(ctx, tx, account, id)
+}
+
+func (s *Store) ownsIn(ctx context.Context, q querier, account, id string) (bool, error) {
 	item, ok := s.catalog.Item(id)
 	if !ok {
 		return false, nil
@@ -87,7 +95,7 @@ func (s *Store) Owns(ctx context.Context, account, id string) (bool, error) {
 	if item.Default() && item.Availability == cosmetics.Live {
 		return true, nil
 	}
-	return s.held(ctx, s.pool, account, id)
+	return s.held(ctx, q, account, id)
 }
 
 func (s *Store) Grant(ctx context.Context, account, id string, source cosmetics.Source, now time.Time) (bool, error) {

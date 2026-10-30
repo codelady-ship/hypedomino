@@ -189,7 +189,8 @@ At least one field among `coins`, `cosmetics`, `medals` and `passXp` is non-empt
 | Coins | Coin packs | Store product |
 
 - Rotations are the same for every player. The daily rotation changes at `ShopRotationResetHourUtc` (0) UTC, the weekly one at that hour on Monday. The admin schedules rotations ahead in the live-ops calendar (#146); a period without a schedule repeats the previous rotation. Rotation contents are scheduled, never drawn at random per player.
-- Shop changes take effect on publish without a server restart (#104).
+- Shop changes take effect on publish without a server restart (#104): the publish writes the catalog as a versioned snapshot (`config_snapshots`, domain `shop`; `docs/economy/examples/shop.json` is the format) and every node picks the newest version up within `ConfigPoll` (10 s). An invalid catalog is refused at publish and, should one reach the table, ignored by the server. The snapshot version is the config version of every purchase it priced.
+- The server answers the sections above for one account: every offer with its price, contents, window end, the purchases of the account against the limit, the owned items with their compensation and whether the account may buy it now. The client renders that and sends intents only.
 
 ### 6.2 Offer
 
@@ -204,7 +205,7 @@ At least one field among `coins`, `cosmetics`, `medals` and `passXp` is non-empt
 | `eligibility` | Optional: hours since account creation, first purchase only |
 
 - A cosmetic offer is not sold to an account that owns the item; the intent is rejected.
-- A bundle offer is sold while at least one of its cosmetics is not owned. Owned items get duplicate compensation (2.7), and the shop shows that before purchase.
+- A bundle offer is sold while at least one of its cosmetics is not owned, or while it grants coins or pass XP besides them. Owned items get duplicate compensation (2.7), and the shop shows that before purchase.
 - The client shows the server's price and never computes one.
 
 ### 6.3 Discounts

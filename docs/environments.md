@@ -77,6 +77,12 @@ Today no code on `main` reads an environment variable. The server variables belo
 | `HD_EMOJI_SLOTS` | No | server | `6` | `6` | No | from #61 |
 | `HD_ACTION_SLOTS` | No | server | `4` | `4` | No | from #61 |
 | `HD_RARITY_ORDINALS` | No | server | `common:1,rare:2,epic:3,legendary:4,mythic:5` | same | No | from #98 |
+| `HD_SHOP_CATALOG` | No | server | empty (shop closed until a publish) | `/etc/hypedomino/shop.json` | No | from #104 |
+| `HD_SHOP_DAILY_SLOTS` | No | server | `4` | `4` | No | from #104 |
+| `HD_SHOP_WEEKLY_SLOTS` | No | server | `2` | `2` | No | from #104 |
+| `HD_SHOP_RESET_HOUR_UTC` | No | server | `0` | `0` | No | from #104 |
+| `HD_CONFIG_POLL` | No | server | `10s` | `10s` | No | from #104 |
+| `HD_DUPLICATE_COMPENSATION_PERCENT` | No | server | `20` | `20` | No | from #104 |
 
 The gateway limits and the reconnect grace are environment variables only until admin config serves them (#210, `docs/penalties.md` section 8); then the admin value wins and the variable is removed in the same PR.
 
