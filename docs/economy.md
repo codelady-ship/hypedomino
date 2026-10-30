@@ -271,6 +271,7 @@ A code has an id, a campaign id (what cosmetic `promo` sources reference), a bun
 - Abuse limits: `PromoAttemptsPerHour` (10) attempts per account; `PromoFailedAttemptsBeforeLock` (5) failed attempts lock redemption for `PromoLockMinutes` (60). The same limits apply per device and IP (#184). Locks and redemption spikes are signals for #209 (V-11).
 - A leaked code is disabled in admin (`docs/launch-runbook.md` 5.5). Rewards already granted stay.
 - A code never grants a store product or an item whose `sources` lack its campaign. Codes are never sold.
+- Implemented in `server/internal/promo` (#108): `cmd/promo` creates, batches, approves and disables codes until the admin screens of #142 exist; `POST /promo/redeem` redeems them. The per-account attempt limits and lock are enforced; the per-device and per-IP limits are #184.
 
 ## 9. Refunds and chargebacks
 

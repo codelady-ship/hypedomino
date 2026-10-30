@@ -14,6 +14,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
 	"github.com/Alievs-corp/hypedomino/server/internal/inventory"
 	"github.com/Alievs-corp/hypedomino/server/internal/profile"
+	"github.com/Alievs-corp/hypedomino/server/internal/promo"
 	"github.com/Alievs-corp/hypedomino/server/internal/purchase"
 	"github.com/Alievs-corp/hypedomino/server/internal/reward"
 	"github.com/Alievs-corp/hypedomino/server/internal/session"
@@ -47,6 +48,8 @@ type Config struct {
 	Play            purchase.GoogleConfig
 	Apple           purchase.AppleConfig
 	PushSecret      string
+	Promo           promo.Config
+	PromoKey        string
 }
 
 func DefaultConfig() Config {
@@ -67,6 +70,7 @@ func DefaultConfig() Config {
 		ConfigPoll:      10 * time.Second,
 		Reward:          reward.DefaultConfig(),
 		Purchase:        purchase.DefaultConfig(),
+		Promo:           promo.DefaultConfig(),
 		Rarities:        cosmetics.DefaultRarities(),
 	}
 }
@@ -240,6 +244,21 @@ func ConfigFromEnv(lookup Lookup) (Config, error) {
 	}
 	if err := config.Purchase.Validate(); err != nil {
 		r.errs = append(r.errs, fmt.Errorf("HD_REFUNDS_BEFORE_PURCHASE_BLOCK and HD_REFUND_WINDOW_DAYS: %w", err))
+	}
+	r.text("HD_PROMO_KEY", &config.PromoKey)
+	r.integer("HD_PROMO_CODE_LENGTH", &config.Promo.CodeLength)
+	r.integer("HD_PROMO_MAX_VALIDITY_DAYS", &config.Promo.MaxValidityDays)
+	r.integer("HD_PROMO_ATTEMPTS_PER_HOUR", &config.Promo.AttemptsPerHour)
+	r.integer("HD_PROMO_FAILED_ATTEMPTS_BEFORE_LOCK", &config.Promo.FailedAttemptsBeforeLock)
+	r.integer("HD_PROMO_LOCK_MINUTES", &config.Promo.LockMinutes)
+	r.integer("HD_PROMO_COINS_APPROVAL_THRESHOLD", &config.Promo.CoinsApprovalThreshold)
+	if config.PromoKey != "" {
+		if _, err := promo.NewHasher(config.PromoKey); err != nil {
+			r.errs = append(r.errs, fmt.Errorf("HD_PROMO_KEY: %w", err))
+		}
+	}
+	if err := config.Promo.Validate(); err != nil {
+		r.errs = append(r.errs, fmt.Errorf("HD_PROMO_*: %w", err))
 	}
 	if config.Inventory.EmojiSlots < 1 || config.Inventory.ActionSlots < 1 {
 		r.errs = append(r.errs, errors.New("HD_EMOJI_SLOTS and HD_ACTION_SLOTS: at least 1"))

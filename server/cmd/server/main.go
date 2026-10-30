@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/account"
@@ -21,6 +22,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
 	"github.com/Alievs-corp/hypedomino/server/internal/inventory"
 	"github.com/Alievs-corp/hypedomino/server/internal/profile"
+	"github.com/Alievs-corp/hypedomino/server/internal/promo"
 	"github.com/Alievs-corp/hypedomino/server/internal/purchase"
 	"github.com/Alievs-corp/hypedomino/server/internal/reward"
 	"github.com/Alievs-corp/hypedomino/server/internal/secrand"
@@ -125,6 +127,12 @@ func build(ctx context.Context, config app.Config, logger *slog.Logger, sessions
 	receipts := purchase.NewHandler(tokens, purchases, google, apple, config.PushSecret, logger, time.Now)
 	a.Handle("POST /shop/complete", receipts)
 	a.Handle("POST /store/", receipts)
+	promos, err := promos(pool, engine, catalog, config)
+	if err != nil {
+		pool.Close()
+		return nil, nil, err
+	}
+	a.Handle("POST /promo/redeem", promo.NewHandler(tokens, promos, logger, time.Now))
 	return a, pool.Close, nil
 }
 
@@ -146,6 +154,17 @@ func stores(config app.Config) (map[purchase.Platform]purchase.Validator, purcha
 		validators[purchase.PlatformApple], apple = ios, ios
 	}
 	return validators, google, apple, nil
+}
+
+func promos(pool *pgxpool.Pool, engine *reward.Engine, catalog *cosmetics.Catalog, config app.Config) (promo.Promos, error) {
+	if config.PromoKey == "" {
+		return nil, nil
+	}
+	hasher, err := promo.NewHasher(config.PromoKey)
+	if err != nil {
+		return nil, fmt.Errorf("HD_PROMO_KEY: %w", err)
+	}
+	return promo.NewStore(pool, engine, catalog, hasher, config.Promo), nil
 }
 
 func loadCatalog(path string) (*cosmetics.Catalog, error) {

@@ -194,7 +194,7 @@
       "sources": [
         {
           "type": "promo",
-          "ref": "promo.launch_week"
+          "ref": "campaign.launch_week"
         },
         {
           "type": "shop",

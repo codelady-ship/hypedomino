@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Alievs-corp/hypedomino/server/internal/promo"
 )
 
 func lookup(values map[string]string) Lookup {
@@ -27,64 +29,71 @@ func TestConfigDefaultsWhenTheEnvironmentIsEmpty(t *testing.T) {
 
 func TestConfigReadsEveryVariable(t *testing.T) {
 	config, err := ConfigFromEnv(lookup(map[string]string{
-		"HD_LISTEN_ADDR":                    "127.0.0.1:9000",
-		"HD_LOG_LEVEL":                      "DEBUG",
-		"HD_ORIGINS":                        "play.example.com, admin.example.com,",
-		"HD_SHUTDOWN_TIMEOUT":               "3s",
-		"HD_DRAIN_TIMEOUT":                  "2m",
-		"HD_MIN_APP_VERSION":                "1.4.0",
-		"HD_CATALOG_VERSION":                "2026.11.01-2",
-		"HD_MAX_FRAME_BYTES":                "2048",
-		"HD_WRITE_QUEUE":                    "64",
-		"HD_HELLO_TIMEOUT":                  "1s",
-		"HD_WRITE_TIMEOUT":                  "2s",
-		"HD_CLOSE_TIMEOUT":                  "500ms",
-		"HD_COMPRESSION_THRESHOLD":          "512",
-		"HD_INTENTS_PER_SECOND":             "20",
-		"HD_INTENT_BURST":                   "40",
-		"HD_PING_INTERVAL":                  "7s",
-		"HD_PONG_TIMEOUT":                   "3s",
-		"HD_RECONNECT_GRACE":                "45s",
-		"HD_REDIS_URL":                      "redis://cache:6379/0",
-		"HD_NODE_ID":                        "server-7",
-		"HD_NODE_ADDR":                      "10.0.0.7:8080",
-		"HD_NODE_CAPACITY":                  "5000",
-		"HD_NODE_HEARTBEAT":                 "1s",
-		"HD_NODE_TTL":                       "4s",
-		"HD_ROUTE_TTL":                      "3h",
-		"HD_SCALE_OUT_AT":                   "0.8",
-		"HD_SCALE_IN_AT":                    "0.2",
-		"HD_RELAY_DIAL_TIMEOUT":             "2s",
-		"HD_DATABASE_URL":                   "postgres://hd:secret@db:5432/hypedomino",
-		"HD_GOOGLE_AUDIENCES":               "1-abc.apps.googleusercontent.com, 2-def.apps.googleusercontent.com",
-		"HD_APPLE_AUDIENCES":                "com.example.hypedomino",
-		"HD_NONCE_TTL":                      "4m",
-		"HD_TOKEN_KEYS":                     "k2:" + testKey('b') + ",k1:" + testKey('a'),
-		"HD_ACCESS_TTL":                     "5m",
-		"HD_REFRESH_TTL":                    "240h",
-		"HD_REFRESH_REUSE_GRACE":            "10s",
-		"HD_NICKNAME_MIN_LENGTH":            "2",
-		"HD_NICKNAME_MAX_LENGTH":            "12",
-		"HD_NICKNAME_ALLOW_MIXED_SCRIPT":    "true",
-		"HD_NICKNAME_RENAME_COOLDOWN":       "168h",
-		"HD_NICKNAME_RELEASE":               "48h",
-		"HD_COSMETICS_MANIFEST":             "/etc/hypedomino/cosmetics.json",
-		"HD_RARITY_ORDINALS":                "common:1,rare:2,epic:3,legendary:4,mythic:5,cosmic:6",
-		"HD_EMOJI_SLOTS":                    "8",
-		"HD_ACTION_SLOTS":                   "2",
-		"HD_SHOP_CATALOG":                   "/etc/hypedomino/shop.json",
-		"HD_SHOP_DAILY_SLOTS":               "5",
-		"HD_SHOP_WEEKLY_SLOTS":              "3",
-		"HD_SHOP_RESET_HOUR_UTC":            "6",
-		"HD_CONFIG_POLL":                    "30s",
-		"HD_DUPLICATE_COMPENSATION_PERCENT": "25",
-		"HD_PLAY_PACKAGE":                   "com.example.hypedomino",
-		"HD_PLAY_SERVICE_ACCOUNT":           "/etc/hypedomino/play.json",
-		"HD_PLAY_NOTIFICATION_TOKEN":        "push-secret",
-		"HD_APPLE_BUNDLE_ID":                "com.example.hypedomino",
-		"HD_STORE_SANDBOX":                  "true",
-		"HD_REFUNDS_BEFORE_PURCHASE_BLOCK":  "2",
-		"HD_REFUND_WINDOW_DAYS":             "90",
+		"HD_LISTEN_ADDR":                       "127.0.0.1:9000",
+		"HD_LOG_LEVEL":                         "DEBUG",
+		"HD_ORIGINS":                           "play.example.com, admin.example.com,",
+		"HD_SHUTDOWN_TIMEOUT":                  "3s",
+		"HD_DRAIN_TIMEOUT":                     "2m",
+		"HD_MIN_APP_VERSION":                   "1.4.0",
+		"HD_CATALOG_VERSION":                   "2026.11.01-2",
+		"HD_MAX_FRAME_BYTES":                   "2048",
+		"HD_WRITE_QUEUE":                       "64",
+		"HD_HELLO_TIMEOUT":                     "1s",
+		"HD_WRITE_TIMEOUT":                     "2s",
+		"HD_CLOSE_TIMEOUT":                     "500ms",
+		"HD_COMPRESSION_THRESHOLD":             "512",
+		"HD_INTENTS_PER_SECOND":                "20",
+		"HD_INTENT_BURST":                      "40",
+		"HD_PING_INTERVAL":                     "7s",
+		"HD_PONG_TIMEOUT":                      "3s",
+		"HD_RECONNECT_GRACE":                   "45s",
+		"HD_REDIS_URL":                         "redis://cache:6379/0",
+		"HD_NODE_ID":                           "server-7",
+		"HD_NODE_ADDR":                         "10.0.0.7:8080",
+		"HD_NODE_CAPACITY":                     "5000",
+		"HD_NODE_HEARTBEAT":                    "1s",
+		"HD_NODE_TTL":                          "4s",
+		"HD_ROUTE_TTL":                         "3h",
+		"HD_SCALE_OUT_AT":                      "0.8",
+		"HD_SCALE_IN_AT":                       "0.2",
+		"HD_RELAY_DIAL_TIMEOUT":                "2s",
+		"HD_DATABASE_URL":                      "postgres://hd:secret@db:5432/hypedomino",
+		"HD_GOOGLE_AUDIENCES":                  "1-abc.apps.googleusercontent.com, 2-def.apps.googleusercontent.com",
+		"HD_APPLE_AUDIENCES":                   "com.example.hypedomino",
+		"HD_NONCE_TTL":                         "4m",
+		"HD_TOKEN_KEYS":                        "k2:" + testKey('b') + ",k1:" + testKey('a'),
+		"HD_ACCESS_TTL":                        "5m",
+		"HD_REFRESH_TTL":                       "240h",
+		"HD_REFRESH_REUSE_GRACE":               "10s",
+		"HD_NICKNAME_MIN_LENGTH":               "2",
+		"HD_NICKNAME_MAX_LENGTH":               "12",
+		"HD_NICKNAME_ALLOW_MIXED_SCRIPT":       "true",
+		"HD_NICKNAME_RENAME_COOLDOWN":          "168h",
+		"HD_NICKNAME_RELEASE":                  "48h",
+		"HD_COSMETICS_MANIFEST":                "/etc/hypedomino/cosmetics.json",
+		"HD_RARITY_ORDINALS":                   "common:1,rare:2,epic:3,legendary:4,mythic:5,cosmic:6",
+		"HD_EMOJI_SLOTS":                       "8",
+		"HD_ACTION_SLOTS":                      "2",
+		"HD_SHOP_CATALOG":                      "/etc/hypedomino/shop.json",
+		"HD_SHOP_DAILY_SLOTS":                  "5",
+		"HD_SHOP_WEEKLY_SLOTS":                 "3",
+		"HD_SHOP_RESET_HOUR_UTC":               "6",
+		"HD_CONFIG_POLL":                       "30s",
+		"HD_DUPLICATE_COMPENSATION_PERCENT":    "25",
+		"HD_PLAY_PACKAGE":                      "com.example.hypedomino",
+		"HD_PLAY_SERVICE_ACCOUNT":              "/etc/hypedomino/play.json",
+		"HD_PLAY_NOTIFICATION_TOKEN":           "push-secret",
+		"HD_APPLE_BUNDLE_ID":                   "com.example.hypedomino",
+		"HD_STORE_SANDBOX":                     "true",
+		"HD_REFUNDS_BEFORE_PURCHASE_BLOCK":     "2",
+		"HD_REFUND_WINDOW_DAYS":                "90",
+		"HD_PROMO_KEY":                         "0123456789abcdef0123456789abcdef",
+		"HD_PROMO_CODE_LENGTH":                 "10",
+		"HD_PROMO_MAX_VALIDITY_DAYS":           "30",
+		"HD_PROMO_ATTEMPTS_PER_HOUR":           "20",
+		"HD_PROMO_FAILED_ATTEMPTS_BEFORE_LOCK": "3",
+		"HD_PROMO_LOCK_MINUTES":                "15",
+		"HD_PROMO_COINS_APPROVAL_THRESHOLD":    "1000",
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -125,6 +134,12 @@ func TestConfigReadsEveryVariable(t *testing.T) {
 	if config.Play.PackageName != "com.example.hypedomino" || config.Play.ServiceAccountFile != "/etc/hypedomino/play.json" || !config.Play.AllowTest || config.PushSecret != "push-secret" || config.Apple.BundleID != "com.example.hypedomino" || !config.Apple.AllowSandbox || config.Purchase.RefundsBeforePurchaseBlock != 2 || config.Purchase.RefundWindowDays != 90 {
 		t.Fatalf("purchase config %+v %+v %+v", config.Play, config.Apple, config.Purchase)
 	}
+	if config.PromoKey != "0123456789abcdef0123456789abcdef" || config.Promo != (promo.Config{CodeLength: 10, MaxValidityDays: 30, AttemptsPerHour: 20, FailedAttemptsBeforeLock: 3, LockMinutes: 15, CoinsApprovalThreshold: 1000}) {
+		t.Fatalf("promo config %q %+v", config.PromoKey, config.Promo)
+	}
+	if config.PromoKey != "0123456789abcdef0123456789abcdef" || config.Promo != (promo.Config{CodeLength: 10, MaxValidityDays: 30, AttemptsPerHour: 20, FailedAttemptsBeforeLock: 3, LockMinutes: 15, CoinsApprovalThreshold: 1000}) {
+		t.Fatalf("promo config %q %+v", config.PromoKey, config.Promo)
+	}
 	if len(config.Rarities) != 6 || config.Rarities["cosmic"] != 6 {
 		t.Fatalf("rarities %v", config.Rarities)
 	}
@@ -150,11 +165,13 @@ func TestConfigReportsEveryBadValueAtOnce(t *testing.T) {
 		"HD_DUPLICATE_COMPENSATION_PERCENT": "101",
 		"HD_PLAY_PACKAGE":                   "com.example.hypedomino",
 		"HD_REFUND_WINDOW_DAYS":             "0",
+		"HD_PROMO_KEY":                      "short",
+		"HD_PROMO_LOCK_MINUTES":             "0",
 	}))
 	if err == nil {
 		t.Fatal("bad values were accepted")
 	}
-	for _, name := range []string{"HD_LOG_LEVEL", "HD_DRAIN_TIMEOUT", "HD_WRITE_QUEUE", "HD_INTENT_BURST", "HD_HELLO_TIMEOUT", "HD_SCALE_OUT_AT", "capacity", "HD_NICKNAME_ALLOW_MIXED_SCRIPT", "HD_NICKNAME_MAX_LENGTH", "HD_EMOJI_SLOTS", "HD_RARITY_ORDINALS", "HD_SHOP_RESET_HOUR_UTC", "HD_CONFIG_POLL", "HD_DUPLICATE_COMPENSATION_PERCENT", "HD_PLAY_PACKAGE", "HD_REFUND_WINDOW_DAYS"} {
+	for _, name := range []string{"HD_LOG_LEVEL", "HD_DRAIN_TIMEOUT", "HD_WRITE_QUEUE", "HD_INTENT_BURST", "HD_HELLO_TIMEOUT", "HD_SCALE_OUT_AT", "capacity", "HD_NICKNAME_ALLOW_MIXED_SCRIPT", "HD_NICKNAME_MAX_LENGTH", "HD_EMOJI_SLOTS", "HD_RARITY_ORDINALS", "HD_SHOP_RESET_HOUR_UTC", "HD_CONFIG_POLL", "HD_DUPLICATE_COMPENSATION_PERCENT", "HD_PLAY_PACKAGE", "HD_REFUND_WINDOW_DAYS", "HD_PROMO_KEY", "HD_PROMO_*"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("error does not name %s: %v", name, err)
 		}

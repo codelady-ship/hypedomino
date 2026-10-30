@@ -47,7 +47,7 @@ func player(t *testing.T, pool *pgxpool.Pool, nickname string) string {
 var (
 	shopFox   = cosmetics.Source{Type: "shop", Ref: "offer.avatar_comet_fox"}
 	passWiz   = cosmetics.Source{Type: "pass", Ref: "pass.season_1.premium.level_30"}
-	promoNite = cosmetics.Source{Type: "promo", Ref: "promo.launch_week"}
+	promoNite = cosmetics.Source{Type: "promo", Ref: "campaign.launch_week"}
 )
 
 func TestDefaultsAreOwnedByEveryoneAndGrantsNeedAListedSource(t *testing.T) {

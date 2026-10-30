@@ -90,6 +90,13 @@ Today no code on `main` reads an environment variable. The server variables belo
 | `HD_STORE_SANDBOX` | No | server | `false` (`true` in dev and staging) | `false` | No | from #106 |
 | `HD_REFUNDS_BEFORE_PURCHASE_BLOCK` | No | server | `3` | `3` | No | from #106 |
 | `HD_REFUND_WINDOW_DAYS` | No | server | `365` | `365` | No | from #106 |
+| `HD_PROMO_KEY` | No | server | empty (promo redemption off, 503 `promo.unavailable`) | `<random-32-bytes>` | Yes | from #108; `cmd/promo` needs the same key |
+| `HD_PROMO_CODE_LENGTH` | No | server | `12` | `12` | No | from #108 |
+| `HD_PROMO_MAX_VALIDITY_DAYS` | No | server | `90` | `90` | No | from #108 |
+| `HD_PROMO_ATTEMPTS_PER_HOUR` | No | server | `10` | `10` | No | from #108 |
+| `HD_PROMO_FAILED_ATTEMPTS_BEFORE_LOCK` | No | server | `5` | `5` | No | from #108 |
+| `HD_PROMO_LOCK_MINUTES` | No | server | `60` | `60` | No | from #108 |
+| `HD_PROMO_COINS_APPROVAL_THRESHOLD` | No | server | `2000` | `2000` | No | from #108 |
 
 The gateway limits and the reconnect grace are environment variables only until admin config serves them (#210, `docs/penalties.md` section 8); then the admin value wins and the variable is removed in the same PR.
 
