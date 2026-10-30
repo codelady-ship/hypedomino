@@ -23,6 +23,10 @@
       "lpChangeMin": 5,
       "lpChangeMax": 40,
       "placementMatches": 5,
+      "seasonLengthMonths": 3,
+      "resetTierDrop": 1,
+      "resetFloor": "Bronze IV",
+      "resetCeiling": "Diamond IV",
       "newPlayerPlacementCap": "Gold IV",
       "offenseRatingPenalty": 10,
       "partnerLossReductionPercent": 50
@@ -49,6 +53,10 @@
       "lpChangeMin": 5,
       "lpChangeMax": 40,
       "placementMatches": 5,
+      "seasonLengthMonths": 3,
+      "resetTierDrop": 1,
+      "resetFloor": "Bronze IV",
+      "resetCeiling": "Diamond IV",
       "newPlayerPlacementCap": "Gold IV",
       "offenseRatingPenalty": 10,
       "partnerLossReductionPercent": 50

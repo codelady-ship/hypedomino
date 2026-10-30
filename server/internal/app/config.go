@@ -43,6 +43,7 @@ type Config struct {
 	Shop            shop.Config
 	ShopCatalog     string
 	ConfigPoll      time.Duration
+	SeasonPoll      time.Duration
 	Reward          reward.Config
 	Purchase        purchase.Config
 	Play            purchase.GoogleConfig
@@ -68,6 +69,7 @@ func DefaultConfig() Config {
 		Inventory:       inventory.DefaultConfig(),
 		Shop:            shop.DefaultConfig(),
 		ConfigPoll:      10 * time.Second,
+		SeasonPoll:      time.Minute,
 		Reward:          reward.DefaultConfig(),
 		Purchase:        purchase.DefaultConfig(),
 		Promo:           promo.DefaultConfig(),
@@ -218,12 +220,16 @@ func ConfigFromEnv(lookup Lookup) (Config, error) {
 	r.integer("HD_SHOP_WEEKLY_SLOTS", &config.Shop.WeeklySlots)
 	r.integer("HD_SHOP_RESET_HOUR_UTC", &config.Shop.ResetHourUTC)
 	r.duration("HD_CONFIG_POLL", &config.ConfigPoll)
+	r.duration("HD_SEASON_POLL", &config.SeasonPoll)
 	r.integer("HD_DUPLICATE_COMPENSATION_PERCENT", &config.Reward.DuplicateCompensationPercent)
 	if err := config.Shop.Validate(); err != nil {
 		r.errs = append(r.errs, fmt.Errorf("HD_SHOP_DAILY_SLOTS, HD_SHOP_WEEKLY_SLOTS and HD_SHOP_RESET_HOUR_UTC: %w", err))
 	}
 	if config.ConfigPoll < time.Second {
 		r.errs = append(r.errs, errors.New("HD_CONFIG_POLL: at least 1s"))
+	}
+	if config.SeasonPoll < time.Second {
+		r.errs = append(r.errs, errors.New("HD_SEASON_POLL: at least 1s"))
 	}
 	if config.Reward.DuplicateCompensationPercent < 0 || config.Reward.DuplicateCompensationPercent > 100 {
 		r.errs = append(r.errs, errors.New("HD_DUPLICATE_COMPENSATION_PERCENT: between 0 and 100"))

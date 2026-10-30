@@ -170,6 +170,8 @@ A ranked match has no accept or decline step (R-53), so there is no dodge and no
 - Section 3 structure, `PlacementMatches`, the reset table and the apex slot rules are frozen while a season runs. MMR and LP coefficients (section 4) can change mid-season and apply to matches that start after the publish; each match records the config version it used (ADR 0006).
 - Season end runs once per mode and is idempotent (#115): final apex recalculation, leaderboard snapshot, final ranks stored for rewards (#120), reset ranks computed for the next season.
 
+- Implemented in `server/internal/rating` (#115): seasons are rows of `ranked_seasons` (`cmd/ranked-season` until #143), contiguous by construction; the end runs once per mode when the end time has passed (apex recalculation, `season_results` snapshot in the order of 8.1, reset ranks, the next season created with `SeasonLengthMonths` if none exists), a result of a closed season changes MMR only, and `state` is derived from the times and the per-mode close marks. Rank rewards and emblems from the snapshot are #120; the Redis leaderboards are #116.
+
 ### 7.2 Soft reset
 
 Every player with a final rank gets a reset rank for the next season from `SeasonResetTable`, one row per final rank (Iron IV to Diamond I, Master, Grandmaster, Challenger). The reset rank is the starting point that placement (section 5) moves from. MMR is not reset.

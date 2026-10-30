@@ -16,30 +16,35 @@ const (
 var ErrInvalidConfig = errors.New("rating: invalid config")
 
 type Config struct {
-	DivisionLp                  int     `json:"divisionLp"`
-	DemotionLp                  int     `json:"demotionLp"`
-	ApexRecalcHourUtc           int     `json:"apexRecalcHourUtc"`
-	ChallengerSlots             int     `json:"challengerSlots"`
-	ChallengerMinLp             int     `json:"challengerMinLp"`
-	GrandmasterSlots            int     `json:"grandmasterSlots"`
-	GrandmasterMinLp            int     `json:"grandmasterMinLp"`
-	InitialMmr                  int     `json:"initialMmr"`
-	MmrScale                    int     `json:"mmrScale"`
-	MmrK                        int     `json:"mmrK"`
-	MmrKProvisional             int     `json:"mmrKProvisional"`
-	MmrProvisionalMatches       int     `json:"mmrProvisionalMatches"`
-	RankMmrBase                 int     `json:"rankMmrBase"`
-	RankMmrStep                 int     `json:"rankMmrStep"`
-	LpBase                      int     `json:"lpBase"`
-	LpGapScale                  int     `json:"lpGapScale"`
-	LpFactorMin                 float64 `json:"lpFactorMin"`
-	LpFactorMax                 float64 `json:"lpFactorMax"`
-	LpChangeMin                 int     `json:"lpChangeMin"`
-	LpChangeMax                 int     `json:"lpChangeMax"`
-	PlacementMatches            int     `json:"placementMatches"`
-	NewPlayerPlacementCap       string  `json:"newPlayerPlacementCap"`
-	OffenseRatingPenalty        int     `json:"offenseRatingPenalty"`
-	PartnerLossReductionPercent int     `json:"partnerLossReductionPercent"`
+	DivisionLp                  int               `json:"divisionLp"`
+	DemotionLp                  int               `json:"demotionLp"`
+	ApexRecalcHourUtc           int               `json:"apexRecalcHourUtc"`
+	ChallengerSlots             int               `json:"challengerSlots"`
+	ChallengerMinLp             int               `json:"challengerMinLp"`
+	GrandmasterSlots            int               `json:"grandmasterSlots"`
+	GrandmasterMinLp            int               `json:"grandmasterMinLp"`
+	InitialMmr                  int               `json:"initialMmr"`
+	MmrScale                    int               `json:"mmrScale"`
+	MmrK                        int               `json:"mmrK"`
+	MmrKProvisional             int               `json:"mmrKProvisional"`
+	MmrProvisionalMatches       int               `json:"mmrProvisionalMatches"`
+	RankMmrBase                 int               `json:"rankMmrBase"`
+	RankMmrStep                 int               `json:"rankMmrStep"`
+	LpBase                      int               `json:"lpBase"`
+	LpGapScale                  int               `json:"lpGapScale"`
+	LpFactorMin                 float64           `json:"lpFactorMin"`
+	LpFactorMax                 float64           `json:"lpFactorMax"`
+	LpChangeMin                 int               `json:"lpChangeMin"`
+	LpChangeMax                 int               `json:"lpChangeMax"`
+	PlacementMatches            int               `json:"placementMatches"`
+	NewPlayerPlacementCap       string            `json:"newPlayerPlacementCap"`
+	SeasonLengthMonths          int               `json:"seasonLengthMonths"`
+	ResetTierDrop               int               `json:"resetTierDrop"`
+	ResetFloor                  string            `json:"resetFloor"`
+	ResetCeiling                string            `json:"resetCeiling"`
+	SeasonResetTable            map[string]string `json:"seasonResetTable,omitempty"`
+	OffenseRatingPenalty        int               `json:"offenseRatingPenalty"`
+	PartnerLossReductionPercent int               `json:"partnerLossReductionPercent"`
 }
 
 func DefaultConfig() Config {
@@ -66,6 +71,10 @@ func DefaultConfig() Config {
 		LpChangeMax:                 40,
 		PlacementMatches:            5,
 		NewPlayerPlacementCap:       "Gold IV",
+		SeasonLengthMonths:          3,
+		ResetTierDrop:               1,
+		ResetFloor:                  "Bronze IV",
+		ResetCeiling:                "Diamond IV",
 		OffenseRatingPenalty:        10,
 		PartnerLossReductionPercent: 50,
 	}
@@ -107,6 +116,12 @@ func (c Config) Validate() error {
 	}
 	if cap > MaxDivisionIndex {
 		return fail("newPlayerPlacementCap must be a division rank")
+	}
+	if c.SeasonLengthMonths < 1 || c.ResetTierDrop < 0 {
+		return fail("seasonLengthMonths must be at least 1 and resetTierDrop not negative")
+	}
+	if _, err := c.ResetTable(); err != nil {
+		return fail("%v", err)
 	}
 	return nil
 }

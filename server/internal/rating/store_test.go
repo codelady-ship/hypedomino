@@ -33,7 +33,11 @@ func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	_, pool := dbtest.Fresh(t)
 	watcher := rating.NewWatcher(pool, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	return &fixture{pool: pool, watcher: watcher, store: rating.NewStore(pool, watcher)}
+	f := &fixture{pool: pool, watcher: watcher, store: rating.NewStore(pool, watcher)}
+	if _, err := f.store.CreateSeason(context.Background(), rating.Season{ID: "season.test", NameKey: "season.test.name", Start: now.Add(-30 * 24 * time.Hour), End: now.Add(60 * 24 * time.Hour)}, now.Add(-31*24*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	return f
 }
 
 func (f *fixture) account(t *testing.T) string {

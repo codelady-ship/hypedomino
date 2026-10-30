@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"math/rand"
+	"reflect"
 	"sort"
 	"testing"
 
@@ -159,7 +160,7 @@ func TestConfigValidationAndParsing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if snapshot.Modes.OneVsOne != rating.DefaultConfig() || snapshot.Modes.TwoVsTwo.LpBase != 25 || snapshot.Modes.TwoVsTwo.LpChangeMax != 40 {
+	if !reflect.DeepEqual(snapshot.Modes.OneVsOne, rating.DefaultConfig()) || snapshot.Modes.TwoVsTwo.LpBase != 25 || snapshot.Modes.TwoVsTwo.LpChangeMax != 40 {
 		t.Errorf("overlay %+v", snapshot.Modes)
 	}
 	for _, raw := range []string{`{`, `{"schema":2}`, `{"schema":1,"modes":{"1v1":{"divisionLp":0}}}`} {
@@ -233,5 +234,34 @@ func TestASimulatedLadderMatchesTheExpectedCurve(t *testing.T) {
 		if s.player.Rank.LP < 0 || (!s.player.Rank.Apex() && s.player.Rank.LP >= c.DivisionLp) {
 			t.Fatalf("rank out of range: %+v", s.player.Rank)
 		}
+	}
+}
+
+func TestTheResetTableFollowsTheSpecAndItsOverrides(t *testing.T) {
+	c := rating.DefaultConfig()
+	for old, want := range map[string]string{"Iron II": "Iron II", "Bronze IV": "Bronze IV", "Bronze III": "Bronze IV", "Silver IV": "Bronze IV", "Silver III": "Bronze III", "Gold II": "Silver II", "Diamond I": "Emerald I", "Master": "Diamond IV"} {
+		if got := (rating.Rank{Index: c.ResetIndex(rank(t, old, 0).Index)}).String(); got != want {
+			t.Errorf("%s resets to %s, want %s", old, got, want)
+		}
+	}
+	c.SeasonResetTable = map[string]string{"Gold II": "Silver III", "Master": "Diamond I"}
+	if c.ResetIndex(14) != 9 || c.ResetIndex(28) != 27 {
+		t.Errorf("overrides ignored: %d %d", c.ResetIndex(14), c.ResetIndex(28))
+	}
+	for name, table := range map[string]map[string]string{
+		"above itself":  {"Silver IV": "Gold IV"},
+		"not monotone":  {"Gold II": "Iron IV"},
+		"into the apex": {"Master": "Master"},
+		"bad rank":      {"Wood IV": "Iron IV"},
+	} {
+		c.SeasonResetTable = table
+		if err := c.Validate(); !errors.Is(err, rating.ErrInvalidConfig) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	c.SeasonResetTable = nil
+	c.ResetFloor, c.ResetCeiling = "Diamond IV", "Bronze IV"
+	if err := c.Validate(); !errors.Is(err, rating.ErrInvalidConfig) {
+		t.Errorf("floor above ceiling: %v", err)
 	}
 }
