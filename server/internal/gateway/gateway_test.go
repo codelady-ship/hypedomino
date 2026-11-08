@@ -733,3 +733,14 @@ func TestTheHelloMayCarryAnIntegrityTokenLargerThanAnIntent(t *testing.T) {
 	}
 	tampered.expectClose(websocket.StatusPolicyViolation)
 }
+
+func TestAQueueIntentToASessionWithoutMatchmakingIsRefusedAsUnavailable(t *testing.T) {
+	h := newHarness(t, testConfig())
+	c := h.dial()
+	c.handshake("ok")
+	c.send(intentFrame(0, &pb.Envelope{Payload: &pb.Envelope_JoinQueueIntent{JoinQueueIntent: &pb.JoinQueueIntent{Mode: pb.Mode_MODE_1V1, Queue: pb.QueueKind_QUEUE_KIND_CASUAL}}}))
+	state := c.recv().GetQueueState()
+	if state.GetStatus() != pb.QueueStatus_QUEUE_STATUS_REFUSED || state.GetRefusal() != pb.QueueRefusal_QUEUE_REFUSAL_UNAVAILABLE {
+		t.Fatalf("queue state %v", state)
+	}
+}

@@ -68,6 +68,7 @@ type Manager struct {
 	clocks   ClockObserver
 	replays  ReplayObserver
 	checker  IntegrityChecker
+	queue    Queue
 	mu       sync.Mutex
 	sessions map[string]*Session
 	accounts map[string]map[string]*Session
@@ -379,6 +380,7 @@ func (c *connection) Close() {
 		return
 	}
 	s.active = nil
+	go c.leaveOnClose()
 	if seat != nil {
 		s.acked = seat.Acked()
 	}

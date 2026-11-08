@@ -281,8 +281,10 @@ func (c *Conn) dispatch(frame *pb.Envelope) bool {
 	loading := frame.GetLoadingIntent()
 	emoji := frame.GetEmojiIntent()
 	quick := frame.GetQuickMessageIntent()
+	join := frame.GetJoinQueueIntent()
+	leave := frame.GetLeaveQueueIntent()
 	intent, ok := DecodeIntent(frame)
-	if !ok && loading == nil && emoji == nil && quick == nil {
+	if !ok && loading == nil && emoji == nil && quick == nil && join == nil && leave == nil {
 		return c.Send(ErrorFrame(pb.ErrorCode_ERROR_CODE_ILLEGAL_INTENT, sequence, c.session.Acked())) == nil
 	}
 	if !c.bucket.take(c.options.Clock.Now()) {
@@ -305,6 +307,9 @@ func (c *Conn) dispatch(frame *pb.Envelope) bool {
 	if quick != nil {
 		c.session.QuickMessage(quick.GetKey(), quick.GetTeamOnly())
 		return true
+	}
+	if join != nil || leave != nil {
+		return c.matchmaking(join)
 	}
 	c.session.Intent(sequence, intent)
 	return true
@@ -377,4 +382,17 @@ func EncodeIntent(intent replay.Intent) (*pb.Envelope, bool) {
 		return &pb.Envelope{Payload: &pb.Envelope_PassIntent{PassIntent: &pb.PassIntent{}}}, true
 	}
 	return nil, false
+}
+
+func (c *Conn) matchmaking(join *pb.JoinQueueIntent) bool {
+	queuer, ok := c.session.(Queuer)
+	switch {
+	case !ok:
+		return c.Send(QueueStateFrame(&pb.QueueState{Status: pb.QueueStatus_QUEUE_STATUS_REFUSED, Refusal: pb.QueueRefusal_QUEUE_REFUSAL_UNAVAILABLE}, c.session.Acked())) == nil
+	case join != nil:
+		queuer.JoinQueue(join)
+	default:
+		queuer.LeaveQueue()
+	}
+	return true
 }

@@ -121,6 +121,15 @@ type ReplayCounter interface {
 	Replayed()
 }
 
+type Queuer interface {
+	JoinQueue(intent *pb.JoinQueueIntent)
+	LeaveQueue()
+}
+
+func QueueStateFrame(state *pb.QueueState, acked uint64) *pb.Envelope {
+	return &pb.Envelope{ProtocolVersion: ProtocolVersion, AckedSequence: acked, Payload: &pb.Envelope_QueueState{QueueState: state}}
+}
+
 func sessionNonce() uint64 {
 	for {
 		if nonce := (secrand.Source{}).Uint64(); nonce != 0 {

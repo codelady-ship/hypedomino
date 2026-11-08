@@ -173,6 +173,14 @@ func (s *relaySession) QuickMessage(key string, teamOnly bool) {
 	s.forward(&pb.Envelope{Payload: &pb.Envelope_QuickMessageIntent{QuickMessageIntent: &pb.QuickMessageIntent{Key: key, TeamOnly: teamOnly}}})
 }
 
+func (s *relaySession) JoinQueue(intent *pb.JoinQueueIntent) {
+	s.forward(&pb.Envelope{Payload: &pb.Envelope_JoinQueueIntent{JoinQueueIntent: intent}})
+}
+
+func (s *relaySession) LeaveQueue() {
+	s.forward(&pb.Envelope{Payload: &pb.Envelope_LeaveQueueIntent{LeaveQueueIntent: &pb.LeaveQueueIntent{}}})
+}
+
 func (s *relaySession) forward(frame *pb.Envelope) {
 	frame.ProtocolVersion, frame.SessionNonce = gateway.ProtocolVersion, s.nonce
 	if err := s.write(context.Background(), frame); err != nil {
