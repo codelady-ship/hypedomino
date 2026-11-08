@@ -31,4 +31,14 @@ Owner scope: #48 (queue), #52 (leaver rules), #118 (quality tuning). Rules refer
 | `RankWindowDivisions` | 8 | Largest rank index distance between two placed players in a ranked queue; 0 disables |
 | `CasualBotFillSeconds` | 30 | Wait before a casual entry is completed with bots; 0 disables |
 
-The engine is `server/internal/matchmaking`: `Form` is a pure function over the entries of one tick (table tests in `matchmaking_test.go`), `Pool` is the in-process queue around it. The Redis-backed queue that survives a restart and spans nodes is #51 and feeds the same `Form`. A ranked entry's MMR, rank and placement state come from `rating.Store.Queue` (#118), `InitialMmr` and unplaced for an account without a rating in the mode; the test in `server/internal/rating/queue_test.go` runs a formed ranked match through `rating.Store.Apply` and checks that a casual match is never applied.
+The engine is `server/internal/matchmaking`: `Form` is a pure function over the entries of one tick (table tests in `matchmaking_test.go`), `Pool` is the in-process queue around it. The cluster wiring is section 4 (#478). A ranked entry's MMR, rank and placement state come from `rating.Store.Queue` (#118), `InitialMmr` and unplaced for an account without a rating in the mode; the test in `server/internal/rating/queue_test.go` runs a formed ranked match through `rating.Store.Apply` and checks that a casual match is never applied.
+
+## 4. Queue protocol and placement
+
+Owner decision 2026-11-08 (#478): one pool per region, run by a leader node.
+
+- Any game server pod accepts the queue intents of its connected players. `JoinQueueIntent` names the mode and the queue (`QUEUE_KIND_RANKED` or `QUEUE_KIND_CASUAL`); `LeaveQueueIntent` leaves. The server answers with `QueueState`.
+- `QueueState.status`: `SEARCHING` with the join time and the time the search starts (later than the join time during a penalty queue delay); `LEFT` after a leave or a disconnect; `MATCH_FOUND` when a match formed, followed by the match itself (R-57 loading phase); `REFUSED` with a reason and, for a ban, the time it ends.
+- Refusals: `IN_MATCH` while a match of the player has not ended (R-58); `MATCHMAKING_BAN` during penalty step 3 (`docs/penalties.md`); `RANKED_CLOSED` while the ranked kill switch is on (`docs/admin.md`); `UNAVAILABLE` while the pod drains or no leader is reachable. A second join while queued replaces the entry.
+- One pod at a time holds the leader lock in Redis and runs the region's only `Pool` and its `Tick`. A lost lock ends leadership; the next leader starts with an empty pool and the pods re-send the entries they hold, so no player has to queue again.
+- The leader picks the pod that opens the room of a formed match. Players whose sessions live on other pods join it through the cross-node relay (#51).

@@ -5,6 +5,7 @@ package hypedomino.v1;
 import "hypedomino/v1/error.proto";
 import "hypedomino/v1/hello.proto";
 import "hypedomino/v1/match.proto";
+import "hypedomino/v1/queue.proto";
 
 message Envelope {
   uint32 protocol_version = 1;
@@ -18,6 +19,7 @@ message Envelope {
     MatchView match_view = 13;
     EmojiShown emoji_shown = 14;
     QuickMessageShown quick_message_shown = 15;
+    QueueState queue_state = 16;
     PlaceTileIntent place_tile_intent = 20;
     PassIntent pass_intent = 21;
     DrawIntent draw_intent = 22;
@@ -25,5 +27,7 @@ message Envelope {
     LoadingIntent loading_intent = 24;
     EmojiIntent emoji_intent = 25;
     QuickMessageIntent quick_message_intent = 26;
+    JoinQueueIntent join_queue_intent = 27;
+    LeaveQueueIntent leave_queue_intent = 28;
   }
 }

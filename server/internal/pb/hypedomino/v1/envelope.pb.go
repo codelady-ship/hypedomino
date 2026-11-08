@@ -35,6 +35,7 @@ type Envelope struct {
 	//	*Envelope_MatchView
 	//	*Envelope_EmojiShown
 	//	*Envelope_QuickMessageShown
+	//	*Envelope_QueueState
 	//	*Envelope_PlaceTileIntent
 	//	*Envelope_PassIntent
 	//	*Envelope_DrawIntent
@@ -42,6 +43,8 @@ type Envelope struct {
 	//	*Envelope_LoadingIntent
 	//	*Envelope_EmojiIntent
 	//	*Envelope_QuickMessageIntent
+	//	*Envelope_JoinQueueIntent
+	//	*Envelope_LeaveQueueIntent
 	Payload       isEnvelope_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -166,6 +169,15 @@ func (x *Envelope) GetQuickMessageShown() *QuickMessageShown {
 	return nil
 }
 
+func (x *Envelope) GetQueueState() *QueueState {
+	if x != nil {
+		if x, ok := x.Payload.(*Envelope_QueueState); ok {
+			return x.QueueState
+		}
+	}
+	return nil
+}
+
 func (x *Envelope) GetPlaceTileIntent() *PlaceTileIntent {
 	if x != nil {
 		if x, ok := x.Payload.(*Envelope_PlaceTileIntent); ok {
@@ -229,6 +241,24 @@ func (x *Envelope) GetQuickMessageIntent() *QuickMessageIntent {
 	return nil
 }
 
+func (x *Envelope) GetJoinQueueIntent() *JoinQueueIntent {
+	if x != nil {
+		if x, ok := x.Payload.(*Envelope_JoinQueueIntent); ok {
+			return x.JoinQueueIntent
+		}
+	}
+	return nil
+}
+
+func (x *Envelope) GetLeaveQueueIntent() *LeaveQueueIntent {
+	if x != nil {
+		if x, ok := x.Payload.(*Envelope_LeaveQueueIntent); ok {
+			return x.LeaveQueueIntent
+		}
+	}
+	return nil
+}
+
 type isEnvelope_Payload interface {
 	isEnvelope_Payload()
 }
@@ -255,6 +285,10 @@ type Envelope_EmojiShown struct {
 
 type Envelope_QuickMessageShown struct {
 	QuickMessageShown *QuickMessageShown `protobuf:"bytes,15,opt,name=quick_message_shown,json=quickMessageShown,proto3,oneof"`
+}
+
+type Envelope_QueueState struct {
+	QueueState *QueueState `protobuf:"bytes,16,opt,name=queue_state,json=queueState,proto3,oneof"`
 }
 
 type Envelope_PlaceTileIntent struct {
@@ -285,6 +319,14 @@ type Envelope_QuickMessageIntent struct {
 	QuickMessageIntent *QuickMessageIntent `protobuf:"bytes,26,opt,name=quick_message_intent,json=quickMessageIntent,proto3,oneof"`
 }
 
+type Envelope_JoinQueueIntent struct {
+	JoinQueueIntent *JoinQueueIntent `protobuf:"bytes,27,opt,name=join_queue_intent,json=joinQueueIntent,proto3,oneof"`
+}
+
+type Envelope_LeaveQueueIntent struct {
+	LeaveQueueIntent *LeaveQueueIntent `protobuf:"bytes,28,opt,name=leave_queue_intent,json=leaveQueueIntent,proto3,oneof"`
+}
+
 func (*Envelope_ClientHello) isEnvelope_Payload() {}
 
 func (*Envelope_ServerHello) isEnvelope_Payload() {}
@@ -296,6 +338,8 @@ func (*Envelope_MatchView) isEnvelope_Payload() {}
 func (*Envelope_EmojiShown) isEnvelope_Payload() {}
 
 func (*Envelope_QuickMessageShown) isEnvelope_Payload() {}
+
+func (*Envelope_QueueState) isEnvelope_Payload() {}
 
 func (*Envelope_PlaceTileIntent) isEnvelope_Payload() {}
 
@@ -311,11 +355,15 @@ func (*Envelope_EmojiIntent) isEnvelope_Payload() {}
 
 func (*Envelope_QuickMessageIntent) isEnvelope_Payload() {}
 
+func (*Envelope_JoinQueueIntent) isEnvelope_Payload() {}
+
+func (*Envelope_LeaveQueueIntent) isEnvelope_Payload() {}
+
 var File_hypedomino_v1_envelope_proto protoreflect.FileDescriptor
 
 const file_hypedomino_v1_envelope_proto_rawDesc = "" +
 	"\n" +
-	"\x1chypedomino/v1/envelope.proto\x12\rhypedomino.v1\x1a\x19hypedomino/v1/error.proto\x1a\x19hypedomino/v1/hello.proto\x1a\x19hypedomino/v1/match.proto\"\x96\b\n" +
+	"\x1chypedomino/v1/envelope.proto\x12\rhypedomino.v1\x1a\x19hypedomino/v1/error.proto\x1a\x19hypedomino/v1/hello.proto\x1a\x19hypedomino/v1/match.proto\x1a\x19hypedomino/v1/queue.proto\"\xf3\t\n" +
 	"\bEnvelope\x12)\n" +
 	"\x10protocol_version\x18\x01 \x01(\rR\x0fprotocolVersion\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\x12%\n" +
@@ -329,7 +377,9 @@ const file_hypedomino_v1_envelope_proto_rawDesc = "" +
 	"match_view\x18\r \x01(\v2\x18.hypedomino.v1.MatchViewH\x00R\tmatchView\x12<\n" +
 	"\vemoji_shown\x18\x0e \x01(\v2\x19.hypedomino.v1.EmojiShownH\x00R\n" +
 	"emojiShown\x12R\n" +
-	"\x13quick_message_shown\x18\x0f \x01(\v2 .hypedomino.v1.QuickMessageShownH\x00R\x11quickMessageShown\x12L\n" +
+	"\x13quick_message_shown\x18\x0f \x01(\v2 .hypedomino.v1.QuickMessageShownH\x00R\x11quickMessageShown\x12<\n" +
+	"\vqueue_state\x18\x10 \x01(\v2\x19.hypedomino.v1.QueueStateH\x00R\n" +
+	"queueState\x12L\n" +
 	"\x11place_tile_intent\x18\x14 \x01(\v2\x1e.hypedomino.v1.PlaceTileIntentH\x00R\x0fplaceTileIntent\x12<\n" +
 	"\vpass_intent\x18\x15 \x01(\v2\x19.hypedomino.v1.PassIntentH\x00R\n" +
 	"passIntent\x12<\n" +
@@ -338,7 +388,9 @@ const file_hypedomino_v1_envelope_proto_rawDesc = "" +
 	"\x0fend_turn_intent\x18\x17 \x01(\v2\x1c.hypedomino.v1.EndTurnIntentH\x00R\rendTurnIntent\x12E\n" +
 	"\x0eloading_intent\x18\x18 \x01(\v2\x1c.hypedomino.v1.LoadingIntentH\x00R\rloadingIntent\x12?\n" +
 	"\femoji_intent\x18\x19 \x01(\v2\x1a.hypedomino.v1.EmojiIntentH\x00R\vemojiIntent\x12U\n" +
-	"\x14quick_message_intent\x18\x1a \x01(\v2!.hypedomino.v1.QuickMessageIntentH\x00R\x12quickMessageIntentB\t\n" +
+	"\x14quick_message_intent\x18\x1a \x01(\v2!.hypedomino.v1.QuickMessageIntentH\x00R\x12quickMessageIntent\x12L\n" +
+	"\x11join_queue_intent\x18\x1b \x01(\v2\x1e.hypedomino.v1.JoinQueueIntentH\x00R\x0fjoinQueueIntent\x12O\n" +
+	"\x12leave_queue_intent\x18\x1c \x01(\v2\x1f.hypedomino.v1.LeaveQueueIntentH\x00R\x10leaveQueueIntentB\t\n" +
 	"\apayloadB\xc8\x01\n" +
 	"\x11com.hypedomino.v1B\rEnvelopeProtoP\x01ZOgithub.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1;hypedominov1\xa2\x02\x03HXX\xaa\x02\rHypedomino.V1\xca\x02\rHypedomino\\V1\xe2\x02\x19Hypedomino\\V1\\GPBMetadata\xea\x02\x0eHypedomino::V1b\x06proto3"
 
@@ -363,13 +415,16 @@ var file_hypedomino_v1_envelope_proto_goTypes = []any{
 	(*MatchView)(nil),          // 4: hypedomino.v1.MatchView
 	(*EmojiShown)(nil),         // 5: hypedomino.v1.EmojiShown
 	(*QuickMessageShown)(nil),  // 6: hypedomino.v1.QuickMessageShown
-	(*PlaceTileIntent)(nil),    // 7: hypedomino.v1.PlaceTileIntent
-	(*PassIntent)(nil),         // 8: hypedomino.v1.PassIntent
-	(*DrawIntent)(nil),         // 9: hypedomino.v1.DrawIntent
-	(*EndTurnIntent)(nil),      // 10: hypedomino.v1.EndTurnIntent
-	(*LoadingIntent)(nil),      // 11: hypedomino.v1.LoadingIntent
-	(*EmojiIntent)(nil),        // 12: hypedomino.v1.EmojiIntent
-	(*QuickMessageIntent)(nil), // 13: hypedomino.v1.QuickMessageIntent
+	(*QueueState)(nil),         // 7: hypedomino.v1.QueueState
+	(*PlaceTileIntent)(nil),    // 8: hypedomino.v1.PlaceTileIntent
+	(*PassIntent)(nil),         // 9: hypedomino.v1.PassIntent
+	(*DrawIntent)(nil),         // 10: hypedomino.v1.DrawIntent
+	(*EndTurnIntent)(nil),      // 11: hypedomino.v1.EndTurnIntent
+	(*LoadingIntent)(nil),      // 12: hypedomino.v1.LoadingIntent
+	(*EmojiIntent)(nil),        // 13: hypedomino.v1.EmojiIntent
+	(*QuickMessageIntent)(nil), // 14: hypedomino.v1.QuickMessageIntent
+	(*JoinQueueIntent)(nil),    // 15: hypedomino.v1.JoinQueueIntent
+	(*LeaveQueueIntent)(nil),   // 16: hypedomino.v1.LeaveQueueIntent
 }
 var file_hypedomino_v1_envelope_proto_depIdxs = []int32{
 	1,  // 0: hypedomino.v1.Envelope.client_hello:type_name -> hypedomino.v1.ClientHello
@@ -378,18 +433,21 @@ var file_hypedomino_v1_envelope_proto_depIdxs = []int32{
 	4,  // 3: hypedomino.v1.Envelope.match_view:type_name -> hypedomino.v1.MatchView
 	5,  // 4: hypedomino.v1.Envelope.emoji_shown:type_name -> hypedomino.v1.EmojiShown
 	6,  // 5: hypedomino.v1.Envelope.quick_message_shown:type_name -> hypedomino.v1.QuickMessageShown
-	7,  // 6: hypedomino.v1.Envelope.place_tile_intent:type_name -> hypedomino.v1.PlaceTileIntent
-	8,  // 7: hypedomino.v1.Envelope.pass_intent:type_name -> hypedomino.v1.PassIntent
-	9,  // 8: hypedomino.v1.Envelope.draw_intent:type_name -> hypedomino.v1.DrawIntent
-	10, // 9: hypedomino.v1.Envelope.end_turn_intent:type_name -> hypedomino.v1.EndTurnIntent
-	11, // 10: hypedomino.v1.Envelope.loading_intent:type_name -> hypedomino.v1.LoadingIntent
-	12, // 11: hypedomino.v1.Envelope.emoji_intent:type_name -> hypedomino.v1.EmojiIntent
-	13, // 12: hypedomino.v1.Envelope.quick_message_intent:type_name -> hypedomino.v1.QuickMessageIntent
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	7,  // 6: hypedomino.v1.Envelope.queue_state:type_name -> hypedomino.v1.QueueState
+	8,  // 7: hypedomino.v1.Envelope.place_tile_intent:type_name -> hypedomino.v1.PlaceTileIntent
+	9,  // 8: hypedomino.v1.Envelope.pass_intent:type_name -> hypedomino.v1.PassIntent
+	10, // 9: hypedomino.v1.Envelope.draw_intent:type_name -> hypedomino.v1.DrawIntent
+	11, // 10: hypedomino.v1.Envelope.end_turn_intent:type_name -> hypedomino.v1.EndTurnIntent
+	12, // 11: hypedomino.v1.Envelope.loading_intent:type_name -> hypedomino.v1.LoadingIntent
+	13, // 12: hypedomino.v1.Envelope.emoji_intent:type_name -> hypedomino.v1.EmojiIntent
+	14, // 13: hypedomino.v1.Envelope.quick_message_intent:type_name -> hypedomino.v1.QuickMessageIntent
+	15, // 14: hypedomino.v1.Envelope.join_queue_intent:type_name -> hypedomino.v1.JoinQueueIntent
+	16, // 15: hypedomino.v1.Envelope.leave_queue_intent:type_name -> hypedomino.v1.LeaveQueueIntent
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_hypedomino_v1_envelope_proto_init() }
@@ -400,6 +458,7 @@ func file_hypedomino_v1_envelope_proto_init() {
 	file_hypedomino_v1_error_proto_init()
 	file_hypedomino_v1_hello_proto_init()
 	file_hypedomino_v1_match_proto_init()
+	file_hypedomino_v1_queue_proto_init()
 	file_hypedomino_v1_envelope_proto_msgTypes[0].OneofWrappers = []any{
 		(*Envelope_ClientHello)(nil),
 		(*Envelope_ServerHello)(nil),
@@ -407,6 +466,7 @@ func file_hypedomino_v1_envelope_proto_init() {
 		(*Envelope_MatchView)(nil),
 		(*Envelope_EmojiShown)(nil),
 		(*Envelope_QuickMessageShown)(nil),
+		(*Envelope_QueueState)(nil),
 		(*Envelope_PlaceTileIntent)(nil),
 		(*Envelope_PassIntent)(nil),
 		(*Envelope_DrawIntent)(nil),
@@ -414,6 +474,8 @@ func file_hypedomino_v1_envelope_proto_init() {
 		(*Envelope_LoadingIntent)(nil),
 		(*Envelope_EmojiIntent)(nil),
 		(*Envelope_QuickMessageIntent)(nil),
+		(*Envelope_JoinQueueIntent)(nil),
+		(*Envelope_LeaveQueueIntent)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

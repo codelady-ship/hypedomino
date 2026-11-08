@@ -1,0 +1,4 @@
+{
+  "protocolVersion": 1,
+  "queueState": { "status": "QUEUE_STATUS_SEARCHING", "mode": "MODE_2V2", "queue": "QUEUE_KIND_CASUAL", "joinedUnixMs": "1793000000000", "searchStartsUnixMs": "1793000030000" }
+}

@@ -1,0 +1,4 @@
+{
+  "protocolVersion": 1,
+  "joinQueueIntent": { "mode": "MODE_2V2", "queue": "QUEUE_KIND_RANKED" }
+}

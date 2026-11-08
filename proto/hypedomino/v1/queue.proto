@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package hypedomino.v1;
+
+import "hypedomino/v1/match.proto";
+
+enum QueueKind {
+  QUEUE_KIND_UNSPECIFIED = 0;
+  QUEUE_KIND_RANKED = 1;
+  QUEUE_KIND_CASUAL = 2;
+}
+
+enum QueueStatus {
+  QUEUE_STATUS_UNSPECIFIED = 0;
+  QUEUE_STATUS_SEARCHING = 1;
+  QUEUE_STATUS_LEFT = 2;
+  QUEUE_STATUS_MATCH_FOUND = 3;
+  QUEUE_STATUS_REFUSED = 4;
+}
+
+enum QueueRefusal {
+  QUEUE_REFUSAL_UNSPECIFIED = 0;
+  QUEUE_REFUSAL_IN_MATCH = 1;
+  QUEUE_REFUSAL_MATCHMAKING_BAN = 2;
+  QUEUE_REFUSAL_RANKED_CLOSED = 3;
+  QUEUE_REFUSAL_UNAVAILABLE = 4;
+}
+
+message JoinQueueIntent {
+  Mode mode = 1;
+  QueueKind queue = 2;
+}
+
+message LeaveQueueIntent {}
+
+message QueueState {
+  QueueStatus status = 1;
+  Mode mode = 2;
+  QueueKind queue = 3;
+  uint64 joined_unix_ms = 4;
+  uint64 search_starts_unix_ms = 5;
+  QueueRefusal refusal = 6;
+  uint64 refused_until_unix_ms = 7;
+}
