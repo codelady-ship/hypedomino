@@ -22,6 +22,18 @@ var (
 	ErrClosed          = errors.New("gateway: connection closed")
 )
 
+type RoutedElsewhere struct {
+	Key string
+}
+
+func (e *RoutedElsewhere) Error() string {
+	return "gateway: session hosted on another node"
+}
+
+func (e *RoutedElsewhere) Unwrap() error {
+	return ErrUnauthenticated
+}
+
 type Config struct {
 	MinimumAppVersion    string
 	CatalogVersion       string

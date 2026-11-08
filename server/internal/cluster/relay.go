@@ -61,7 +61,12 @@ func (r *Relay) Connect(ctx context.Context, conn *gateway.Conn, hello *pb.Clien
 	if !errors.Is(err, gateway.ErrUnauthenticated) || Relayed(ctx) {
 		return session, err
 	}
-	node, lookupErr := r.cluster.Lookup(ctx, hello.GetSessionToken())
+	key := hello.GetSessionToken()
+	var routed *gateway.RoutedElsewhere
+	if errors.As(err, &routed) {
+		key = routed.Key
+	}
+	node, lookupErr := r.cluster.Lookup(ctx, key)
 	if lookupErr != nil || node.ID == r.cluster.NodeID() || node.Addr == "" {
 		return nil, gateway.ErrUnauthenticated
 	}

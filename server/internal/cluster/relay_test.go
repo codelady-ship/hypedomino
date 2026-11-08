@@ -239,3 +239,43 @@ func TestARelayedConnectionIsNeverRelayedAgain(t *testing.T) {
 	}
 	_ = tokens
 }
+
+type tokenAuth map[string][2]string
+
+func (a tokenAuth) Authenticate(token string) (string, string, error) {
+	identity, ok := a[token]
+	if !ok {
+		return "", "", errors.New("bad token")
+	}
+	return identity[0], identity[1], nil
+}
+
+func TestAnAuthenticatedSessionIsRelayedToTheNodeThatSeatedIt(t *testing.T) {
+	client := redistest.Client(t)
+	prefix := redistest.Prefix(t)
+	a := startNode(t, client, prefix, "a")
+	b := startNode(t, client, prefix, "b")
+	auth := tokenAuth{"jwt-x": {"acct-x", "sid-x"}, "jwt-y": {"acct-y", "sid-y"}}
+	a.sessions.Authenticate(auth)
+	b.sessions.Authenticate(auth)
+	r := room.New(room.Options{Mode: rules.Mode1v1, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), BotLevel: bot.Hard, Seed: 11, Clock: realClock{}})
+	ctx, cancel := context.WithCancel(context.Background())
+	go r.Run(ctx)
+	t.Cleanup(func() { cancel(); <-r.Done() })
+	if err := a.sessions.Place("sid-x", "acct-x", r, rules.SeatX); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.sessions.Place("sid-y", "acct-y", r, rules.SeatY); err != nil {
+		t.Fatal(err)
+	}
+	north := dial(t, b.url(), "jwt-x", 0)
+	if b.relay.Relayed() != 1 {
+		t.Fatalf("relayed %d", b.relay.Relayed())
+	}
+	if view, err := north.View(); err != nil || view.GetSeat() != pb.Seat_SEAT_X {
+		t.Fatalf("view through the relay: %v, %v", view, err)
+	}
+	if !a.sessions.Connected("sid-x") {
+		t.Fatal("the host does not see the relayed session")
+	}
+}

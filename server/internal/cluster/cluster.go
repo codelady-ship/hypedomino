@@ -337,6 +337,14 @@ func (c *Cluster) Release(ctx context.Context, token string) error {
 	return err
 }
 
+func (c *Cluster) Elsewhere(ctx context.Context, token string) (bool, error) {
+	owner, err := c.client.Get(ctx, c.routeKey(token)).Result()
+	if errors.Is(err, redis.Nil) {
+		return false, nil
+	}
+	return err == nil && owner != c.config.NodeID, err
+}
+
 func (c *Cluster) Lookup(ctx context.Context, token string) (Node, error) {
 	owner, err := c.client.Get(ctx, c.routeKey(token)).Result()
 	if errors.Is(err, redis.Nil) {
