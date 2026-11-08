@@ -99,6 +99,7 @@ Published config is a sequence of immutable snapshots per environment. A snapsho
 | `progression` | Pass seasons, missions, medals | From the server |
 | `ranking` | `docs/ranking.md` section 10 keys per mode, ranked seasons, reset tables, rank reward mapping, emblem definitions | From the server |
 | `rules` | `TurnSeconds`, `AfkConsecutiveTimeouts`, `MatchLoadingSeconds` (`docs/rules.md` section 13). The other `rules.Config` fields change only with `docs/rules.md` and code | Rule values from the server |
+| `matchmaking` | `docs/matchmaking.md` section 3, including the bot level of ranked and casual matches | From the server |
 | `penalties` | `docs/penalties.md` section 8 | From the server |
 | `anticheat` | `docs/anti-cheat.md` section 7 except live controls | Never |
 | `privacy` | `docs/privacy.md` section 4 and section 11 | Policy and age values only |
@@ -610,6 +611,7 @@ The keys of section 11 are deployment config, changed by pull request, not in th
 | `PUT /admin/config/rules` `{"values"}` | P on config values | Publishes the next `rules` snapshot. A key left out keeps its default |
 | `GET /admin/config/rules/history` | V on config values | The last 50 `rules` snapshots, newest first |
 | `POST /admin/config/rules/rollback` `{"version"}` | P on config values and S: rollback on snapshots | Publishes the content of an earlier `rules` snapshot as the next version |
+| `GET`, `PUT /admin/config/matchmaking`, `GET /admin/config/matchmaking/history`, `POST /admin/config/matchmaking/rollback` | V or P on config values; rollback also S | The `matchmaking` domain (`docs/matchmaking.md` section 3) as a whole JSON object; keys left out keep their default; an unknown key or a value out of range gets 400 `invalid` |
 | `GET /admin/config/shop` | V on shop offers | The published shop catalog (offers and rotations of 5.5), its `config_version`, and the server's `rotation` rules (`daily_slots`, `weekly_slots`, `reset_hour_utc`); `catalog` is null before the first publish |
 | `PUT /admin/config/shop` `{"catalog"}` | P on shop offers | Publishes the catalog as the next `shop` snapshot. A chest pool item must be a published `common` or `rare` item listing the chest as its `chest` source (V-15) |
 | `GET /admin/cosmetics/items` | V on cosmetic items | The published cosmetic items (`id`, `type`, `rarity`, `availability`, `sources`), the built-in ones before the first publish; the chest pool editor picks from them |

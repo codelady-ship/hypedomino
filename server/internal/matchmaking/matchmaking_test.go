@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/bot"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
@@ -340,5 +341,17 @@ func TestPlayersWhoMetTooOftenAreKeptApart(t *testing.T) {
 	a.Avoid = nil
 	if matches, _ := Form(DefaultConfig(), []Entry{a, b}, start, seeded(1)); len(matches) != 0 {
 		t.Fatalf("the other side's list is ignored: %+v", matches)
+	}
+}
+
+func TestTheMatchmakingConfigKeepsDefaultsAndRefusesUnknownKeysAndBadValues(t *testing.T) {
+	config, err := Parse([]byte(`{"mmrWindowStart":150,"casualBotLevel":"easy"}`))
+	if err != nil || config.MmrWindowStart != 150 || config.MmrWindowMax != 400 || config.BotLevel(QueueCasual) != bot.Easy || config.BotLevel(QueueRanked) != bot.Medium {
+		t.Fatalf("config %+v, %v", config, err)
+	}
+	for _, raw := range []string{`{"mmrWindowStart":500}`, `{"mmrWindowStepSeconds":0}`, `{"casualBotFillSeconds":-1}`, `{"rankedBotLevel":"brutal"}`, `{"queueTimeout":5}`, `[]`} {
+		if _, err := Parse([]byte(raw)); !errors.Is(err, ErrInvalidConfig) {
+			t.Fatalf("%s accepted: %v", raw, err)
+		}
 	}
 }

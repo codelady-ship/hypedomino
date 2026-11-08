@@ -1,10 +1,15 @@
 package matchmaking
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"math/rand/v2"
 	"sort"
 	"time"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/bot"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
@@ -26,12 +31,14 @@ func (q Queue) String() string {
 }
 
 type Config struct {
-	MmrWindowStart       int
-	MmrWindowStep        int
-	MmrWindowStepSeconds int
-	MmrWindowMax         int
-	RankWindowDivisions  int
-	CasualBotFillSeconds int
+	MmrWindowStart       int       `json:"mmrWindowStart"`
+	MmrWindowStep        int       `json:"mmrWindowStep"`
+	MmrWindowStepSeconds int       `json:"mmrWindowStepSeconds"`
+	MmrWindowMax         int       `json:"mmrWindowMax"`
+	RankWindowDivisions  int       `json:"rankWindowDivisions"`
+	CasualBotFillSeconds int       `json:"casualBotFillSeconds"`
+	RankedBotLevel       bot.Level `json:"rankedBotLevel"`
+	CasualBotLevel       bot.Level `json:"casualBotLevel"`
 }
 
 func DefaultConfig() Config {
@@ -42,6 +49,8 @@ func DefaultConfig() Config {
 		MmrWindowMax:         400,
 		RankWindowDivisions:  8,
 		CasualBotFillSeconds: 30,
+		RankedBotLevel:       bot.Medium,
+		CasualBotLevel:       bot.Medium,
 	}
 }
 
@@ -216,4 +225,37 @@ func abs(value int) int {
 		return -value
 	}
 	return value
+}
+
+const Domain = "matchmaking"
+
+var ErrInvalidConfig = errors.New("matchmaking: invalid config")
+
+func Parse(raw []byte) (Config, error) {
+	config := DefaultConfig()
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&config); err != nil {
+		return Config{}, fmt.Errorf("%w: %v", ErrInvalidConfig, err)
+	}
+	return config, config.Validate()
+}
+
+func (c Config) Validate() error {
+	switch {
+	case c.MmrWindowStart < 0 || c.MmrWindowStep < 0 || c.MmrWindowMax < c.MmrWindowStart:
+		return fmt.Errorf("%w: the MMR window needs 0 <= start <= max and a step of at least 0", ErrInvalidConfig)
+	case c.MmrWindowStepSeconds < 1:
+		return fmt.Errorf("%w: mmrWindowStepSeconds below 1", ErrInvalidConfig)
+	case c.RankWindowDivisions < 0 || c.CasualBotFillSeconds < 0:
+		return fmt.Errorf("%w: rankWindowDivisions and casualBotFillSeconds may not be negative", ErrInvalidConfig)
+	}
+	return nil
+}
+
+func (c Config) BotLevel(queue Queue) bot.Level {
+	if queue == QueueRanked {
+		return c.RankedBotLevel
+	}
+	return c.CasualBotLevel
 }

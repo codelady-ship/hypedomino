@@ -24,6 +24,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
 	"github.com/Alievs-corp/hypedomino/server/internal/inventory"
 	"github.com/Alievs-corp/hypedomino/server/internal/livecontrol"
+	"github.com/Alievs-corp/hypedomino/server/internal/matchmaking"
 	"github.com/Alievs-corp/hypedomino/server/internal/medal"
 	"github.com/Alievs-corp/hypedomino/server/internal/mission"
 	"github.com/Alievs-corp/hypedomino/server/internal/objectstore"
@@ -125,6 +126,10 @@ func New(config Config, verifier Verifier, buckets ratelimit.Buckets, pool *pgxp
 	h.mux.HandleFunc("PUT /admin/config/rules", h.allowed(rbac.GameConfig, rbac.Publish, h.publishRules))
 	h.mux.HandleFunc("GET /admin/config/rules/history", h.allowed(rbac.GameConfig, rbac.View, h.rulesHistory))
 	h.mux.HandleFunc("POST /admin/config/rules/rollback", h.allowed(rbac.GameConfig, rbac.Publish, h.rollbackRules))
+	h.mux.HandleFunc("GET /admin/config/matchmaking", h.allowed(rbac.GameConfig, rbac.View, h.domainCatalog(matchmaking.Domain)))
+	h.mux.HandleFunc("PUT /admin/config/matchmaking", h.allowed(rbac.GameConfig, rbac.Publish, h.publishDomain(matchmakingDomain)))
+	h.mux.HandleFunc("GET /admin/config/matchmaking/history", h.allowed(rbac.GameConfig, rbac.View, h.domainHistory(matchmaking.Domain)))
+	h.mux.HandleFunc("POST /admin/config/matchmaking/rollback", h.allowed(rbac.GameConfig, rbac.Publish, h.rollbackDomain(matchmakingDomain)))
 	h.mux.HandleFunc("GET /admin/assets", h.allowed(rbac.Assets, rbac.View, h.listAssets))
 	h.mux.HandleFunc("POST /admin/assets/uploads", h.allowed(rbac.Assets, rbac.Create, h.startAssetUpload))
 	h.mux.HandleFunc("POST /admin/assets/{id}/check", h.allowed(rbac.Assets, rbac.Create, h.checkAsset))
@@ -508,7 +513,7 @@ func classify(err error) (int, string) {
 		errors.Is(err, dailylogin.ErrInvalidCalendar),
 		errors.Is(err, medal.ErrInvalidCatalog), errors.Is(err, errMedalRemoved),
 		errors.Is(err, pass.ErrInvalidConfig), errors.Is(err, errSeasonRemoved),
-		errors.Is(err, rating.ErrInvalidConfig), errors.Is(err, livecontrol.ErrInvalid), errors.Is(err, quickmessage.ErrInvalid),
+		errors.Is(err, rating.ErrInvalidConfig), errors.Is(err, livecontrol.ErrInvalid), errors.Is(err, quickmessage.ErrInvalid), errors.Is(err, matchmaking.ErrInvalidConfig),
 		errors.Is(err, cosmetics.ErrInvalid), errors.Is(err, cosmetics.ErrSchema), errors.Is(err, cosmetics.ErrSuccessor):
 		return http.StatusBadRequest, "invalid"
 	case errors.Is(err, pass.ErrFrozen), errors.Is(err, rating.ErrFrozen):

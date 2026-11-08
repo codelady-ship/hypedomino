@@ -30,6 +30,10 @@ Owner scope: #48 (queue), #52 (leaver rules), #118 (quality tuning). Rules refer
 | `MmrWindowMax` | 400 | Largest window |
 | `RankWindowDivisions` | 8 | Largest rank index distance between two placed players in a ranked queue; 0 disables |
 | `CasualBotFillSeconds` | 30 | Wait before a casual entry is completed with bots; 0 disables |
+| `RankedBotLevel` | `medium` | Level of the server bot (`easy`, `medium`, `hard`) that plays for an AFK or absent player in a ranked match (R-50 to R-52) |
+| `CasualBotLevel` | `medium` | Level of the server bot that fills casual seats and plays for an AFK or absent player in a casual match |
+
+The values are the `matchmaking` config domain, edited in the admin panel (`docs/admin.md`, `/admin/config/matchmaking`) and checked by `matchmaking.Parse`; the bot levels are an owner decision of 2026-11-08 (#478). Game servers pick up a new version within `HD_CONFIG_POLL`.
 
 The engine is `server/internal/matchmaking`: `Form` is a pure function over the entries of one tick (table tests in `matchmaking_test.go`), `Pool` is the in-process queue around it. The cluster wiring is section 4 (#478). A ranked entry's MMR, rank and placement state come from `rating.Store.Queue` (#118), `InitialMmr` and unplaced for an account without a rating in the mode; the test in `server/internal/rating/queue_test.go` runs a formed ranked match through `rating.Store.Apply` and checks that a casual match is never applied.
 
