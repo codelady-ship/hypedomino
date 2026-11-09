@@ -13,6 +13,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/matchmaking"
 	"github.com/Alievs-corp/hypedomino/server/internal/matchqueue"
 	"github.com/Alievs-corp/hypedomino/server/internal/matchstart"
+	"github.com/Alievs-corp/hypedomino/server/internal/matchstore"
 	"github.com/Alievs-corp/hypedomino/server/internal/room"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
@@ -28,6 +29,18 @@ type fakes struct {
 	seated   map[string]rules.Seat
 	found    []string
 	requeued []string
+	begun    []matchstore.Started
+	finished []matchstore.Finished
+}
+
+func (f *fakes) Begin(ctx context.Context, m matchstore.Started) error {
+	f.begun = append(f.begun, m)
+	return nil
+}
+
+func (f *fakes) Finish(ctx context.Context, m matchstore.Finished) error {
+	f.finished = append(f.finished, m)
+	return nil
 }
 
 func (f *fakes) Open(options room.Options) (*room.Room, error) {
@@ -65,7 +78,7 @@ func host(f *fakes, roster matchstart.RosterFunc) *matchstart.Host {
 		c.CasualBotLevel = bot.Easy
 		return c
 	}
-	return matchstart.NewHost(f, f, f, f, roster, config, clock{}, rand.New(rand.NewPCG(1, 2)), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	return matchstart.NewHost(f, f, f, f, f, roster, config, clock{}, rand.New(rand.NewPCG(1, 2)), slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
 
 func TestAPlacementOpensARoomSeatsEveryPlayerAndAnnouncesIt(t *testing.T) {
@@ -80,6 +93,9 @@ func TestAPlacementOpensARoomSeatsEveryPlayerAndAnnouncesIt(t *testing.T) {
 	if f.seated["sa"] != rules.SeatNorth || f.seated["sb"] != rules.SeatSouth || len(f.found) != 2 || len(f.requeued) != 0 {
 		t.Fatalf("seated %v found %v requeued %v", f.seated, f.found, f.requeued)
 	}
+	if len(f.begun) != 1 || f.begun[0].Kind != matchstore.KindCasual || len(f.begun[0].Participants) != 4 || f.begun[0].Seed != f.options.Seed || len(f.finished) != 0 {
+		t.Fatalf("begun %+v finished %+v", f.begun, f.finished)
+	}
 }
 
 func TestARoomThatCannotOpenPutsThePlayersBackInTheQueue(t *testing.T) {
@@ -88,5 +104,8 @@ func TestARoomThatCannotOpenPutsThePlayersBackInTheQueue(t *testing.T) {
 	host(f, roster).Open(context.Background(), placement())
 	if len(f.requeued) != 2 || len(f.seated) != 0 || len(f.found) != 0 {
 		t.Fatalf("requeued %v seated %v found %v", f.requeued, f.seated, f.found)
+	}
+	if len(f.begun) != 1 || len(f.finished) != 1 || f.finished[0].ID != f.begun[0].ID || !f.finished[0].Cancelled || len(f.finished[0].Outbox) != 0 {
+		t.Fatalf("begun %+v finished %+v", f.begun, f.finished)
 	}
 }

@@ -35,6 +35,7 @@ type Host struct {
 	seats    Seater
 	notifier Notifier
 	queue    Queue
+	archive  Archive
 	roster   RosterFunc
 	config   func() matchmaking.Config
 	clock    room.Clock
@@ -42,8 +43,8 @@ type Host struct {
 	logger   *slog.Logger
 }
 
-func NewHost(rooms Rooms, seats Seater, notifier Notifier, queue Queue, roster RosterFunc, config func() matchmaking.Config, clock room.Clock, random *rand.Rand, logger *slog.Logger) *Host {
-	return &Host{rooms: rooms, seats: seats, notifier: notifier, queue: queue, roster: roster, config: config, clock: clock, random: random, logger: logger}
+func NewHost(rooms Rooms, seats Seater, notifier Notifier, queue Queue, archive Archive, roster RosterFunc, config func() matchmaking.Config, clock room.Clock, random *rand.Rand, logger *slog.Logger) *Host {
+	return &Host{rooms: rooms, seats: seats, notifier: notifier, queue: queue, archive: archive, roster: roster, config: config, clock: clock, random: random, logger: logger}
 }
 
 func kind(queue matchmaking.Queue) room.Kind {
@@ -60,11 +61,19 @@ func (h *Host) Open(ctx context.Context, placement matchqueue.Placement) {
 		h.requeue(ctx, placement, err)
 		return
 	}
-	r, err := h.rooms.Open(room.Options{Kind: kind(match.Queue), Mode: match.Mode, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), BotLevel: h.config().BotLevel(match.Queue), Seed: h.random.Uint64(), Clock: h.clock, Roster: roster})
-	if err != nil {
+	seed := h.random.Uint64()
+	begun := started(match, roster, seed, h.clock.Now())
+	if err := h.archive.Begin(ctx, begun); err != nil {
 		h.requeue(ctx, placement, err)
 		return
 	}
+	r, err := h.rooms.Open(room.Options{Kind: kind(match.Queue), Mode: match.Mode, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), BotLevel: h.config().BotLevel(match.Queue), Seed: seed, Clock: h.clock, Roster: roster})
+	if err != nil {
+		h.abandon(begun)
+		h.requeue(ctx, placement, err)
+		return
+	}
+	go h.archived(r, begun)
 	seats := map[string]rules.Seat{}
 	for _, seat := range match.Seats {
 		seats[seat.Account] = seat.Seat

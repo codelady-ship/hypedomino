@@ -10,9 +10,7 @@ import (
 
 	"github.com/Alievs-corp/hypedomino/server/internal/matchstore"
 	"github.com/Alievs-corp/hypedomino/server/internal/metrics"
-	"github.com/Alievs-corp/hypedomino/server/internal/replay"
 	"github.com/Alievs-corp/hypedomino/server/internal/room"
-	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
 type Archive interface {
@@ -91,7 +89,7 @@ func (s *Stores) track(c claim, r *room.Room) {
 	<-r.Finished()
 	record, recorded := r.FinalRecord()
 	if s.archive != nil && recorded {
-		finished := finish(started, record)
+		finished := matchstore.FinishedFrom(started, record, time.Now())
 		s.timed(s.finishes, func(ctx context.Context) error { return s.archive.Finish(ctx, finished) })
 	}
 	if s.router != nil {
@@ -103,37 +101,5 @@ func (s *Stores) route(c claim, h *metrics.Histogram, call func(context.Context,
 	for _, seat := range c.mode.Seats() {
 		token := Token(c.room, c.mode, seat)
 		s.timed(h, func(ctx context.Context) error { return call(ctx, token) })
-	}
-}
-
-func finish(started matchstore.Started, record replay.Record) matchstore.Finished {
-	finished := matchstore.Finished{
-		ID:          started.ID,
-		StartedAt:   started.StartedAt,
-		EndedAt:     time.Now(),
-		HandsPlayed: record.Result.HandsPlayed,
-		Scores:      record.Result.Scores,
-		Winner:      record.Result.Winner,
-		HasWinner:   record.Result.HasWinner,
-		Cancelled:   !record.HasResult,
-		Results:     map[rules.Seat]string{},
-	}
-	if data, err := record.MarshalBinary(); err == nil {
-		finished.Replay = data
-	}
-	for _, p := range started.Participants {
-		finished.Results[p.Seat] = seatResult(finished, p.Seat)
-	}
-	return finished
-}
-
-func seatResult(f matchstore.Finished, seat rules.Seat) string {
-	switch {
-	case f.Cancelled || !f.HasWinner:
-		return matchstore.ResultCancelled
-	case seat.Team() == f.Winner:
-		return matchstore.ResultWin
-	default:
-		return matchstore.ResultLoss
 	}
 }
