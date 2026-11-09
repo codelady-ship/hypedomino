@@ -21,6 +21,7 @@ type PlayerOutcome struct {
 	Team         int    `json:"team"`
 	Won          bool   `json:"won"`
 	Offender     bool   `json:"offender"`
+	Returned     bool   `json:"returned"`
 	HandsWon     int64  `json:"hands_won"`
 	Dominoes     int64  `json:"dominoes"`
 	BoardPoints  int64  `json:"board_points"`

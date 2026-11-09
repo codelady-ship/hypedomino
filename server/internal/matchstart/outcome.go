@@ -43,7 +43,7 @@ func started(match matchmaking.Match, roster []room.Player, seed uint64, now tim
 	return s
 }
 
-func finished(s matchstore.Started, record replay.Record, recorded bool, now time.Time) matchstore.Finished {
+func finished(s matchstore.Started, record replay.Record, recorded bool, offenses map[rules.Seat]penalties.Kind, now time.Time) matchstore.Finished {
 	f := matchstore.FinishedFrom(s, record, now)
 	stats := map[rules.Seat]replay.SeatStats{}
 	if recorded {
@@ -58,6 +58,8 @@ func finished(s matchstore.Started, record replay.Record, recorded bool, now tim
 		seat := stats[p.Seat]
 		outcome.Players = append(outcome.Players, matchstore.PlayerOutcome{
 			Account:      p.Account,
+			Offender:     offenses[p.Seat] != penalties.KindNone,
+			Returned:     offenses[p.Seat].Returned(),
 			Team:         int(p.Seat.Team()),
 			Won:          f.Results[p.Seat] == matchstore.ResultWin,
 			HandsWon:     int64(seat.HandsWon),
@@ -73,14 +75,15 @@ func finished(s matchstore.Started, record replay.Record, recorded bool, now tim
 func (h *Host) archived(r *room.Room, s matchstore.Started) {
 	record, recorded := r.FinalRecord()
 	now := h.clock.Now()
-	f := finished(s, record, recorded, now)
-	if !f.Cancelled {
-		h.recordPenalties(r, s, now)
+	offenses := map[rules.Seat]penalties.Kind{}
+	if recorded && record.HasResult {
+		offenses = h.recordPenalties(r, s, now)
 	}
-	h.finish(f)
+	h.finish(finished(s, record, recorded, offenses, now))
 }
 
-func (h *Host) recordPenalties(r *room.Room, s matchstore.Started, now time.Time) {
+func (h *Host) recordPenalties(r *room.Room, s matchstore.Started, now time.Time) map[rules.Seat]penalties.Kind {
+	offenses := map[rules.Seat]penalties.Kind{}
 	queue := matchmaking.QueueCasual
 	if s.Kind == matchstore.KindRanked {
 		queue = matchmaking.QueueRanked
@@ -89,10 +92,14 @@ func (h *Host) recordPenalties(r *room.Room, s matchstore.Started, now time.Time
 		if p.Bot {
 			continue
 		}
-		if _, err := h.penalty.MatchEnd(context.Background(), p.Account, queue, s.ID, p.Seat, r.FinalPresence(p.Seat), 0, now); err != nil {
+		notice, err := h.penalty.MatchEnd(context.Background(), p.Account, queue, s.ID, p.Seat, r.FinalPresence(p.Seat), 0, now)
+		if err != nil {
 			h.logger.Error("recording a penalty match end failed", "match", s.ID, "account", p.Account, "error", err)
+			continue
 		}
+		offenses[p.Seat] = notice.Kind
 	}
+	return offenses
 }
 
 func (h *Host) abandon(s matchstore.Started) {

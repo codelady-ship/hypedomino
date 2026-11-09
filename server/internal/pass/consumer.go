@@ -14,7 +14,7 @@ func (s *Store) Publish(ctx context.Context, message matchstore.Pending) error {
 		return fmt.Errorf("pass: outbox %d: %w", message.ID, err)
 	}
 	for _, player := range outcome.Players {
-		match := Match{ID: outcome.Match, Account: player.Account, Mode: outcome.Mode, Kind: outcome.Kind, Won: player.Won, BotSeat: outcome.BotSeat, Offender: player.Offender, Cancelled: outcome.Cancelled, EndedAt: outcome.EndedAt}
+		match := Match{ID: outcome.Match, Account: player.Account, Mode: outcome.Mode, Kind: outcome.Kind, Won: player.Won, BotSeat: outcome.BotSeat, Offender: player.Offender && !player.Returned, Cancelled: outcome.Cancelled, EndedAt: outcome.EndedAt}
 		if _, err := s.AwardMatch(ctx, match); err != nil {
 			return fmt.Errorf("pass: match %s account %s: %w", outcome.Match, player.Account, err)
 		}
