@@ -252,6 +252,9 @@ func (m *Manager) Presence() map[string]bool {
 }
 
 func (m *Manager) Connect(ctx context.Context, conn *gateway.Conn, hello *pb.ClientHello) (gateway.Session, error) {
+	if key, elsewhere := m.routedElsewhere(ctx, hello.GetSessionToken()); elsewhere {
+		return nil, &gateway.RoutedElsewhere{Key: key}
+	}
 	if !m.startAllowed(ctx, hello) {
 		return nil, gateway.ErrIntegrityFailed
 	}
