@@ -91,7 +91,7 @@ func build(ctx context.Context, config app.Config, logger *slog.Logger, sessions
 		}
 		client = redis.NewClient(options)
 	}
-	a, err := node(config, logger, sessions, client)
+	a, members, err := node(config, logger, sessions, client)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -125,7 +125,8 @@ func build(ctx context.Context, config app.Config, logger *slog.Logger, sessions
 	signIn := auth.New(verifier, accounts, tokens, sessions, logger)
 	signIn.SetCountryHeader(config.CountryHeader)
 	a.Handle("POST /auth/", signIn)
-	profiles := profile.NewHandler(tokens, profile.NewStore(pool, config.Profile), logger, time.Now)
+	profileStore := profile.NewStore(pool, config.Profile)
+	profiles := profile.NewHandler(tokens, profileStore, logger, time.Now)
 	profiles.SetCountries(accounts, config.CountryCooldown)
 	a.Handle("/profile/", profiles)
 	catalog, err := loadCatalog(config.Cosmetics)
@@ -229,6 +230,12 @@ func build(ctx context.Context, config app.Config, logger *slog.Logger, sessions
 	ratings.SetCollusionWeight(config.Risk.CollusionWeight)
 	go ratings.RunApexRecalc(ctx, logger, time.Now)
 	go ratings.RunSeasonEnd(ctx, logger, config.SeasonPoll, time.Now)
+	if members != nil {
+		startMatchmaking(ctx, config, logger, matchmakingDeps{pool: pool, client: client, members: members, sessions: sessions, rooms: a.Rooms(), ratings: ratings, profiles: profileStore, rankedOpen: func() bool {
+			current, _, _ := controls.Current()
+			return !current.RankedDisabled
+		}})
+	}
 	var reader leaderboard.Reader
 	if client != nil {
 		boards := leaderboard.New(client, ratings, ratings, leaderboard.DefaultConfig())
@@ -384,17 +391,17 @@ func buckets(client *redis.Client, prefix string) ratelimit.Buckets {
 	return ratelimit.NewRedis(client, prefix)
 }
 
-func node(config app.Config, logger *slog.Logger, sessions *session.Manager, client *redis.Client) (*app.App, error) {
+func node(config app.Config, logger *slog.Logger, sessions *session.Manager, client *redis.Client) (*app.App, *cluster.Cluster, error) {
 	if client == nil {
-		return app.New(config, logger, sessions), nil
+		return app.New(config, logger, sessions), nil, nil
 	}
 	members, err := cluster.New(config.Cluster, client, logger)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	sessions.Route(members)
 	var handler gateway.Handler = cluster.NewRelay(members, sessions, config.Relay)
 	a := app.New(config, logger, handler)
 	a.Join(members)
-	return a, nil
+	return a, members, nil
 }

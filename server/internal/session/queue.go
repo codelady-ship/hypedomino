@@ -3,6 +3,8 @@ package session
 import (
 	"context"
 
+	"github.com/coder/websocket"
+
 	"github.com/Alievs-corp/hypedomino/server/internal/gateway"
 	pb "github.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1"
 )
@@ -46,5 +48,20 @@ func (c *connection) LeaveQueue() {
 func (c *connection) leaveOnClose() {
 	if c.manager.queue != nil {
 		c.manager.queue.Leave(context.Background(), c.session.account)
+	}
+}
+
+func (m *Manager) MatchFound(id string) {
+	m.mu.Lock()
+	s, ok := m.sessions[id]
+	if !ok || s.active == nil {
+		m.mu.Unlock()
+		return
+	}
+	c, hosted := s.active, s.room != nil
+	m.mu.Unlock()
+	c.conn.Send(gateway.QueueStateFrame(&pb.QueueState{Status: pb.QueueStatus_QUEUE_STATUS_MATCH_FOUND}, c.Acked()))
+	if !hosted {
+		c.conn.Close(websocket.StatusGoingAway, "match hosted on another node")
 	}
 }

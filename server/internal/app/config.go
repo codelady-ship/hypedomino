@@ -57,6 +57,8 @@ type Config struct {
 	ConfigPoll      time.Duration
 	SeasonPoll      time.Duration
 	OutboxPoll      time.Duration
+	MatchmakingTick time.Duration
+	MatchmakingTTL  time.Duration
 	CountryHeader   string
 	CountryCooldown time.Duration
 	Reward          reward.Config
@@ -97,6 +99,8 @@ func DefaultConfig() Config {
 		ConfigPoll:      10 * time.Second,
 		SeasonPoll:      time.Minute,
 		OutboxPoll:      2 * time.Second,
+		MatchmakingTick: time.Second,
+		MatchmakingTTL:  5 * time.Second,
 		CountryCooldown: 180 * 24 * time.Hour,
 		Reward:          reward.DefaultConfig(),
 		Purchase:        purchase.DefaultConfig(),
@@ -273,6 +277,8 @@ func ConfigFromEnv(lookup Lookup) (Config, error) {
 	r.duration("HD_CONFIG_POLL", &config.ConfigPoll)
 	r.duration("HD_SEASON_POLL", &config.SeasonPoll)
 	r.duration("HD_OUTBOX_POLL", &config.OutboxPoll)
+	r.duration("HD_MATCHMAKING_TICK", &config.MatchmakingTick)
+	r.duration("HD_MATCHMAKING_LEADER_TTL", &config.MatchmakingTTL)
 	r.text("HD_COUNTRY_HEADER", &config.CountryHeader)
 	r.integer("HD_RATE_IP_PER_MINUTE", &config.RateLimit.IP.PerMinute)
 	r.integer("HD_RATE_IP_BURST", &config.RateLimit.IP.Burst)
@@ -298,6 +304,9 @@ func ConfigFromEnv(lookup Lookup) (Config, error) {
 	}
 	if config.OutboxPoll < 100*time.Millisecond {
 		r.errs = append(r.errs, errors.New("HD_OUTBOX_POLL: at least 100ms"))
+	}
+	if config.MatchmakingTick < 100*time.Millisecond || config.MatchmakingTTL < 2*config.MatchmakingTick {
+		r.errs = append(r.errs, errors.New("HD_MATCHMAKING_TICK and HD_MATCHMAKING_LEADER_TTL: a tick of at least 100ms and a TTL of at least two ticks"))
 	}
 	if config.CountryCooldown < 0 {
 		r.errs = append(r.errs, errors.New("HD_COUNTRY_CHANGE_COOLDOWN: not negative"))
