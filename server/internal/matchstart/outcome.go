@@ -8,6 +8,7 @@ import (
 
 	"github.com/Alievs-corp/hypedomino/server/internal/matchmaking"
 	"github.com/Alievs-corp/hypedomino/server/internal/matchstore"
+	"github.com/Alievs-corp/hypedomino/server/internal/penalties"
 	"github.com/Alievs-corp/hypedomino/server/internal/profile"
 	"github.com/Alievs-corp/hypedomino/server/internal/replay"
 	"github.com/Alievs-corp/hypedomino/server/internal/room"
@@ -17,6 +18,10 @@ import (
 type Archive interface {
 	Begin(ctx context.Context, m matchstore.Started) error
 	Finish(ctx context.Context, f matchstore.Finished) error
+}
+
+type Penalties interface {
+	MatchEnd(ctx context.Context, account string, queue matchmaking.Queue, matchID string, seat rules.Seat, report rules.PresenceReport, configVersion int, now time.Time) (penalties.Notice, error)
 }
 
 func storeKind(queue matchmaking.Queue) string {
@@ -67,7 +72,27 @@ func finished(s matchstore.Started, record replay.Record, recorded bool, now tim
 
 func (h *Host) archived(r *room.Room, s matchstore.Started) {
 	record, recorded := r.FinalRecord()
-	h.finish(finished(s, record, recorded, h.clock.Now()))
+	now := h.clock.Now()
+	f := finished(s, record, recorded, now)
+	if !f.Cancelled {
+		h.recordPenalties(r, s, now)
+	}
+	h.finish(f)
+}
+
+func (h *Host) recordPenalties(r *room.Room, s matchstore.Started, now time.Time) {
+	queue := matchmaking.QueueCasual
+	if s.Kind == matchstore.KindRanked {
+		queue = matchmaking.QueueRanked
+	}
+	for _, p := range s.Participants {
+		if p.Bot {
+			continue
+		}
+		if _, err := h.penalty.MatchEnd(context.Background(), p.Account, queue, s.ID, p.Seat, r.FinalPresence(p.Seat), 0, now); err != nil {
+			h.logger.Error("recording a penalty match end failed", "match", s.ID, "account", p.Account, "error", err)
+		}
+	}
 }
 
 func (h *Host) abandon(s matchstore.Started) {

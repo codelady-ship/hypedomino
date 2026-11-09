@@ -14,6 +14,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/matchqueue"
 	"github.com/Alievs-corp/hypedomino/server/internal/matchstart"
 	"github.com/Alievs-corp/hypedomino/server/internal/matchstore"
+	"github.com/Alievs-corp/hypedomino/server/internal/penalties"
 	"github.com/Alievs-corp/hypedomino/server/internal/room"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
@@ -78,7 +79,7 @@ func host(f *fakes, roster matchstart.RosterFunc) *matchstart.Host {
 		c.CasualBotLevel = bot.Easy
 		return c
 	}
-	return matchstart.NewHost(f, f, f, f, f, roster, config, clock{}, rand.New(rand.NewPCG(1, 2)), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	return matchstart.NewHost(f, f, f, f, f, f, roster, config, clock{}, rand.New(rand.NewPCG(1, 2)), slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
 
 func TestAPlacementOpensARoomSeatsEveryPlayerAndAnnouncesIt(t *testing.T) {
@@ -108,4 +109,8 @@ func TestARoomThatCannotOpenPutsThePlayersBackInTheQueue(t *testing.T) {
 	if len(f.begun) != 1 || len(f.finished) != 1 || f.finished[0].ID != f.begun[0].ID || !f.finished[0].Cancelled || len(f.finished[0].Outbox) != 0 {
 		t.Fatalf("begun %+v finished %+v", f.begun, f.finished)
 	}
+}
+
+func (f *fakes) MatchEnd(ctx context.Context, account string, queue matchmaking.Queue, matchID string, seat rules.Seat, report rules.PresenceReport, configVersion int, now time.Time) (penalties.Notice, error) {
+	return penalties.Notice{}, nil
 }

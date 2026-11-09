@@ -11,6 +11,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/matchmaking"
 	"github.com/Alievs-corp/hypedomino/server/internal/matchqueue"
 	pb "github.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1"
+	"github.com/Alievs-corp/hypedomino/server/internal/penalties"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
@@ -51,5 +52,30 @@ func TestTheGateQueuesAnAccountUnlessRankedIsClosedOrTheNodeDrains(t *testing.T)
 	accepting = true
 	if state := gate.Join(ctx, "ayla", "session-2", &pb.JoinQueueIntent{Queue: pb.QueueKind_QUEUE_KIND_CASUAL}); state.GetRefusal() != pb.QueueRefusal_QUEUE_REFUSAL_UNAVAILABLE {
 		t.Fatalf("no mode %v", state)
+	}
+}
+
+func TestAPenaltyRecordRefusesABannedAccountAndDelaysTheSearch(t *testing.T) {
+	client, prefix := redistest.Client(t), redistest.Prefix(t)
+	ctx := context.Background()
+	config := penalties.DefaultConfig()
+	var record penalties.Record
+	leave := rules.PresenceReport{Left: true, ByBot: true}
+	record.MatchEnd(config, matchmaking.QueueRanked, "m1", rules.SeatX, leave, 0, now.Add(-time.Hour))
+	records := func(context.Context, string) (penalties.Record, error) { return record, nil }
+	plain := func(context.Context, string, rules.Mode, matchmaking.Queue, time.Time) (matchmaking.Entry, error) {
+		return matchmaking.Entry{}, nil
+	}
+	gate := matchqueue.NewGate(matchqueue.NewStore(client, prefix), "node-a", "eu", matchqueue.PenalizedEntry(records, plain), func() bool { return true }, func() bool { return true }, func() time.Time { return now }, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	ranked := &pb.JoinQueueIntent{Mode: pb.Mode_MODE_1V1, Queue: pb.QueueKind_QUEUE_KIND_RANKED}
+	delay := time.Duration(config.QueueDelaySeconds) * time.Second
+	if state := gate.Join(ctx, "kamal", "s1", ranked); state.GetStatus() != pb.QueueStatus_QUEUE_STATUS_SEARCHING || state.GetSearchStartsUnixMs() != uint64(now.Add(delay).UnixMilli()) {
+		t.Fatalf("delayed join %v", state)
+	}
+	record.MatchEnd(config, matchmaking.QueueRanked, "m2", rules.SeatX, leave, 0, now.Add(-time.Minute))
+	state := gate.Join(ctx, "kamal", "s1", &pb.JoinQueueIntent{Mode: pb.Mode_MODE_1V1, Queue: pb.QueueKind_QUEUE_KIND_CASUAL})
+	until, _ := record.Banned(now)
+	if state.GetRefusal() != pb.QueueRefusal_QUEUE_REFUSAL_MATCHMAKING_BAN || state.GetRefusedUntilUnixMs() != uint64(until.UnixMilli()) {
+		t.Fatalf("banned join %v", state)
 	}
 }

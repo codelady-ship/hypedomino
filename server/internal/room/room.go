@@ -305,6 +305,11 @@ func (r *Room) FinalRecord() (replay.Record, bool) {
 	return r.recorder.Record(), true
 }
 
+func (r *Room) FinalPresence(seat rules.Seat) rules.PresenceReport {
+	<-r.done
+	return r.presence.Report(seat)
+}
+
 func (r *Room) join(seat rules.Seat, sink Sink) {
 	if !r.seated(seat) || r.seats[seat].sink != nil {
 		sink.Deliver(Message{Rejected: true, Reason: ErrSeatTaken})

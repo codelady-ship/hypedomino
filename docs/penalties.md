@@ -76,6 +76,7 @@ Casual offenses are kept apart from ranked ones. They never add to the offense l
 - The player sees each active offense, its expiry, their current step on each ladder and how to leave it.
 - An admin can remove an offense or lift a penalty, with a mandatory reason. Every admin change is audited.
 - Applying penalties is idempotent: replaying the same match end never records a second offense. The record keeps the match ids it has applied inside the offense window, so a replayed match end is answered with the current state and changes nothing.
+- Implemented in `server/internal/penalties` (#478): one `penalty_records` row per account holds the `Record` as JSON. The hosting pod applies `MatchEnd` for every player of a matchmade match that ended with a result, under a row lock. The matchmaking gate refuses an entry with `MATCHMAKING_BAN` (with the ban end, or none while under review) and moves the search start by the queue delay of that queue's ladder. The server runs on `penalties.DefaultConfig` until the config domain exists. Notices, the player view and admin changes are not built yet.
 
 ## 8. Config
 

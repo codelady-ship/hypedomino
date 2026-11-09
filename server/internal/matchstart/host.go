@@ -36,6 +36,7 @@ type Host struct {
 	notifier Notifier
 	queue    Queue
 	archive  Archive
+	penalty  Penalties
 	roster   RosterFunc
 	config   func() matchmaking.Config
 	clock    room.Clock
@@ -43,8 +44,8 @@ type Host struct {
 	logger   *slog.Logger
 }
 
-func NewHost(rooms Rooms, seats Seater, notifier Notifier, queue Queue, archive Archive, roster RosterFunc, config func() matchmaking.Config, clock room.Clock, random *rand.Rand, logger *slog.Logger) *Host {
-	return &Host{rooms: rooms, seats: seats, notifier: notifier, queue: queue, archive: archive, roster: roster, config: config, clock: clock, random: random, logger: logger}
+func NewHost(rooms Rooms, seats Seater, notifier Notifier, queue Queue, archive Archive, penalty Penalties, roster RosterFunc, config func() matchmaking.Config, clock room.Clock, random *rand.Rand, logger *slog.Logger) *Host {
+	return &Host{rooms: rooms, seats: seats, notifier: notifier, queue: queue, archive: archive, penalty: penalty, roster: roster, config: config, clock: clock, random: random, logger: logger}
 }
 
 func kind(queue matchmaking.Queue) room.Kind {

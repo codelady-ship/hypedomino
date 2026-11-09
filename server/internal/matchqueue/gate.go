@@ -2,11 +2,13 @@ package matchqueue
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/matchmaking"
 	pb "github.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1"
+	"github.com/Alievs-corp/hypedomino/server/internal/penalties"
 	"github.com/Alievs-corp/hypedomino/server/internal/rating"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
@@ -63,6 +65,14 @@ func (g *Gate) Join(ctx context.Context, account, session string, intent *pb.Joi
 	}
 	now := g.now()
 	entry, err := g.entry(ctx, account, mode, queue, now)
+	var banned *BannedError
+	if errors.As(err, &banned) {
+		state := refused(intent, pb.QueueRefusal_QUEUE_REFUSAL_MATCHMAKING_BAN)
+		if !banned.Until.IsZero() {
+			state.RefusedUntilUnixMs = uint64(banned.Until.UnixMilli())
+		}
+		return state
+	}
 	if err != nil {
 		g.logger.Error("queue entry failed", "account", account, "error", err)
 		return refused(intent, pb.QueueRefusal_QUEUE_REFUSAL_UNAVAILABLE)
@@ -94,6 +104,34 @@ func RatedEntry(ratings *rating.Store) EntryFunc {
 		entry := matchmaking.Entry{Mmr: rated.Mmr, Rank: rated.Rank, Placed: rated.Placed}
 		if queue == matchmaking.QueueRanked {
 			entry.Avoid = rated.Avoid
+		}
+		return entry, nil
+	}
+}
+
+type BannedError struct {
+	Until time.Time
+}
+
+func (e *BannedError) Error() string {
+	return "matchqueue: matchmaking ban"
+}
+
+func PenalizedEntry(records func(ctx context.Context, account string) (penalties.Record, error), next EntryFunc) EntryFunc {
+	return func(ctx context.Context, account string, mode rules.Mode, queue matchmaking.Queue, now time.Time) (matchmaking.Entry, error) {
+		record, err := records(ctx, account)
+		if err != nil {
+			return matchmaking.Entry{}, err
+		}
+		if until, banned := record.Banned(now); banned {
+			return matchmaking.Entry{}, &BannedError{Until: until}
+		}
+		entry, err := next(ctx, account, mode, queue, now)
+		if err != nil {
+			return matchmaking.Entry{}, err
+		}
+		if delayed := now.Add(record.QueueDelay(queue)); delayed.After(entry.SearchFrom) {
+			entry.SearchFrom = delayed
 		}
 		return entry, nil
 	}
