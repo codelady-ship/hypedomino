@@ -111,6 +111,10 @@ func TestARoomThatCannotOpenPutsThePlayersBackInTheQueue(t *testing.T) {
 	}
 }
 
-func (f *fakes) MatchEnd(ctx context.Context, account string, queue matchmaking.Queue, matchID string, seat rules.Seat, report rules.PresenceReport, configVersion int, now time.Time) (penalties.Notice, error) {
+func (f *fakes) Config() (penalties.Config, int) {
+	return penalties.DefaultConfig(), 0
+}
+
+func (f *fakes) MatchEnd(ctx context.Context, account string, config penalties.Config, queue matchmaking.Queue, matchID string, seat rules.Seat, report rules.PresenceReport, configVersion int, now time.Time) (penalties.Notice, error) {
 	return penalties.Notice{}, nil
 }

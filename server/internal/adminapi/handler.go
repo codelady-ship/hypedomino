@@ -29,6 +29,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/mission"
 	"github.com/Alievs-corp/hypedomino/server/internal/objectstore"
 	"github.com/Alievs-corp/hypedomino/server/internal/pass"
+	"github.com/Alievs-corp/hypedomino/server/internal/penalties"
 	"github.com/Alievs-corp/hypedomino/server/internal/playerrecord"
 	"github.com/Alievs-corp/hypedomino/server/internal/promo"
 	"github.com/Alievs-corp/hypedomino/server/internal/quickmessage"
@@ -130,6 +131,10 @@ func New(config Config, verifier Verifier, buckets ratelimit.Buckets, pool *pgxp
 	h.mux.HandleFunc("PUT /admin/config/matchmaking", h.allowed(rbac.GameConfig, rbac.Publish, h.publishDomain(matchmakingDomain)))
 	h.mux.HandleFunc("GET /admin/config/matchmaking/history", h.allowed(rbac.GameConfig, rbac.View, h.domainHistory(matchmaking.Domain)))
 	h.mux.HandleFunc("POST /admin/config/matchmaking/rollback", h.allowed(rbac.GameConfig, rbac.Publish, h.rollbackDomain(matchmakingDomain)))
+	h.mux.HandleFunc("GET /admin/config/penalties", h.allowed(rbac.GameConfig, rbac.View, h.domainCatalog(penalties.Domain)))
+	h.mux.HandleFunc("PUT /admin/config/penalties", h.allowed(rbac.GameConfig, rbac.Publish, h.publishDomain(penaltiesDomain)))
+	h.mux.HandleFunc("GET /admin/config/penalties/history", h.allowed(rbac.GameConfig, rbac.View, h.domainHistory(penalties.Domain)))
+	h.mux.HandleFunc("POST /admin/config/penalties/rollback", h.allowed(rbac.GameConfig, rbac.Publish, h.rollbackDomain(penaltiesDomain)))
 	h.mux.HandleFunc("GET /admin/assets", h.allowed(rbac.Assets, rbac.View, h.listAssets))
 	h.mux.HandleFunc("POST /admin/assets/uploads", h.allowed(rbac.Assets, rbac.Create, h.startAssetUpload))
 	h.mux.HandleFunc("POST /admin/assets/{id}/check", h.allowed(rbac.Assets, rbac.Create, h.checkAsset))
@@ -513,7 +518,7 @@ func classify(err error) (int, string) {
 		errors.Is(err, dailylogin.ErrInvalidCalendar),
 		errors.Is(err, medal.ErrInvalidCatalog), errors.Is(err, errMedalRemoved),
 		errors.Is(err, pass.ErrInvalidConfig), errors.Is(err, errSeasonRemoved),
-		errors.Is(err, rating.ErrInvalidConfig), errors.Is(err, livecontrol.ErrInvalid), errors.Is(err, quickmessage.ErrInvalid), errors.Is(err, matchmaking.ErrInvalidConfig),
+		errors.Is(err, rating.ErrInvalidConfig), errors.Is(err, livecontrol.ErrInvalid), errors.Is(err, quickmessage.ErrInvalid), errors.Is(err, matchmaking.ErrInvalidConfig), errors.Is(err, penalties.ErrInvalidConfig),
 		errors.Is(err, cosmetics.ErrInvalid), errors.Is(err, cosmetics.ErrSchema), errors.Is(err, cosmetics.ErrSuccessor):
 		return http.StatusBadRequest, "invalid"
 	case errors.Is(err, pass.ErrFrozen), errors.Is(err, rating.ErrFrozen):

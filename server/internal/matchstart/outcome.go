@@ -21,7 +21,8 @@ type Archive interface {
 }
 
 type Penalties interface {
-	MatchEnd(ctx context.Context, account string, queue matchmaking.Queue, matchID string, seat rules.Seat, report rules.PresenceReport, configVersion int, now time.Time) (penalties.Notice, error)
+	Config() (penalties.Config, int)
+	MatchEnd(ctx context.Context, account string, config penalties.Config, queue matchmaking.Queue, matchID string, seat rules.Seat, report rules.PresenceReport, configVersion int, now time.Time) (penalties.Notice, error)
 }
 
 func storeKind(queue matchmaking.Queue) string {
@@ -72,17 +73,17 @@ func finished(s matchstore.Started, record replay.Record, recorded bool, offense
 	return f
 }
 
-func (h *Host) archived(r *room.Room, s matchstore.Started) {
+func (h *Host) archived(r *room.Room, s matchstore.Started, config penalties.Config, version int) {
 	record, recorded := r.FinalRecord()
 	now := h.clock.Now()
 	offenses := map[rules.Seat]penalties.Kind{}
 	if recorded && record.HasResult {
-		offenses = h.recordPenalties(r, s, now)
+		offenses = h.recordPenalties(r, s, config, version, now)
 	}
 	h.finish(finished(s, record, recorded, offenses, now))
 }
 
-func (h *Host) recordPenalties(r *room.Room, s matchstore.Started, now time.Time) map[rules.Seat]penalties.Kind {
+func (h *Host) recordPenalties(r *room.Room, s matchstore.Started, config penalties.Config, version int, now time.Time) map[rules.Seat]penalties.Kind {
 	offenses := map[rules.Seat]penalties.Kind{}
 	queue := matchmaking.QueueCasual
 	if s.Kind == matchstore.KindRanked {
@@ -92,7 +93,7 @@ func (h *Host) recordPenalties(r *room.Room, s matchstore.Started, now time.Time
 		if p.Bot {
 			continue
 		}
-		notice, err := h.penalty.MatchEnd(context.Background(), p.Account, queue, s.ID, p.Seat, r.FinalPresence(p.Seat), 0, now)
+		notice, err := h.penalty.MatchEnd(context.Background(), p.Account, config, queue, s.ID, p.Seat, r.FinalPresence(p.Seat), version, now)
 		if err != nil {
 			h.logger.Error("recording a penalty match end failed", "match", s.ID, "account", p.Account, "error", err)
 			continue

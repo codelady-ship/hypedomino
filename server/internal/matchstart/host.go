@@ -74,7 +74,8 @@ func (h *Host) Open(ctx context.Context, placement matchqueue.Placement) {
 		h.requeue(ctx, placement, err)
 		return
 	}
-	go h.archived(r, begun)
+	penaltyConfig, penaltyVersion := h.penalty.Config()
+	go h.archived(r, begun, penaltyConfig, penaltyVersion)
 	seats := map[string]rules.Seat{}
 	for _, seat := range match.Seats {
 		seats[seat.Account] = seat.Seat

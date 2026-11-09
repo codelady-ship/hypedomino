@@ -310,3 +310,15 @@ func TestNamesAreStable(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestParseKeepsDefaultsForMissingKeysAndRefusesUnknownOrBrokenOnes(t *testing.T) {
+	config, err := Parse([]byte(`{"banHours":48,"casualQueueDelayLevels":[3],"casualQueueDelaySeconds":[120]}`))
+	if err != nil || config.BanHours != 48 || config.LeaveWeight != DefaultConfig().LeaveWeight || len(config.CasualQueueDelayLevels) != 1 {
+		t.Fatalf("parse %+v, %v", config, err)
+	}
+	for _, raw := range []string{`{"banHour":48}`, `{"banLevel":2}`, `{"casualQueueDelaySeconds":[600,700]}`, `[`} {
+		if _, err := Parse([]byte(raw)); !errors.Is(err, ErrInvalidConfig) {
+			t.Fatalf("%s: %v", raw, err)
+		}
+	}
+}

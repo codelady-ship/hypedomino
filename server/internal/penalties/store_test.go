@@ -24,13 +24,13 @@ func TestTheStoreKeepsTheRecordAndAppliesEachMatchEndOnce(t *testing.T) {
 	if err := pool.QueryRow(ctx, `insert into accounts (created_at) values ($1) returning id`, now).Scan(&account); err != nil {
 		t.Fatal(err)
 	}
-	store := penalties.NewStore(pool, penalties.DefaultConfig)
+	store := penalties.NewStore(pool, func() (penalties.Config, int) { return penalties.DefaultConfig(), 3 })
 	if record, err := store.Record(ctx, account); err != nil || record.Level(penalties.DefaultConfig(), matchmaking.QueueRanked, now) != 0 {
 		t.Fatalf("empty record %+v, %v", record, err)
 	}
 	leave := rules.PresenceReport{Left: true, ByBot: true}
 	for index, match := range []string{"m1", "m1", "m2"} {
-		notice, err := store.MatchEnd(ctx, account, matchmaking.QueueRanked, match, rules.SeatX, leave, 0, now.Add(time.Duration(index)*time.Minute))
+		notice, err := store.MatchEnd(ctx, account, penalties.DefaultConfig(), matchmaking.QueueRanked, match, rules.SeatX, leave, 3, now.Add(time.Duration(index)*time.Minute))
 		if err != nil || (index == 1 && notice.Applied) {
 			t.Fatalf("match end %d: %+v, %v", index, notice, err)
 		}
@@ -41,6 +41,9 @@ func TestTheStoreKeepsTheRecordAndAppliesEachMatchEndOnce(t *testing.T) {
 	}
 	if level := record.Level(penalties.DefaultConfig(), matchmaking.QueueRanked, now); level != 6 || len(record.Ranked.Offenses) != 2 {
 		t.Fatalf("level %d, offenses %+v", level, record.Ranked.Offenses)
+	}
+	if record.Ranked.Offenses[0].ConfigVersion != 3 {
+		t.Fatalf("offense config version %d", record.Ranked.Offenses[0].ConfigVersion)
 	}
 	if _, banned := record.Banned(now.Add(time.Hour)); !banned {
 		t.Fatal("level 6 is not a matchmaking ban")

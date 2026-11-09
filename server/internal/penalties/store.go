@@ -14,12 +14,16 @@ import (
 )
 
 type Store struct {
-	pool   *pgxpool.Pool
-	config func() Config
+	pool    *pgxpool.Pool
+	current func() (Config, int)
 }
 
-func NewStore(pool *pgxpool.Pool, config func() Config) *Store {
-	return &Store{pool: pool, config: config}
+func NewStore(pool *pgxpool.Pool, current func() (Config, int)) *Store {
+	return &Store{pool: pool, current: current}
+}
+
+func (s *Store) Config() (Config, int) {
+	return s.current()
 }
 
 func (s *Store) Record(ctx context.Context, account string) (Record, error) {
@@ -35,7 +39,7 @@ func (s *Store) Record(ctx context.Context, account string) (Record, error) {
 	return record, json.Unmarshal(raw, &record)
 }
 
-func (s *Store) MatchEnd(ctx context.Context, account string, queue matchmaking.Queue, matchID string, seat rules.Seat, report rules.PresenceReport, configVersion int, now time.Time) (Notice, error) {
+func (s *Store) MatchEnd(ctx context.Context, account string, config Config, queue matchmaking.Queue, matchID string, seat rules.Seat, report rules.PresenceReport, configVersion int, now time.Time) (Notice, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return Notice{}, err
@@ -52,7 +56,7 @@ func (s *Store) MatchEnd(ctx context.Context, account string, queue matchmaking.
 	if err := json.Unmarshal(raw, &record); err != nil {
 		return Notice{}, err
 	}
-	notice := record.MatchEnd(s.config(), queue, matchID, seat, report, configVersion, now)
+	notice := record.MatchEnd(config, queue, matchID, seat, report, configVersion, now)
 	if raw, err = json.Marshal(record); err != nil {
 		return Notice{}, err
 	}

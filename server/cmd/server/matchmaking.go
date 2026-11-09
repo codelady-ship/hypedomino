@@ -52,7 +52,13 @@ func startMatchmaking(ctx context.Context, config app.Config, logger *slog.Logge
 	}
 	prefix, node := config.Cluster.KeyPrefix, deps.members.NodeID()
 	store := matchqueue.NewStore(deps.client, prefix)
-	penaltyRecords := penalties.NewStore(deps.pool, penalties.DefaultConfig)
+	penaltyConfigs := snapshot.New(deps.pool, penalties.Domain, penalties.Parse, logger)
+	penaltyConfigs.Seed(penalties.DefaultConfig(), 0)
+	go penaltyConfigs.Run(ctx, config.ConfigPoll)
+	penaltyRecords := penalties.NewStore(deps.pool, func() (penalties.Config, int) {
+		value, version, _ := penaltyConfigs.Current()
+		return value, int(version)
+	})
 	deps.sessions.Queue(matchqueue.NewGate(store, node, "", matchqueue.PenalizedEntry(penaltyRecords.Record, matchqueue.RatedEntry(deps.ratings)), deps.rankedOpen, deps.members.Accepting, time.Now, logger))
 	dispatcher := matchqueue.NewDispatcher(deps.client, prefix, node)
 	host := matchstart.NewHost(deps.rooms, deps.sessions, dispatcher, store, matchstore.New(deps.pool), penaltyRecords, matchstart.ProfileRoster(deps.pool, deps.profiles, time.Now), current, systemClock{}, seeded(), logger)
