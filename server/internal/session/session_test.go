@@ -175,6 +175,14 @@ func (p *player) tryRead() (*pb.Envelope, error) {
 	return frame, nil
 }
 
+func (p *player) closeReason() error {
+	for {
+		if _, err := p.tryRead(); err != nil {
+			return err
+		}
+	}
+}
+
 func (p *player) view() *pb.MatchView {
 	p.t.Helper()
 	for {
@@ -486,7 +494,7 @@ func TestAccessTokensOpenSessionsKeyedByTheirSessionIdAndLogoutAllClosesThem(t *
 		t.Fatalf("revoked %d sessions", n)
 	}
 	for _, p := range []*player{refreshed, other} {
-		if _, err := p.tryRead(); websocket.CloseStatus(err) != websocket.StatusPolicyViolation {
+		if err := p.closeReason(); websocket.CloseStatus(err) != websocket.StatusPolicyViolation {
 			t.Fatalf("after logout-all the device saw %v", err)
 		}
 	}
