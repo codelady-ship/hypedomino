@@ -355,7 +355,7 @@ func TestASecondDeviceReplacesTheFirstWithoutStartingTheGrace(t *testing.T) {
 	first := tab.join(rules.SeatX)
 	first.awaitReady()
 	second := tab.join(rules.SeatX)
-	_, err := first.tryRead()
+	err := first.closeReason()
 	if websocket.CloseStatus(err) != websocket.StatusPolicyViolation {
 		t.Fatalf("first device saw %v", err)
 	}
