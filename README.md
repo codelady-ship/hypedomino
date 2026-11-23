@@ -19,7 +19,7 @@ Real-time online multiplayer mobile domino game.
 Requirements: Git, Git LFS and Node.js 22 or newer. Go, Unity and the admin toolchain are needed only for the area you work on.
 
 ```bash
-git clone https://github.com/Alievs-corp/hypedomino.git
+git clone https://github.com/codelady-ship/hypedomino.git
 cd hypedomino
 git lfs install
 npm install
