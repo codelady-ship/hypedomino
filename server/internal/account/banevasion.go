@@ -121,7 +121,7 @@ func (s *Store) inheritBan(ctx context.Context, tx pgx.Tx, a *Account, provider,
 		return nil
 	}
 	var ban evadedBan
-	err := tx.QueryRow(ctx, `select category, ban_ends_at from ban_evasion_hashes where identity_hash = $1 and expires_at > $2`,
+	err := tx.QueryRow(ctx, `delete from ban_evasion_hashes where identity_hash = $1 and expires_at > $2 returning category, ban_ends_at`,
 		s.evasion.Hasher.Hash(provider, subject), now.UTC()).Scan(&ban.category, &ban.endsAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil
