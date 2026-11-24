@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/sanction"
 )
 
-const banEvasionKey = "0123456789abcdef0123456789abcdef"
+var banEvasionKey = strings.Repeat("k", 32)
 
 const permanentBanEvasionRetention = 1095 * 24 * time.Hour
 
@@ -309,5 +310,107 @@ func TestAPermanentBanWithoutARetentionStopsTheErase(t *testing.T) {
 	}
 	if n := count(t, pool, `select count(*) from accounts where id = $1`, banned.ID); n != 1 {
 		t.Fatal("the account was erased without its hash")
+	}
+}
+
+func TestAnInheritedBanConsumesTheHashSoALiftedBanStaysLiftedAfterADeletion(t *testing.T) {
+	_, pool := dbtest.Fresh(t)
+	store := trackingStore(t, pool)
+	ctx := context.Background()
+	deletedWhileBanned(t, store, pool, "g-perm", sanction.PermanentBan, nil)
+	heir, created, err := store.SignIn(ctx, google("g-perm"))
+	if !created || !errors.Is(err, account.ErrBanned) {
+		t.Fatalf("sign-in that inherits the ban: %+v %v %v", heir, created, err)
+	}
+	if n := count(t, pool, `select count(*) from ban_evasion_hashes`); n != 0 {
+		t.Fatalf("hashes left after the inheritance: %d", n)
+	}
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	if lifted, err := sanction.LiftByID(ctx, pool, liftable(t, pool, heir.ID), now); err != nil || !lifted {
+		t.Fatalf("lift of the inherited ban: %v %v", lifted, err)
+	}
+	if _, err := pool.Exec(ctx, `update accounts set state = $2 where id = $1`, heir.ID, account.StateActive); err != nil {
+		t.Fatal(err)
+	}
+	dueForDeletion(t, store, heir.ID, now)
+	if deleted, err := store.DeleteDue(ctx, &recordedLog{}, now, now); err != nil || deleted != 1 {
+		t.Fatalf("delete of the clean heir: %d %v", deleted, err)
+	}
+	if n := count(t, pool, `select count(*) from ban_evasion_hashes`); n != 0 {
+		t.Fatalf("hashes after a clean deletion: %d", n)
+	}
+	if fresh, created, err := store.SignIn(ctx, google("g-perm")); err != nil || !created || fresh.State != account.StateActive {
+		t.Fatalf("sign-in after the lifted ban and a clean deletion: %+v %v %v", fresh, created, err)
+	}
+}
+
+func TestDeletingAnIdentityThatAlreadyHasAHashKeepsTheLaterExpiry(t *testing.T) {
+	_, pool := dbtest.Fresh(t)
+	store := trackingStore(t, pool)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	ends := now.Add(48 * time.Hour)
+	stored := map[string]time.Time{"g-longer": now.Add(72 * time.Hour), "g-shorter": now.Add(24 * time.Hour)}
+	hasher := banEvasion(t).Hasher
+	for subject, expires := range stored {
+		a := signedUp(t, store, pool, subject, subject)
+		if _, err := pool.Exec(ctx, `insert into ban_evasion_hashes (identity_hash, category, ban_ends_at, expires_at) values ($1, 'other', $2, $2)`, hasher.Hash("google", subject), expires); err != nil {
+			t.Fatal(err)
+		}
+		ban(t, pool, a.ID, sanction.TemporaryBan, sanction.Cheating, now.Add(-time.Hour), &ends)
+		dueForDeletion(t, store, a.ID, now.Add(-time.Minute))
+	}
+	if deleted, err := store.DeleteDue(ctx, &recordedLog{}, now, now); err != nil || deleted != 2 {
+		t.Fatalf("delete due: %d %v", deleted, err)
+	}
+	want := map[string]struct {
+		category string
+		expires  time.Time
+	}{
+		"g-longer":  {"other", stored["g-longer"]},
+		"g-shorter": {"cheating", ends},
+	}
+	for subject, w := range want {
+		var category string
+		var banEndsAt, expiresAt time.Time
+		if err := pool.QueryRow(ctx, `select category, ban_ends_at, expires_at from ban_evasion_hashes where identity_hash = $1`, hasher.Hash("google", subject)).Scan(&category, &banEndsAt, &expiresAt); err != nil {
+			t.Fatalf("%s: %v", subject, err)
+		}
+		if category != w.category || !banEndsAt.Equal(w.expires) || !expiresAt.Equal(w.expires) {
+			t.Fatalf("%s: %s %v %v, want %s %v", subject, category, banEndsAt, expiresAt, w.category, w.expires)
+		}
+	}
+}
+
+func TestReapplyOfABannedAccountWritesTheHashFromTheLoggedDeletionTime(t *testing.T) {
+	_, pool := dbtest.Fresh(t)
+	store := trackingStore(t, pool)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	restored := signedUp(t, store, pool, "g-perm", "Perm")
+	ban(t, pool, restored.ID, sanction.PermanentBan, sanction.Collusion, now.Add(-time.Hour), nil)
+	var tombstone string
+	if err := pool.QueryRow(ctx, `select gen_random_uuid()::text`).Scan(&tombstone); err != nil {
+		t.Fatal(err)
+	}
+	deletedAt := now.Add(-time.Minute)
+	logged := account.Deletion{Account: restored.ID, Tombstone: tombstone, At: deletedAt}
+	if reapplied, err := store.Reapply(ctx, logged); err != nil || !reapplied {
+		t.Fatalf("replay: %v %v", reapplied, err)
+	}
+	var category string
+	var banEndsAt *time.Time
+	var expiresAt time.Time
+	if err := pool.QueryRow(ctx, `select category, ban_ends_at, expires_at from ban_evasion_hashes where identity_hash = $1`, banEvasion(t).Hasher.Hash("google", "g-perm")).Scan(&category, &banEndsAt, &expiresAt); err != nil {
+		t.Fatal(err)
+	}
+	if category != "collusion" || banEndsAt != nil || !expiresAt.Equal(deletedAt.Add(permanentBanEvasionRetention)) {
+		t.Fatalf("hash after the replay: %s %v %v", category, banEndsAt, expiresAt)
+	}
+	if reapplied, err := store.Reapply(ctx, logged); err != nil || reapplied {
+		t.Fatalf("second replay: %v %v", reapplied, err)
+	}
+	if n := count(t, pool, `select count(*) from ban_evasion_hashes`); n != 1 {
+		t.Fatalf("hashes after the second replay: %d", n)
 	}
 }

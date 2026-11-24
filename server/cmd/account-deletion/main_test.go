@@ -205,7 +205,7 @@ func TestBadInvocationsAreUsageErrors(t *testing.T) {
 		"bad grace":                 {[]string{"run"}, with("HD_ACCOUNT_DELETION_GRACE", "-1h")},
 		"bad retention":             {[]string{"run"}, with("HD_DELETION_LOG_RETENTION", "35 days")},
 		"bad analytics retention":   {[]string{"run"}, with("HD_ANALYTICS_RAW_RETENTION", "0s")},
-		"short ban-evasion key":     {[]string{"run"}, with("HD_BAN_EVASION_KEY", "0123456789abcdef")},
+		"short ban-evasion key":     {[]string{"run"}, with("HD_BAN_EVASION_KEY", strings.Repeat("k", 16))},
 		"bad ban-evasion retention": {[]string{"run"}, with("HD_PERMANENT_BAN_EVASION_RETENTION", "-1h")},
 	} {
 		if err := dispatch(context.Background(), c.args, c.getenv, io.Discard, time.Now); !errors.Is(err, errUsage) {
