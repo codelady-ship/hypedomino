@@ -130,6 +130,7 @@ func TestRequestsTakeFromTheirIPAccountSignInAndSpendBuckets(t *testing.T) {
 		"spend paths share a bucket": {
 			{"POST", "/shop/buy", "1.1.1.1", "access:a", 200}, {"POST", "/promo/redeem", "1.1.1.1", "access:a", 429}, {"GET", "/shop", "1.1.1.1", "access:a", 200},
 			{"POST", "/shop/complete", "2.2.2.2", "access:b", 200}, {"POST", "/shop/begin", "2.2.2.2", "access:b", 429},
+			{"POST", "/pass/levels", "3.3.3.3", "access:c", 200}, {"POST", "/shop/buy", "3.3.3.3", "access:c", 429},
 		},
 		"probes and store notifications are not limited": {
 			{"GET", "/healthz", "1.1.1.1", "", 200}, {"GET", "/readyz", "1.1.1.1", "", 200}, {"GET", "/loadz", "1.1.1.1", "", 200}, {"GET", "/healthz", "1.1.1.1", "", 200},

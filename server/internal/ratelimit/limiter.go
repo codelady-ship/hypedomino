@@ -16,7 +16,7 @@ import (
 var (
 	unlimitedPaths = map[string]bool{"/healthz": true, "/readyz": true, "/loadz": true}
 	signInPaths    = map[string]bool{"/auth/signin": true, "/auth/refresh": true}
-	spendPaths     = map[string]bool{"/shop/buy": true, "/shop/begin": true, "/shop/complete": true, "/promo/redeem": true}
+	spendPaths     = map[string]bool{"/shop/buy": true, "/shop/begin": true, "/shop/complete": true, "/promo/redeem": true, "/pass/levels": true}
 )
 
 type Limiter struct {
