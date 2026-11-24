@@ -237,6 +237,37 @@ func TestParallelAccountsRaceForTheLastSlots(t *testing.T) {
 	}
 }
 
+func TestParallelAttemptsOfOneAccountStayWithinTheHourlyLimit(t *testing.T) {
+	f := newFixture(t, promo.Config{CodeLength: 12, MaxValidityDays: 90, AttemptsPerHour: 3, FailedAttemptsBeforeLock: 100, LockMinutes: 30, CoinsApprovalThreshold: 2000, LockSignalWeight: 5, SpikePercent: 100, SpikeWindowMinutes: 1})
+	a := f.account(t)
+	var wg sync.WaitGroup
+	results := make(chan error, 12)
+	for i := 0; i < 12; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := f.store.Redeem(context.Background(), a, "WRXNGCDE", now)
+			results <- err
+		}()
+	}
+	wg.Wait()
+	close(results)
+	unknown, limited := 0, 0
+	for err := range results {
+		switch {
+		case errors.Is(err, promo.ErrUnknown):
+			unknown++
+		case errors.Is(err, promo.ErrRateLimited):
+			limited++
+		default:
+			t.Errorf("unexpected result %v", err)
+		}
+	}
+	if unknown != 3 || limited != 9 {
+		t.Fatalf("unknown %d, rate limited %d", unknown, limited)
+	}
+}
+
 func TestABatchGeneratesUniqueSingleUseCodes(t *testing.T) {
 	f := newFixture(t, promo.DefaultConfig())
 	created, err := f.store.Batch(context.Background(), definition("promo.launch", promo.SingleUse, coins), 12, now)

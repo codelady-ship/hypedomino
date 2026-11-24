@@ -606,23 +606,44 @@ func (s *Store) Redeem(ctx context.Context, account, raw string, now time.Time) 
 	if err != nil {
 		return Redemption{}, err
 	}
-	if err := s.throttle(ctx, account, now); err != nil {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
 		return Redemption{}, err
 	}
-	redemption, err := s.redeem(ctx, account, s.hasher.Hash(normalized), now)
+	defer tx.Rollback(ctx)
+	if err := reward.LockIn(ctx, tx, account); err != nil {
+		return Redemption{}, err
+	}
+	if err := s.throttle(ctx, tx, account, now); err != nil {
+		return Redemption{}, err
+	}
+	attempt, err := tx.Begin(ctx)
+	if err != nil {
+		return Redemption{}, err
+	}
+	redemption, err := s.redeem(ctx, attempt, account, s.hasher.Hash(normalized), now)
 	if err != nil && !refused(err) {
 		return Redemption{}, err
 	}
 	if err != nil {
-		if _, recordErr := s.db.Exec(ctx, `insert into promo_attempts (account_id, ok, attempted_at) values ($1, false, $2)`, account, now); recordErr != nil {
+		if rollbackErr := attempt.Rollback(ctx); rollbackErr != nil {
+			return Redemption{}, rollbackErr
+		}
+		if _, recordErr := tx.Exec(ctx, `insert into promo_attempts (account_id, ok, attempted_at) values ($1, false, $2)`, account, now); recordErr != nil {
 			return Redemption{}, recordErr
 		}
-		if lockErr := s.flagLock(ctx, account, now); lockErr != nil {
+		if lockErr := s.flagLock(ctx, tx, account, now); lockErr != nil {
 			return Redemption{}, lockErr
+		}
+		if commitErr := tx.Commit(ctx); commitErr != nil {
+			return Redemption{}, commitErr
 		}
 		return Redemption{}, err
 	}
-	return redemption, nil
+	if err := attempt.Commit(ctx); err != nil {
+		return Redemption{}, err
+	}
+	return redemption, tx.Commit(ctx)
 }
 
 func refused(err error) bool {
@@ -634,11 +655,11 @@ func refused(err error) bool {
 	return false
 }
 
-func (s *Store) throttle(ctx context.Context, account string, now time.Time) error {
+func (s *Store) throttle(ctx context.Context, tx pgx.Tx, account string, now time.Time) error {
 	var attempts, failed int
 	hour := now.Add(-time.Hour)
 	lock := now.Add(-time.Duration(s.config.LockMinutes) * time.Minute)
-	if err := s.db.QueryRow(ctx, `select count(*) filter (where attempted_at > $2), count(*) filter (where not ok and attempted_at > $3) from promo_attempts where account_id = $1 and attempted_at > least($2, $3)`, account, hour, lock).Scan(&attempts, &failed); err != nil {
+	if err := tx.QueryRow(ctx, `select count(*) filter (where attempted_at > $2), count(*) filter (where not ok and attempted_at > $3) from promo_attempts where account_id = $1 and attempted_at > least($2, $3)`, account, hour, lock).Scan(&attempts, &failed); err != nil {
 		return err
 	}
 	switch {
@@ -650,15 +671,7 @@ func (s *Store) throttle(ctx context.Context, account string, now time.Time) err
 	return nil
 }
 
-func (s *Store) redeem(ctx context.Context, account string, hash []byte, now time.Time) (Redemption, error) {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return Redemption{}, err
-	}
-	defer tx.Rollback(ctx)
-	if err := reward.LockIn(ctx, tx, account); err != nil {
-		return Redemption{}, err
-	}
+func (s *Store) redeem(ctx context.Context, tx pgx.Tx, account string, hash []byte, now time.Time) (Redemption, error) {
 	code, err := scanCode(tx.QueryRow(ctx, `select `+codeColumns+` from promo_codes c where c.code_hash = $1 for update of c`, hash))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Redemption{}, ErrUnknown
@@ -688,7 +701,7 @@ func (s *Store) redeem(ctx context.Context, account string, hash []byte, now tim
 	if err != nil {
 		return Redemption{}, err
 	}
-	return Redemption{Promo: code.ID, Campaign: code.Campaign, Grant: report, PassPremium: code.PassPremium, Spiked: spiked}, tx.Commit(ctx)
+	return Redemption{Promo: code.ID, Campaign: code.Campaign, Grant: report, PassPremium: code.PassPremium, Spiked: spiked}, nil
 }
 
 func (s *Store) unlockPremium(ctx context.Context, tx pgx.Tx, code Code, account string, now time.Time) error {
@@ -709,10 +722,10 @@ func (s *Store) unlockPremium(ctx context.Context, tx pgx.Tx, code Code, account
 	return err
 }
 
-func (s *Store) flagLock(ctx context.Context, account string, now time.Time) error {
+func (s *Store) flagLock(ctx context.Context, tx pgx.Tx, account string, now time.Time) error {
 	var failed int
 	since := now.Add(-time.Duration(s.config.LockMinutes) * time.Minute)
-	if err := s.db.QueryRow(ctx, `select count(*) from promo_attempts where account_id = $1 and not ok and attempted_at > $2`, account, since).Scan(&failed); err != nil {
+	if err := tx.QueryRow(ctx, `select count(*) from promo_attempts where account_id = $1 and not ok and attempted_at > $2`, account, since).Scan(&failed); err != nil {
 		return err
 	}
 	if failed != s.config.FailedAttemptsBeforeLock {
@@ -722,7 +735,7 @@ func (s *Store) flagLock(ctx context.Context, account string, now time.Time) err
 		Account: account, Kind: SignalLock, Weight: s.config.LockSignalWeight, Dedupe: now.UTC().Format(time.RFC3339Nano), At: now,
 		Evidence: map[string]any{"failed": failed, "lock_minutes": s.config.LockMinutes},
 	}
-	_, err := risk.RecordIn(ctx, s.db, signal)
+	_, err := risk.RecordIn(ctx, tx, signal)
 	return err
 }
 
