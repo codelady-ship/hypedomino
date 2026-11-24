@@ -61,7 +61,7 @@ func has(names []string, want string) bool {
 	return false
 }
 
-const head = 60
+const head = 61
 
 func TestUpFromEmptyToHeadDownToZeroAndUpAgain(t *testing.T) {
 	url := dbtest.Empty(t)
@@ -84,7 +84,7 @@ func TestUpFromEmptyToHeadDownToZeroAndUpAgain(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pool.Close()
-	for _, want := range []string{"accounts", "auth_identities", "profiles", "inventory_items", "wallets", "ledger_entries", "matches", "match_participants", "matches_default", "match_participants_default", "match_events", "match_events_default", "outbox", "reward_grants", "config_snapshots", "admin_audit_entries", "purchases", "purchase_notices", "admin_accounts", "game_strings", "game_string_values", "game_string_bundles", "admin_approvals", "admin_sessions", "promo_codes", "promo_targets", "promo_redemptions", "promo_attempts", "ratings", "rating_results", "rating_changes", "ranked_seasons", "season_results", "pass_progress", "pass_season_ends", "pass_xp_events", "medal_ownership", "medal_showcases", "mission_assignments", "mission_matches", "daily_logins", "app_attest_keys", "deletion_log_pending", "analytics_sources", "leaderboard_removals", "account_sanctions", "appeals", "goose_db_version"} {
+	for _, want := range []string{"accounts", "auth_identities", "profiles", "inventory_items", "wallets", "ledger_entries", "matches", "match_participants", "matches_default", "match_participants_default", "match_events", "match_events_default", "outbox", "reward_grants", "config_snapshots", "admin_audit_entries", "purchases", "purchase_notices", "admin_accounts", "game_strings", "game_string_values", "game_string_bundles", "admin_approvals", "admin_sessions", "promo_codes", "promo_targets", "promo_redemptions", "promo_attempts", "ratings", "rating_results", "rating_changes", "ranked_seasons", "season_results", "pass_progress", "pass_season_ends", "pass_xp_events", "medal_ownership", "medal_showcases", "mission_assignments", "mission_matches", "daily_logins", "app_attest_keys", "deletion_log_pending", "analytics_sources", "leaderboard_removals", "account_sanctions", "appeals", "ban_evasion_hashes", "goose_db_version"} {
 		if !has(tables(t, pool), want) {
 			t.Fatalf("table %s missing after up: %v", want, tables(t, pool))
 		}
