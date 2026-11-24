@@ -5,6 +5,7 @@ import { parseBalance } from "../economy-balance/economy-balance.mjs";
 const sampleHeading = "### 8.2 Levels and rewards";
 const rowPattern = /^\| (\d+) \| (\d+) \| (.+) \| (.+) \|$/;
 const coinPattern = /^(\d+) coins/;
+const crystalPattern = /^(\d+) crystals/;
 
 export function xpTotalToReach(level, curve) {
   let total = 0;
@@ -35,6 +36,7 @@ function configValues(docText, keys) {
 }
 
 const coinsIn = (cell) => Number(cell.match(coinPattern)?.[1] ?? 0);
+const crystalsIn = (cell) => Number(cell.match(crystalPattern)?.[1] ?? 0);
 const sum = (values) => values.reduce((total, value) => total + value, 0);
 
 function curveFrom(docText) {
@@ -57,12 +59,12 @@ function rowErrors(rows, curve) {
 
 function coinErrors(rows, balance) {
   const tracks = [
-    ["free", "PassFreeTrackCoins", rows.map((row) => coinsIn(row.free))],
-    ["premium", "PassPremiumTrackCoins", rows.map((row) => coinsIn(row.premium))],
+    ["free", "PassFreeTrackCoins", "coins", rows.map((row) => coinsIn(row.free))],
+    ["premium", "PassPremiumTrackCrystals", "crystals", rows.map((row) => crystalsIn(row.premium))],
   ];
   return tracks
-    .filter(([, key, coins]) => sum(coins) !== balance.get(key).values[0])
-    .map(([track, key, coins]) => `${track} track pays ${sum(coins)} coins, ${key} is ${balance.get(key).values[0]}`);
+    .filter(([, key, , amounts]) => sum(amounts) !== balance.get(key).values[0])
+    .map(([track, key, unit, amounts]) => `${track} track pays ${sum(amounts)} ${unit}, ${key} is ${balance.get(key).values[0]}`);
 }
 
 export function checkPassSeason(docText, csvText) {

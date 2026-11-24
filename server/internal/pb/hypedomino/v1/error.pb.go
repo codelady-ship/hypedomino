@@ -29,6 +29,8 @@ const (
 	ErrorCode_ERROR_CODE_UNAUTHENTICATED      ErrorCode = 2
 	ErrorCode_ERROR_CODE_ILLEGAL_INTENT       ErrorCode = 3
 	ErrorCode_ERROR_CODE_RATE_LIMITED         ErrorCode = 4
+	ErrorCode_ERROR_CODE_REPLAY_REJECTED      ErrorCode = 5
+	ErrorCode_ERROR_CODE_INTEGRITY_FAILED     ErrorCode = 6
 )
 
 // Enum value maps for ErrorCode.
@@ -39,6 +41,8 @@ var (
 		2: "ERROR_CODE_UNAUTHENTICATED",
 		3: "ERROR_CODE_ILLEGAL_INTENT",
 		4: "ERROR_CODE_RATE_LIMITED",
+		5: "ERROR_CODE_REPLAY_REJECTED",
+		6: "ERROR_CODE_INTEGRITY_FAILED",
 	}
 	ErrorCode_value = map[string]int32{
 		"ERROR_CODE_UNSPECIFIED":          0,
@@ -46,6 +50,8 @@ var (
 		"ERROR_CODE_UNAUTHENTICATED":      2,
 		"ERROR_CODE_ILLEGAL_INTENT":       3,
 		"ERROR_CODE_RATE_LIMITED":         4,
+		"ERROR_CODE_REPLAY_REJECTED":      5,
+		"ERROR_CODE_INTEGRITY_FAILED":     6,
 	}
 )
 
@@ -135,13 +141,15 @@ const file_hypedomino_v1_error_proto_rawDesc = "" +
 	"\x19hypedomino/v1/error.proto\x12\rhypedomino.v1\"b\n" +
 	"\x05Error\x12,\n" +
 	"\x04code\x18\x01 \x01(\x0e2\x18.hypedomino.v1.ErrorCodeR\x04code\x12+\n" +
-	"\x11rejected_sequence\x18\x02 \x01(\x04R\x10rejectedSequence*\xa8\x01\n" +
+	"\x11rejected_sequence\x18\x02 \x01(\x04R\x10rejectedSequence*\xe9\x01\n" +
 	"\tErrorCode\x12\x1a\n" +
 	"\x16ERROR_CODE_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fERROR_CODE_UNSUPPORTED_PROTOCOL\x10\x01\x12\x1e\n" +
 	"\x1aERROR_CODE_UNAUTHENTICATED\x10\x02\x12\x1d\n" +
 	"\x19ERROR_CODE_ILLEGAL_INTENT\x10\x03\x12\x1b\n" +
-	"\x17ERROR_CODE_RATE_LIMITED\x10\x04B\xc5\x01\n" +
+	"\x17ERROR_CODE_RATE_LIMITED\x10\x04\x12\x1e\n" +
+	"\x1aERROR_CODE_REPLAY_REJECTED\x10\x05\x12\x1f\n" +
+	"\x1bERROR_CODE_INTEGRITY_FAILED\x10\x06B\xc5\x01\n" +
 	"\x11com.hypedomino.v1B\n" +
 	"ErrorProtoP\x01ZOgithub.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1;hypedominov1\xa2\x02\x03HXX\xaa\x02\rHypedomino.V1\xca\x02\rHypedomino\\V1\xe2\x02\x19Hypedomino\\V1\\GPBMetadata\xea\x02\x0eHypedomino::V1b\x06proto3"
 

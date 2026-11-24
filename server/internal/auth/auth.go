@@ -2,18 +2,25 @@ package auth
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/account"
+	"github.com/Alievs-corp/hypedomino/server/internal/appeal"
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
+	"github.com/Alievs-corp/hypedomino/server/internal/metrics"
 	"github.com/Alievs-corp/hypedomino/server/internal/token"
 )
 
 const MaxBodyBytes = 16 * 1024
+
+const unknownProvider = "unknown"
 
 type Verifier interface {
 	IssueNonce(ctx context.Context) (string, error)
@@ -22,6 +29,7 @@ type Verifier interface {
 
 type Accounts interface {
 	SignIn(ctx context.Context, identity idtoken.Identity) (account.Account, bool, error)
+	AdoptCountry(ctx context.Context, id, code string) error
 }
 
 type Tokens interface {
@@ -37,22 +45,34 @@ type Connections interface {
 }
 
 type Handler struct {
-	verifier    Verifier
-	accounts    Accounts
-	tokens      Tokens
-	connections Connections
-	logger      *slog.Logger
-	mux         *http.ServeMux
+	countryHeader string
+	deletion      Deletion
+	appeals       *appeal.Granter
+	verifier      Verifier
+	accounts      Accounts
+	tokens        Tokens
+	connections   Connections
+	logger        *slog.Logger
+	mux           *http.ServeMux
+	signIns       *metrics.Counter
 }
 
 func New(verifier Verifier, accounts Accounts, tokens Tokens, connections Connections, logger *slog.Logger) *Handler {
-	h := &Handler{verifier: verifier, accounts: accounts, tokens: tokens, connections: connections, logger: logger, mux: http.NewServeMux()}
+	h := &Handler{verifier: verifier, accounts: accounts, tokens: tokens, connections: connections, logger: logger, mux: http.NewServeMux(), signIns: newSignIns()}
 	h.mux.HandleFunc("POST /auth/nonce", h.nonce)
 	h.mux.HandleFunc("POST /auth/signin", h.signIn)
 	h.mux.HandleFunc("POST /auth/refresh", h.refresh)
 	h.mux.HandleFunc("POST /auth/logout", h.logout)
 	h.mux.HandleFunc("POST /auth/logout-all", h.logoutAll)
 	return h
+}
+
+func newSignIns() *metrics.Counter {
+	return metrics.NewCounter("hd_signins_total", "Sign-in attempts by identity provider and result: ok or the refusal reason sent to the client.", metrics.Labels{"provider", "result"})
+}
+
+func (h *Handler) SignIns() io.WriterTo {
+	return h.signIns
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -83,12 +103,16 @@ type tokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
+	RequestKey   string `json:"request_key"`
 	AccountID    string `json:"account_id"`
 	Created      bool   `json:"created,omitempty"`
 }
 
 type errorResponse struct {
-	Error string `json:"error"`
+	Error       string        `json:"error"`
+	Category    string        `json:"category,omitempty"`
+	BannedUntil *time.Time    `json:"banned_until,omitempty"`
+	Appeal      *appeal.Grant `json:"appeal,omitempty"`
 }
 
 func (h *Handler) nonce(w http.ResponseWriter, r *http.Request) {
@@ -102,35 +126,48 @@ func (h *Handler) nonce(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
+	provider, result := h.attemptSignIn(w, r)
+	h.signIns.Inc(metrics.Labels{provider, result})
+}
+
+func (h *Handler) attemptSignIn(w http.ResponseWriter, r *http.Request) (string, string) {
 	var request signInRequest
 	if !decode(w, r, &request) {
-		return
+		return unknownProvider, "malformed"
 	}
 	provider, ok := parseProvider(request.Provider)
-	switch {
-	case !ok:
+	if !ok {
 		reply(w, http.StatusBadRequest, errorResponse{Error: "unknown_provider"})
-		return
-	case request.DeviceID == "":
+		return unknownProvider, "unknown_provider"
+	}
+	name := provider.String()
+	if request.DeviceID == "" {
 		reply(w, http.StatusBadRequest, errorResponse{Error: "device_required"})
-		return
+		return name, "device_required"
 	}
 	identity, err := h.verifier.Verify(r.Context(), provider, request.IDToken, request.Nonce)
 	if err != nil {
-		h.refuse(w, err)
-		return
+		return name, h.refuse(w, err)
 	}
 	a, created, err := h.accounts.SignIn(r.Context(), identity)
+	if errors.Is(err, account.ErrDeletionPending) {
+		reply(w, http.StatusConflict, deletionResponse{Error: "deletion_pending", DeleteAt: h.deleteAt(a)})
+		return name, "deletion_pending"
+	}
 	if err != nil {
-		h.refuse(w, err)
-		return
+		return name, h.refuse(w, err)
+	}
+	if a.Country == "" && h.countryHeader != "" {
+		if err := h.accounts.AdoptCountry(r.Context(), a.ID, strings.ToUpper(strings.TrimSpace(r.Header.Get(h.countryHeader)))); err != nil {
+			return name, h.refuse(w, err)
+		}
 	}
 	pair, err := h.tokens.Issue(r.Context(), a.ID, request.DeviceID)
 	if err != nil {
-		h.refuse(w, err)
-		return
+		return name, h.refuse(w, err)
 	}
-	reply(w, http.StatusOK, tokenResponse{AccessToken: pair.AccessToken, RefreshToken: pair.RefreshToken, ExpiresIn: pair.ExpiresIn, AccountID: a.ID, Created: created})
+	reply(w, http.StatusOK, tokenResponse{AccessToken: pair.AccessToken, RefreshToken: pair.RefreshToken, ExpiresIn: pair.ExpiresIn, RequestKey: base64.StdEncoding.EncodeToString(pair.RequestKey), AccountID: a.ID, Created: created})
+	return name, "ok"
 }
 
 func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +189,7 @@ func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 		h.refuse(w, err)
 		return
 	}
-	reply(w, http.StatusOK, tokenResponse{AccessToken: pair.AccessToken, RefreshToken: pair.RefreshToken, ExpiresIn: pair.ExpiresIn, AccountID: claims.Account})
+	reply(w, http.StatusOK, tokenResponse{AccessToken: pair.AccessToken, RefreshToken: pair.RefreshToken, ExpiresIn: pair.ExpiresIn, RequestKey: base64.StdEncoding.EncodeToString(pair.RequestKey), AccountID: claims.Account})
 }
 
 func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
@@ -197,14 +234,31 @@ func decode(w http.ResponseWriter, r *http.Request, into any) bool {
 	return true
 }
 
-func (h *Handler) refuse(w http.ResponseWriter, err error) {
+func (h *Handler) refuse(w http.ResponseWriter, err error) string {
 	status, code := classify(err)
 	if status >= http.StatusInternalServerError {
 		h.logger.Error("auth request failed", "error", err)
 	} else {
 		h.logger.Info("auth request refused", "reason", code)
 	}
-	reply(w, status, errorResponse{Error: code})
+	reply(w, status, h.refusal(code, err))
+	return code
+}
+
+func (h *Handler) EnableAppeals(appeals *appeal.Granter) {
+	h.appeals = appeals
+}
+
+func (h *Handler) refusal(code string, err error) errorResponse {
+	var banned *account.BannedError
+	if !errors.As(err, &banned) {
+		return errorResponse{Error: code}
+	}
+	grant, grantErr := h.appeals.Grant(banned.Account, banned.SanctionID)
+	if grantErr != nil {
+		h.logger.Error("appeal grant failed", "error", grantErr)
+	}
+	return errorResponse{Error: code, Category: banned.Category, BannedUntil: banned.Until, Appeal: grant}
 }
 
 func classify(err error) (int, string) {
@@ -233,6 +287,10 @@ func classify(err error) (int, string) {
 		return http.StatusForbidden, "banned"
 	case errors.Is(err, account.ErrDeleted):
 		return http.StatusGone, "deleted"
+	case errors.Is(err, account.ErrUnknown):
+		return http.StatusNotFound, "account_unknown"
+	case errors.Is(err, account.ErrNoDeletionPending):
+		return http.StatusConflict, "no_deletion_pending"
 	}
 	return http.StatusInternalServerError, "internal"
 }
@@ -252,4 +310,8 @@ func reply(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(body)
+}
+
+func (h *Handler) SetCountryHeader(name string) {
+	h.countryHeader = name
 }

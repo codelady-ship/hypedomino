@@ -78,7 +78,8 @@
             "hand-end",
             "match-end",
             "turn-timer",
-            "afk"
+            "afk",
+            "doubles-redeal"
           ]
         },
         "rules": {
@@ -209,6 +210,15 @@
               "expect": { "$ref": "#/$defs/afkExpect" }
             }
           }
+        },
+        {
+          "if": { "required": ["kind"], "properties": { "kind": { "const": "doubles-redeal" } } },
+          "then": {
+            "properties": {
+              "given": { "$ref": "#/$defs/dealGiven" },
+              "expect": { "$ref": "#/$defs/doublesRedealExpect" }
+            }
+          }
         }
       ]
     },
@@ -220,6 +230,12 @@
         "hands": { "$ref": "#/$defs/hands" },
         "boneyard": { "$ref": "#/$defs/tiles" }
       }
+    },
+    "doublesRedealExpect": {
+      "type": "object",
+      "required": ["redeal"],
+      "additionalProperties": false,
+      "properties": { "redeal": { "type": "boolean" } }
     },
     "dealExpect": {
       "type": "object",

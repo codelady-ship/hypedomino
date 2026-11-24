@@ -85,6 +85,13 @@ type HandResult struct {
 	NextOpener Team
 }
 
+type HandEnd struct {
+	Status    HandStatus
+	Locked    bool
+	CarriedIn int
+	Left      map[Seat]Hand
+}
+
 func DominoResult(mode Mode, config Config, lastPlacedBy Seat, hands map[Seat]Hand, scores HandScores) HandResult {
 	winner := lastPlacedBy.Team()
 	result := HandResult{

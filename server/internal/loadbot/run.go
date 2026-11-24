@@ -24,13 +24,14 @@ type Config struct {
 	ThinkMax        time.Duration
 	ThinkFollow     time.Duration
 	DropsPerMinute  float64
+	StormAt         time.Duration
 	Window          time.Duration
 	Warmup          time.Duration
 	ReportEvery     time.Duration
 	AppVersion      string
 	Seed            uint64
 	Budget          time.Duration
-	Heap            func() uint64
+	Node            func() (NodeSample, error)
 }
 
 func DefaultConfig() Config {
@@ -64,11 +65,14 @@ type Counters struct {
 	Peak         atomic.Int64
 	SentBytes    atomic.Uint64
 	Sent         atomic.Uint64
+	StormDrops   atomic.Uint64
+	Recovered    atomic.Uint64
 }
 
-type HeapSample struct {
-	At    time.Duration
-	Bytes uint64
+type NodeSample struct {
+	At         time.Duration
+	HeapBytes  uint64
+	Goroutines uint64
 }
 
 type Runner struct {
@@ -79,9 +83,12 @@ type Runner struct {
 	steady   *Histogram
 	windows  *Windows
 	counters Counters
-	heapMu   sync.Mutex
-	heap     []HeapSample
+	nodeMu   sync.Mutex
+	node     []NodeSample
 	nextRoom atomic.Uint64
+	storm    chan struct{}
+	stormed  time.Time
+	recovery atomic.Int64
 	wg       sync.WaitGroup
 }
 
@@ -95,6 +102,14 @@ func (r *Runner) Run(ctx context.Context) (*Report, error) {
 	}
 	r.start = time.Now()
 	r.windows = NewWindows(r.start, r.config.Window)
+	r.storm = make(chan struct{})
+	if r.config.StormAt > 0 {
+		storm := time.AfterFunc(r.config.StormAt, func() {
+			r.stormed = time.Now()
+			close(r.storm)
+		})
+		defer storm.Stop()
+	}
 	ctx, cancel := context.WithTimeout(ctx, r.config.Ramp+r.config.Hold)
 	defer cancel()
 	observed := make(chan struct{})
@@ -190,14 +205,16 @@ func (r *Runner) release(c *botclient.Client) {
 }
 
 type seatRun struct {
-	runner  *Runner
-	ctx     context.Context
-	random  *rand.Rand
-	client  *botclient.Client
-	pending uint64
-	sentAt  time.Time
-	actedOn *pb.MatchView
-	turn    turnKey
+	runner     *Runner
+	ctx        context.Context
+	random     *rand.Rand
+	client     *botclient.Client
+	pending    uint64
+	sentAt     time.Time
+	actedOn    *pb.MatchView
+	turn       turnKey
+	stormed    bool
+	recovering bool
 }
 
 type turnKey struct {
@@ -211,7 +228,7 @@ func keyOf(view *pb.MatchView) turnKey {
 }
 
 func (r *Runner) playSeat(ctx context.Context, token string, random *rand.Rand) bool {
-	s := &seatRun{runner: r, ctx: ctx, random: random}
+	s := &seatRun{runner: r, ctx: ctx, random: random, stormed: r.stormOver()}
 	acked := uint64(0)
 	for ctx.Err() == nil {
 		c, err := r.dial(ctx, token, acked)
@@ -265,6 +282,10 @@ func (s *seatRun) play() (finished bool, dropped bool) {
 		view := frame.GetMatchView()
 		if view == nil {
 			continue
+		}
+		if s.recovering {
+			s.recovering = false
+			r.recovered()
 		}
 		s.settle(frame.GetAckedSequence())
 		if botclient.Finished(view) {
@@ -327,6 +348,11 @@ func (s *seatRun) next(frames <-chan readResult, drop <-chan time.Time) (*pb.Env
 	case res := <-frames:
 		return res.frame, res.err
 	case <-drop:
+		s.client.Drop()
+		return nil, errDrop
+	case <-s.nextStorm():
+		s.stormed, s.recovering = true, true
+		s.runner.counters.StormDrops.Add(1)
 		s.client.Drop()
 		return nil, errDrop
 	case <-s.ctx.Done():
@@ -402,20 +428,55 @@ func (r *Runner) sample() {
 		"drops", r.counters.Drops.Load(),
 		"errors", r.counters.Rejected.Load() + r.counters.DialFailures.Load() + r.counters.ReadFailures.Load(),
 	}
-	if r.config.Heap != nil {
-		bytes := r.config.Heap()
-		r.heapMu.Lock()
-		r.heap = append(r.heap, HeapSample{At: elapsed, Bytes: bytes})
-		r.heapMu.Unlock()
-		attrs = append(attrs, "heap_bytes", bytes)
+	if r.config.Node != nil {
+		attrs = append(attrs, r.sampleNode(elapsed)...)
 	}
 	if r.logger != nil {
 		r.logger.Info("load", attrs...)
 	}
 }
 
+func (r *Runner) sampleNode(elapsed time.Duration) []any {
+	sample, err := r.config.Node()
+	if err != nil {
+		return []any{"node_error", err.Error()}
+	}
+	sample.At = elapsed
+	r.nodeMu.Lock()
+	r.node = append(r.node, sample)
+	r.nodeMu.Unlock()
+	return []any{"heap_bytes", sample.HeapBytes, "goroutines", sample.Goroutines}
+}
+
 func (r *Runner) debug(msg string, args ...any) {
 	if r.logger != nil {
 		r.logger.Debug(msg, args...)
+	}
+}
+
+func (r *Runner) stormOver() bool {
+	select {
+	case <-r.storm:
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *seatRun) nextStorm() <-chan struct{} {
+	if s.stormed {
+		return nil
+	}
+	return s.runner.storm
+}
+
+func (r *Runner) recovered() {
+	r.counters.Recovered.Add(1)
+	took := int64(time.Since(r.stormed))
+	for {
+		longest := r.recovery.Load()
+		if took <= longest || r.recovery.CompareAndSwap(longest, took) {
+			return
+		}
 	}
 }

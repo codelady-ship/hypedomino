@@ -8,15 +8,19 @@ import type { Error } from "./error_pb";
 import { file_hypedomino_v1_error } from "./error_pb";
 import type { ClientHello, ServerHello } from "./hello_pb";
 import { file_hypedomino_v1_hello } from "./hello_pb";
-import type { DrawIntent, EndTurnIntent, LoadingIntent, MatchView, PassIntent, PlaceTileIntent } from "./match_pb";
+import type { LobbyIntent, LobbyInvite, LobbyRelay, LobbyState } from "./lobby_pb";
+import { file_hypedomino_v1_lobby } from "./lobby_pb";
+import type { DrawIntent, EmojiIntent, EmojiShown, EndTurnIntent, LoadingIntent, MatchView, PassIntent, PlaceTileIntent, QuickMessageIntent, QuickMessageShown } from "./match_pb";
 import { file_hypedomino_v1_match } from "./match_pb";
+import type { JoinQueueIntent, LeaveQueueIntent, QueueState } from "./queue_pb";
+import { file_hypedomino_v1_queue } from "./queue_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file hypedomino/v1/envelope.proto.
  */
 export const file_hypedomino_v1_envelope: GenFile = /*@__PURE__*/
-  fileDesc("ChxoeXBlZG9taW5vL3YxL2VudmVsb3BlLnByb3RvEg1oeXBlZG9taW5vLnYxIqoECghFbnZlbG9wZRIYChBwcm90b2NvbF92ZXJzaW9uGAEgASgNEhAKCHNlcXVlbmNlGAIgASgEEhYKDmFja2VkX3NlcXVlbmNlGAMgASgEEjIKDGNsaWVudF9oZWxsbxgKIAEoCzIaLmh5cGVkb21pbm8udjEuQ2xpZW50SGVsbG9IABIyCgxzZXJ2ZXJfaGVsbG8YCyABKAsyGi5oeXBlZG9taW5vLnYxLlNlcnZlckhlbGxvSAASJQoFZXJyb3IYDCABKAsyFC5oeXBlZG9taW5vLnYxLkVycm9ySAASLgoKbWF0Y2hfdmlldxgNIAEoCzIYLmh5cGVkb21pbm8udjEuTWF0Y2hWaWV3SAASOwoRcGxhY2VfdGlsZV9pbnRlbnQYFCABKAsyHi5oeXBlZG9taW5vLnYxLlBsYWNlVGlsZUludGVudEgAEjAKC3Bhc3NfaW50ZW50GBUgASgLMhkuaHlwZWRvbWluby52MS5QYXNzSW50ZW50SAASMAoLZHJhd19pbnRlbnQYFiABKAsyGS5oeXBlZG9taW5vLnYxLkRyYXdJbnRlbnRIABI3Cg9lbmRfdHVybl9pbnRlbnQYFyABKAsyHC5oeXBlZG9taW5vLnYxLkVuZFR1cm5JbnRlbnRIABI2Cg5sb2FkaW5nX2ludGVudBgYIAEoCzIcLmh5cGVkb21pbm8udjEuTG9hZGluZ0ludGVudEgAQgkKB3BheWxvYWRCyAEKEWNvbS5oeXBlZG9taW5vLnYxQg1FbnZlbG9wZVByb3RvUAFaT2dpdGh1Yi5jb20vQWxpZXZzLWNvcnAvaHlwZWRvbWluby9zZXJ2ZXIvaW50ZXJuYWwvcGIvaHlwZWRvbWluby92MTtoeXBlZG9taW5vdjGiAgNIWFiqAg1IeXBlZG9taW5vLlYxygINSHlwZWRvbWlub1xWMeICGUh5cGVkb21pbm9cVjFcR1BCTWV0YWRhdGHqAg5IeXBlZG9taW5vOjpWMWIGcHJvdG8z", [file_hypedomino_v1_error, file_hypedomino_v1_hello, file_hypedomino_v1_match]);
+  fileDesc("ChxoeXBlZG9taW5vL3YxL2VudmVsb3BlLnByb3RvEg1oeXBlZG9taW5vLnYxIqUJCghFbnZlbG9wZRIYChBwcm90b2NvbF92ZXJzaW9uGAEgASgNEhAKCHNlcXVlbmNlGAIgASgEEhYKDmFja2VkX3NlcXVlbmNlGAMgASgEEhUKDXNlc3Npb25fbm9uY2UYBCABKAYSMgoMY2xpZW50X2hlbGxvGAogASgLMhouaHlwZWRvbWluby52MS5DbGllbnRIZWxsb0gAEjIKDHNlcnZlcl9oZWxsbxgLIAEoCzIaLmh5cGVkb21pbm8udjEuU2VydmVySGVsbG9IABIlCgVlcnJvchgMIAEoCzIULmh5cGVkb21pbm8udjEuRXJyb3JIABIuCgptYXRjaF92aWV3GA0gASgLMhguaHlwZWRvbWluby52MS5NYXRjaFZpZXdIABIwCgtlbW9qaV9zaG93bhgOIAEoCzIZLmh5cGVkb21pbm8udjEuRW1vamlTaG93bkgAEj8KE3F1aWNrX21lc3NhZ2Vfc2hvd24YDyABKAsyIC5oeXBlZG9taW5vLnYxLlF1aWNrTWVzc2FnZVNob3duSAASMAoLcXVldWVfc3RhdGUYECABKAsyGS5oeXBlZG9taW5vLnYxLlF1ZXVlU3RhdGVIABIwCgtsb2JieV9zdGF0ZRgRIAEoCzIZLmh5cGVkb21pbm8udjEuTG9iYnlTdGF0ZUgAEjAKC2xvYmJ5X3JlbGF5GBIgASgLMhkuaHlwZWRvbWluby52MS5Mb2JieVJlbGF5SAASMgoMbG9iYnlfaW52aXRlGBMgASgLMhouaHlwZWRvbWluby52MS5Mb2JieUludml0ZUgAEjsKEXBsYWNlX3RpbGVfaW50ZW50GBQgASgLMh4uaHlwZWRvbWluby52MS5QbGFjZVRpbGVJbnRlbnRIABIwCgtwYXNzX2ludGVudBgVIAEoCzIZLmh5cGVkb21pbm8udjEuUGFzc0ludGVudEgAEjAKC2RyYXdfaW50ZW50GBYgASgLMhkuaHlwZWRvbWluby52MS5EcmF3SW50ZW50SAASNwoPZW5kX3R1cm5faW50ZW50GBcgASgLMhwuaHlwZWRvbWluby52MS5FbmRUdXJuSW50ZW50SAASNgoObG9hZGluZ19pbnRlbnQYGCABKAsyHC5oeXBlZG9taW5vLnYxLkxvYWRpbmdJbnRlbnRIABIyCgxlbW9qaV9pbnRlbnQYGSABKAsyGi5oeXBlZG9taW5vLnYxLkVtb2ppSW50ZW50SAASQQoUcXVpY2tfbWVzc2FnZV9pbnRlbnQYGiABKAsyIS5oeXBlZG9taW5vLnYxLlF1aWNrTWVzc2FnZUludGVudEgAEjsKEWpvaW5fcXVldWVfaW50ZW50GBsgASgLMh4uaHlwZWRvbWluby52MS5Kb2luUXVldWVJbnRlbnRIABI9ChJsZWF2ZV9xdWV1ZV9pbnRlbnQYHCABKAsyHy5oeXBlZG9taW5vLnYxLkxlYXZlUXVldWVJbnRlbnRIABIyCgxsb2JieV9pbnRlbnQYHSABKAsyGi5oeXBlZG9taW5vLnYxLkxvYmJ5SW50ZW50SABCCQoHcGF5bG9hZELIAQoRY29tLmh5cGVkb21pbm8udjFCDUVudmVsb3BlUHJvdG9QAVpPZ2l0aHViLmNvbS9BbGlldnMtY29ycC9oeXBlZG9taW5vL3NlcnZlci9pbnRlcm5hbC9wYi9oeXBlZG9taW5vL3YxO2h5cGVkb21pbm92MaICA0hYWKoCDUh5cGVkb21pbm8uVjHKAg1IeXBlZG9taW5vXFYx4gIZSHlwZWRvbWlub1xWMVxHUEJNZXRhZGF0YeoCDkh5cGVkb21pbm86OlYxYgZwcm90bzM", [file_hypedomino_v1_error, file_hypedomino_v1_hello, file_hypedomino_v1_lobby, file_hypedomino_v1_match, file_hypedomino_v1_queue]);
 
 /**
  * @generated from message hypedomino.v1.Envelope
@@ -36,6 +40,11 @@ export type Envelope = Message<"hypedomino.v1.Envelope"> & {
    * @generated from field: uint64 acked_sequence = 3;
    */
   ackedSequence: bigint;
+
+  /**
+   * @generated from field: fixed64 session_nonce = 4;
+   */
+  sessionNonce: bigint;
 
   /**
    * @generated from oneof hypedomino.v1.Envelope.payload
@@ -66,6 +75,42 @@ export type Envelope = Message<"hypedomino.v1.Envelope"> & {
     case: "matchView";
   } | {
     /**
+     * @generated from field: hypedomino.v1.EmojiShown emoji_shown = 14;
+     */
+    value: EmojiShown;
+    case: "emojiShown";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.QuickMessageShown quick_message_shown = 15;
+     */
+    value: QuickMessageShown;
+    case: "quickMessageShown";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.QueueState queue_state = 16;
+     */
+    value: QueueState;
+    case: "queueState";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.LobbyState lobby_state = 17;
+     */
+    value: LobbyState;
+    case: "lobbyState";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.LobbyRelay lobby_relay = 18;
+     */
+    value: LobbyRelay;
+    case: "lobbyRelay";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.LobbyInvite lobby_invite = 19;
+     */
+    value: LobbyInvite;
+    case: "lobbyInvite";
+  } | {
+    /**
      * @generated from field: hypedomino.v1.PlaceTileIntent place_tile_intent = 20;
      */
     value: PlaceTileIntent;
@@ -94,6 +139,36 @@ export type Envelope = Message<"hypedomino.v1.Envelope"> & {
      */
     value: LoadingIntent;
     case: "loadingIntent";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.EmojiIntent emoji_intent = 25;
+     */
+    value: EmojiIntent;
+    case: "emojiIntent";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.QuickMessageIntent quick_message_intent = 26;
+     */
+    value: QuickMessageIntent;
+    case: "quickMessageIntent";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.JoinQueueIntent join_queue_intent = 27;
+     */
+    value: JoinQueueIntent;
+    case: "joinQueueIntent";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.LeaveQueueIntent leave_queue_intent = 28;
+     */
+    value: LeaveQueueIntent;
+    case: "leaveQueueIntent";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.LobbyIntent lobby_intent = 29;
+     */
+    value: LobbyIntent;
+    case: "lobbyIntent";
   } | { case: undefined; value?: undefined };
 };
 

@@ -47,7 +47,7 @@ func player(t *testing.T, pool *pgxpool.Pool, nickname string) string {
 var (
 	shopFox   = cosmetics.Source{Type: "shop", Ref: "offer.avatar_comet_fox"}
 	passWiz   = cosmetics.Source{Type: "pass", Ref: "pass.season_1.premium.level_30"}
-	promoNite = cosmetics.Source{Type: "promo", Ref: "promo.launch_week"}
+	promoNite = cosmetics.Source{Type: "promo", Ref: "campaign.launch_week"}
 )
 
 func TestDefaultsAreOwnedByEveryoneAndGrantsNeedAListedSource(t *testing.T) {
@@ -92,7 +92,7 @@ func TestDefaultsAreOwnedByEveryoneAndGrantsNeedAListedSource(t *testing.T) {
 
 func TestEquipAcceptsOnlyOwnedLiveItemsOfTheSlotType(t *testing.T) {
 	_, pool := dbtest.Fresh(t)
-	store := inventory.NewStore(pool, catalog(t), inventory.Config{EmojiSlots: 2, ActionSlots: 1})
+	store := inventory.NewStore(pool, catalog(t), inventory.Config{EmojiSlots: 2})
 	ctx := context.Background()
 	ayla, fresh := player(t, pool, "Ayla"), player(t, pool, "")
 	for _, c := range []struct {
@@ -101,6 +101,8 @@ func TestEquipAcceptsOnlyOwnedLiveItemsOfTheSlotType(t *testing.T) {
 		err  error
 	}{
 		{"hat", []string{"avatar.starter"}, inventory.ErrUnknownSlot},
+		{"character", []string{"avatar.starter"}, inventory.ErrUnknownSlot},
+		{"action", nil, inventory.ErrUnknownSlot},
 		{"avatar", nil, inventory.ErrTooMany},
 		{"avatar", []string{"avatar.starter", "avatar.comet_fox"}, inventory.ErrTooMany},
 		{"emoji", []string{"emoji.smile", "emoji.smile"}, inventory.ErrTooMany},
@@ -151,24 +153,24 @@ func TestFreezeFallsBackToDefaultsAndRevokeUnequips(t *testing.T) {
 	ctx := context.Background()
 	ayla, fresh := player(t, pool, "Ayla"), player(t, pool, "")
 	frozen, err := store.Freeze(ctx, fresh)
-	if err != nil || frozen.Avatar != "avatar.starter" || frozen.Frame != "frame.starter" || frozen.Character != "character.starter" || frozen.Table != "table.starter" || len(frozen.Emojis) != 0 {
+	if err != nil || frozen.Avatar != "avatar.starter" || frozen.Frame != "frame.starter" || frozen.Table != "table.starter" || frozen.Tile != "tile.starter" || len(frozen.Emojis) != 0 {
 		t.Fatalf("freeze without a profile %+v %v", frozen, err)
 	}
-	for id, source := range map[string]cosmetics.Source{"avatar.comet_fox": shopFox, "character.tile_wizard": passWiz, "table.night_market": promoNite} {
+	for id, source := range map[string]cosmetics.Source{"avatar.comet_fox": shopFox, "avatar.tile_wizard": passWiz, "table.night_market": promoNite, "tile.storm_sapphire": {Type: "event", Ref: "event.spring_cup"}} {
 		if _, err := store.Grant(ctx, ayla, id, source, start); err != nil {
 			t.Fatal(id, err)
 		}
 	}
-	for slot, id := range map[string]string{"avatar": "avatar.comet_fox", "character": "character.tile_wizard", "table": "table.night_market"} {
+	for slot, id := range map[string]string{"avatar": "avatar.comet_fox", "table": "table.night_market", "tile": "tile.storm_sapphire"} {
 		if _, err := store.Equip(ctx, ayla, slot, []string{id}, start); err != nil {
 			t.Fatal(slot, err)
 		}
 	}
-	if _, err := pool.Exec(ctx, `update profiles set loadout = loadout || '{"frame":"frame.withdrawn","emojis":["emoji.smile","emoji.laugh_spin","emoji.smile"],"actions":["action.victory_dance"]}' where account_id = $1`, ayla); err != nil {
+	if _, err := pool.Exec(ctx, `update profiles set loadout = loadout || '{"frame":"frame.withdrawn","emojis":["emoji.smile","emoji.laugh_spin","emoji.smile"],"character":"character.tile_wizard","actions":["action.victory_dance"]}' where account_id = $1`, ayla); err != nil {
 		t.Fatal(err)
 	}
 	frozen, err = store.Freeze(ctx, ayla)
-	if err != nil || frozen.Avatar != "avatar.comet_fox" || frozen.Character != "character.tile_wizard" || frozen.Table != "table.night_market" || frozen.Frame != "frame.starter" || len(frozen.Emojis) != 1 || frozen.Emojis[0] != "emoji.smile" || len(frozen.Actions) != 0 {
+	if err != nil || frozen.Avatar != "avatar.comet_fox" || frozen.Table != "table.night_market" || frozen.Tile != "tile.storm_sapphire" || frozen.Frame != "frame.starter" || len(frozen.Emojis) != 1 || frozen.Emojis[0] != "emoji.smile" {
 		t.Fatalf("frozen loadout %+v %v", frozen, err)
 	}
 	if err := store.Revoke(ctx, ayla, "avatar.starter", start); !errors.Is(err, inventory.ErrDefaultItem) {
@@ -184,11 +186,11 @@ func TestFreezeFallsBackToDefaultsAndRevokeUnequips(t *testing.T) {
 		t.Fatalf("revoked twice: %v", err)
 	}
 	p, _, err := profile.NewStore(pool, profile.DefaultConfig()).Get(ctx, ayla)
-	if err != nil || p.Loadout.Avatar != "avatar.starter" || p.Loadout.Character != "character.tile_wizard" || p.Loadout.Frame != "frame.starter" {
+	if err != nil || p.Loadout.Avatar != "avatar.starter" || p.Loadout.Frame != "frame.starter" {
 		t.Fatalf("loadout after revoke %+v %v", p.Loadout, err)
 	}
 	owned, err := store.Owned(ctx, ayla)
-	if err != nil || len(owned) != 7 {
+	if err != nil || len(owned) != 8 {
 		t.Fatalf("inventory after revoke %+v %v", owned, err)
 	}
 	if granted, err := store.Grant(ctx, ayla, "avatar.comet_fox", cosmetics.Source{Type: "event", Ref: "event.spring_cup"}, start.Add(2*time.Hour)); err != nil || !granted {
@@ -196,5 +198,26 @@ func TestFreezeFallsBackToDefaultsAndRevokeUnequips(t *testing.T) {
 	}
 	if owns, err := store.Owns(ctx, ayla, "avatar.comet_fox"); err != nil || !owns {
 		t.Fatalf("owned after regrant %v %v", owns, err)
+	}
+}
+
+func TestTheStoreFollowsThePublishedCatalogOnceThereIsOne(t *testing.T) {
+	builtin := cosmetics.Builtin()
+	published, err := cosmetics.Load("../../../docs/cosmetics/examples/catalog.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := inventory.NewStore(nil, builtin, inventory.DefaultConfig())
+	var current *cosmetics.Catalog
+	store.Follow(func() (*cosmetics.Catalog, int64, bool) { return current, 3, current != nil })
+	if store.Catalog() != builtin {
+		t.Fatal("without a published catalog the store must keep its own")
+	}
+	current = published
+	if store.Catalog() != published {
+		t.Fatal("the store did not switch to the published catalog")
+	}
+	if _, ok := store.Catalog().Item("avatar.comet_fox"); !ok {
+		t.Fatal("an item of the published catalog is unknown")
 	}
 }

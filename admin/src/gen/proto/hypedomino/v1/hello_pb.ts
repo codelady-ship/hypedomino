@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hypedomino/v1/hello.proto.
  */
 export const file_hypedomino_v1_hello: GenFile = /*@__PURE__*/
-  fileDesc("ChloeXBlZG9taW5vL3YxL2hlbGxvLnByb3RvEg1oeXBlZG9taW5vLnYxIr8BCgtDbGllbnRIZWxsbxITCgthcHBfdmVyc2lvbhgBIAEoCRISCgpidWlsZF9oYXNoGAIgASgJEikKCHBsYXRmb3JtGAMgASgOMhcuaHlwZWRvbWluby52MS5QbGF0Zm9ybRISCgpvc192ZXJzaW9uGAQgASgJEhQKDGRldmljZV9tb2RlbBgFIAEoCRIVCg1zZXNzaW9uX3Rva2VuGAYgASgJEhsKE2xhc3RfYWNrZWRfc2VxdWVuY2UYByABKAQingEKC1NlcnZlckhlbGxvEioKBnN0YXR1cxgBIAEoDjIaLmh5cGVkb21pbm8udjEuSGVsbG9TdGF0dXMSGwoTbWluaW11bV9hcHBfdmVyc2lvbhgCIAEoCRIbChNzZXJ2ZXJfdGltZV91bml4X21zGAMgASgEEhcKD2NhdGFsb2dfdmVyc2lvbhgEIAEoCRIQCghpbl9tYXRjaBgFIAEoCCpMCghQbGF0Zm9ybRIYChRQTEFURk9STV9VTlNQRUNJRklFRBAAEhQKEFBMQVRGT1JNX0FORFJPSUQQARIQCgxQTEFURk9STV9JT1MQAipoCgtIZWxsb1N0YXR1cxIcChhIRUxMT19TVEFUVVNfVU5TUEVDSUZJRUQQABIZChVIRUxMT19TVEFUVVNfQUNDRVBURUQQARIgChxIRUxMT19TVEFUVVNfVVBEQVRFX1JFUVVJUkVEEAJCxQEKEWNvbS5oeXBlZG9taW5vLnYxQgpIZWxsb1Byb3RvUAFaT2dpdGh1Yi5jb20vQWxpZXZzLWNvcnAvaHlwZWRvbWluby9zZXJ2ZXIvaW50ZXJuYWwvcGIvaHlwZWRvbWluby92MTtoeXBlZG9taW5vdjGiAgNIWFiqAg1IeXBlZG9taW5vLlYxygINSHlwZWRvbWlub1xWMeICGUh5cGVkb21pbm9cVjFcR1BCTWV0YWRhdGHqAg5IeXBlZG9taW5vOjpWMWIGcHJvdG8z");
+  fileDesc("ChloeXBlZG9taW5vL3YxL2hlbGxvLnByb3RvEg1oeXBlZG9taW5vLnYxIsECCgtDbGllbnRIZWxsbxITCgthcHBfdmVyc2lvbhgBIAEoCRISCgpidWlsZF9oYXNoGAIgASgJEikKCHBsYXRmb3JtGAMgASgOMhcuaHlwZWRvbWluby52MS5QbGF0Zm9ybRISCgpvc192ZXJzaW9uGAQgASgJEhQKDGRldmljZV9tb2RlbBgFIAEoCRIVCg1zZXNzaW9uX3Rva2VuGAYgASgJEhsKE2xhc3RfYWNrZWRfc2VxdWVuY2UYByABKAQSGwoTY2xpZW50X3RpbWVfdW5peF9tcxgIIAEoBBIwCglpbnRlZ3JpdHkYCSABKAsyHS5oeXBlZG9taW5vLnYxLkludGVncml0eVByb29mEhsKE2RldmljZV9yaXNrX3NpZ25hbHMYCiADKAkSFAoMaG9va19zaWduYWxzGAsgAygJInIKDkludGVncml0eVByb29mEh4KFHBsYXlfaW50ZWdyaXR5X3Rva2VuGAEgASgJSAASNwoKYXBwX2F0dGVzdBgCIAEoCzIhLmh5cGVkb21pbm8udjEuQXBwQXR0ZXN0QXNzZXJ0aW9uSABCBwoFcHJvb2YiRgoSQXBwQXR0ZXN0QXNzZXJ0aW9uEg4KBmtleV9pZBgBIAEoDBINCgVub25jZRgCIAEoCRIRCglhc3NlcnRpb24YAyABKAwi1QMKC1NlcnZlckhlbGxvEioKBnN0YXR1cxgBIAEoDjIaLmh5cGVkb21pbm8udjEuSGVsbG9TdGF0dXMSGwoTbWluaW11bV9hcHBfdmVyc2lvbhgCIAEoCRIbChNzZXJ2ZXJfdGltZV91bml4X21zGAMgASgEEhcKD2NhdGFsb2dfdmVyc2lvbhgEIAEoCRIQCghpbl9tYXRjaBgFIAEoCBIzCg5zdHJpbmdfYnVuZGxlcxgGIAMoCzIbLmh5cGVkb21pbm8udjEuU3RyaW5nQnVuZGxlEjUKD2ZhbGxiYWNrX2NoYWlucxgHIAMoCzIcLmh5cGVkb21pbm8udjEuRmFsbGJhY2tDaGFpbhIVCg1zZXNzaW9uX25vbmNlGAggASgGEhgKEGNvbnRlbnRfYmFzZV91cmwYCSABKAkSIAoYbWFpbnRlbmFuY2VfZW5kc191bml4X21zGAogASgEEjwKEmNvc21ldGljc19tYW5pZmVzdBgLIAEoCzIgLmh5cGVkb21pbm8udjEuQ29zbWV0aWNzTWFuaWZlc3QSOAoQYW5hbHl0aWNzX2NvbmZpZxgMIAEoCzIeLmh5cGVkb21pbm8udjEuQW5hbHl0aWNzQ29uZmlnIj8KDFN0cmluZ0J1bmRsZRIQCghsYW5ndWFnZRgBIAEoCRIPCgd2ZXJzaW9uGAIgASgNEgwKBGhhc2gYAyABKAkiMgoRQ29zbWV0aWNzTWFuaWZlc3QSDwoHdmVyc2lvbhgBIAEoDRIMCgRoYXNoGAIgASgJIlEKD0FuYWx5dGljc0NvbmZpZxISCgpiYXRjaF9zaXplGAEgASgNEhMKC3F1ZXVlX2xpbWl0GAIgASgNEhUKDWZsdXNoX3NlY29uZHMYAyABKA0iNAoNRmFsbGJhY2tDaGFpbhIQCghsYW5ndWFnZRgBIAEoCRIRCglsYW5ndWFnZXMYAiADKAkqTAoIUGxhdGZvcm0SGAoUUExBVEZPUk1fVU5TUEVDSUZJRUQQABIUChBQTEFURk9STV9BTkRST0lEEAESEAoMUExBVEZPUk1fSU9TEAIqhgEKC0hlbGxvU3RhdHVzEhwKGEhFTExPX1NUQVRVU19VTlNQRUNJRklFRBAAEhkKFUhFTExPX1NUQVRVU19BQ0NFUFRFRBABEiAKHEhFTExPX1NUQVRVU19VUERBVEVfUkVRVUlSRUQQAhIcChhIRUxMT19TVEFUVVNfTUFJTlRFTkFOQ0UQA0LFAQoRY29tLmh5cGVkb21pbm8udjFCCkhlbGxvUHJvdG9QAVpPZ2l0aHViLmNvbS9BbGlldnMtY29ycC9oeXBlZG9taW5vL3NlcnZlci9pbnRlcm5hbC9wYi9oeXBlZG9taW5vL3YxO2h5cGVkb21pbm92MaICA0hYWKoCDUh5cGVkb21pbm8uVjHKAg1IeXBlZG9taW5vXFYx4gIZSHlwZWRvbWlub1xWMVxHUEJNZXRhZGF0YeoCDkh5cGVkb21pbm86OlYxYgZwcm90bzM");
 
 /**
  * @generated from message hypedomino.v1.ClientHello
@@ -50,6 +50,26 @@ export type ClientHello = Message<"hypedomino.v1.ClientHello"> & {
    * @generated from field: uint64 last_acked_sequence = 7;
    */
   lastAckedSequence: bigint;
+
+  /**
+   * @generated from field: uint64 client_time_unix_ms = 8;
+   */
+  clientTimeUnixMs: bigint;
+
+  /**
+   * @generated from field: hypedomino.v1.IntegrityProof integrity = 9;
+   */
+  integrity?: IntegrityProof | undefined;
+
+  /**
+   * @generated from field: repeated string device_risk_signals = 10;
+   */
+  deviceRiskSignals: string[];
+
+  /**
+   * @generated from field: repeated string hook_signals = 11;
+   */
+  hookSignals: string[];
 };
 
 /**
@@ -58,6 +78,62 @@ export type ClientHello = Message<"hypedomino.v1.ClientHello"> & {
  */
 export const ClientHelloSchema: GenMessage<ClientHello> = /*@__PURE__*/
   messageDesc(file_hypedomino_v1_hello, 0);
+
+/**
+ * @generated from message hypedomino.v1.IntegrityProof
+ */
+export type IntegrityProof = Message<"hypedomino.v1.IntegrityProof"> & {
+  /**
+   * @generated from oneof hypedomino.v1.IntegrityProof.proof
+   */
+  proof: {
+    /**
+     * @generated from field: string play_integrity_token = 1;
+     */
+    value: string;
+    case: "playIntegrityToken";
+  } | {
+    /**
+     * @generated from field: hypedomino.v1.AppAttestAssertion app_attest = 2;
+     */
+    value: AppAttestAssertion;
+    case: "appAttest";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message hypedomino.v1.IntegrityProof.
+ * Use `create(IntegrityProofSchema)` to create a new message.
+ */
+export const IntegrityProofSchema: GenMessage<IntegrityProof> = /*@__PURE__*/
+  messageDesc(file_hypedomino_v1_hello, 1);
+
+/**
+ * @generated from message hypedomino.v1.AppAttestAssertion
+ */
+export type AppAttestAssertion = Message<"hypedomino.v1.AppAttestAssertion"> & {
+  /**
+   * @generated from field: bytes key_id = 1;
+   */
+  keyId: Uint8Array;
+
+  /**
+   * @generated from field: string nonce = 2;
+   */
+  nonce: string;
+
+  /**
+   * @generated from field: bytes assertion = 3;
+   */
+  assertion: Uint8Array;
+};
+
+/**
+ * Describes the message hypedomino.v1.AppAttestAssertion.
+ * Use `create(AppAttestAssertionSchema)` to create a new message.
+ */
+export const AppAttestAssertionSchema: GenMessage<AppAttestAssertion> = /*@__PURE__*/
+  messageDesc(file_hypedomino_v1_hello, 2);
 
 /**
  * @generated from message hypedomino.v1.ServerHello
@@ -87,6 +163,41 @@ export type ServerHello = Message<"hypedomino.v1.ServerHello"> & {
    * @generated from field: bool in_match = 5;
    */
   inMatch: boolean;
+
+  /**
+   * @generated from field: repeated hypedomino.v1.StringBundle string_bundles = 6;
+   */
+  stringBundles: StringBundle[];
+
+  /**
+   * @generated from field: repeated hypedomino.v1.FallbackChain fallback_chains = 7;
+   */
+  fallbackChains: FallbackChain[];
+
+  /**
+   * @generated from field: fixed64 session_nonce = 8;
+   */
+  sessionNonce: bigint;
+
+  /**
+   * @generated from field: string content_base_url = 9;
+   */
+  contentBaseUrl: string;
+
+  /**
+   * @generated from field: uint64 maintenance_ends_unix_ms = 10;
+   */
+  maintenanceEndsUnixMs: bigint;
+
+  /**
+   * @generated from field: hypedomino.v1.CosmeticsManifest cosmetics_manifest = 11;
+   */
+  cosmeticsManifest?: CosmeticsManifest | undefined;
+
+  /**
+   * @generated from field: hypedomino.v1.AnalyticsConfig analytics_config = 12;
+   */
+  analyticsConfig?: AnalyticsConfig | undefined;
 };
 
 /**
@@ -94,7 +205,105 @@ export type ServerHello = Message<"hypedomino.v1.ServerHello"> & {
  * Use `create(ServerHelloSchema)` to create a new message.
  */
 export const ServerHelloSchema: GenMessage<ServerHello> = /*@__PURE__*/
-  messageDesc(file_hypedomino_v1_hello, 1);
+  messageDesc(file_hypedomino_v1_hello, 3);
+
+/**
+ * @generated from message hypedomino.v1.StringBundle
+ */
+export type StringBundle = Message<"hypedomino.v1.StringBundle"> & {
+  /**
+   * @generated from field: string language = 1;
+   */
+  language: string;
+
+  /**
+   * @generated from field: uint32 version = 2;
+   */
+  version: number;
+
+  /**
+   * @generated from field: string hash = 3;
+   */
+  hash: string;
+};
+
+/**
+ * Describes the message hypedomino.v1.StringBundle.
+ * Use `create(StringBundleSchema)` to create a new message.
+ */
+export const StringBundleSchema: GenMessage<StringBundle> = /*@__PURE__*/
+  messageDesc(file_hypedomino_v1_hello, 4);
+
+/**
+ * @generated from message hypedomino.v1.CosmeticsManifest
+ */
+export type CosmeticsManifest = Message<"hypedomino.v1.CosmeticsManifest"> & {
+  /**
+   * @generated from field: uint32 version = 1;
+   */
+  version: number;
+
+  /**
+   * @generated from field: string hash = 2;
+   */
+  hash: string;
+};
+
+/**
+ * Describes the message hypedomino.v1.CosmeticsManifest.
+ * Use `create(CosmeticsManifestSchema)` to create a new message.
+ */
+export const CosmeticsManifestSchema: GenMessage<CosmeticsManifest> = /*@__PURE__*/
+  messageDesc(file_hypedomino_v1_hello, 5);
+
+/**
+ * @generated from message hypedomino.v1.AnalyticsConfig
+ */
+export type AnalyticsConfig = Message<"hypedomino.v1.AnalyticsConfig"> & {
+  /**
+   * @generated from field: uint32 batch_size = 1;
+   */
+  batchSize: number;
+
+  /**
+   * @generated from field: uint32 queue_limit = 2;
+   */
+  queueLimit: number;
+
+  /**
+   * @generated from field: uint32 flush_seconds = 3;
+   */
+  flushSeconds: number;
+};
+
+/**
+ * Describes the message hypedomino.v1.AnalyticsConfig.
+ * Use `create(AnalyticsConfigSchema)` to create a new message.
+ */
+export const AnalyticsConfigSchema: GenMessage<AnalyticsConfig> = /*@__PURE__*/
+  messageDesc(file_hypedomino_v1_hello, 6);
+
+/**
+ * @generated from message hypedomino.v1.FallbackChain
+ */
+export type FallbackChain = Message<"hypedomino.v1.FallbackChain"> & {
+  /**
+   * @generated from field: string language = 1;
+   */
+  language: string;
+
+  /**
+   * @generated from field: repeated string languages = 2;
+   */
+  languages: string[];
+};
+
+/**
+ * Describes the message hypedomino.v1.FallbackChain.
+ * Use `create(FallbackChainSchema)` to create a new message.
+ */
+export const FallbackChainSchema: GenMessage<FallbackChain> = /*@__PURE__*/
+  messageDesc(file_hypedomino_v1_hello, 7);
 
 /**
  * @generated from enum hypedomino.v1.Platform
@@ -140,6 +349,11 @@ export enum HelloStatus {
    * @generated from enum value: HELLO_STATUS_UPDATE_REQUIRED = 2;
    */
   UPDATE_REQUIRED = 2,
+
+  /**
+   * @generated from enum value: HELLO_STATUS_MAINTENANCE = 3;
+   */
+  MAINTENANCE = 3,
 }
 
 /**

@@ -100,6 +100,7 @@ type Identity struct {
 	Email         string
 	EmailVerified bool
 	PrivateEmail  bool
+	HostedDomain  string
 }
 
 type Clock interface {

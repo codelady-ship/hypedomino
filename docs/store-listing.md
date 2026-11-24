@@ -14,7 +14,7 @@ Owned elsewhere and only referenced here: game rules (`docs/rules.md`), economy 
 | Listing languages | `az`, `en`, `tr`, `ru`; the Russian copy serves Russian-speaking players outside Russia | `docs/localization.md` 1 |
 | Accounts | 13 and older only; neutral age gate | `docs/privacy.md` 7.3, 7.4 |
 | Content rating target | IARC lowest tier, PEGI 3, App Store 4+ | `docs/localization.md` 7 |
-| Payments | Store billing only; coin packs, pass products and offers; no paid random items; coins have no cash value | `docs/economy.md` EP-3, EP-5, EP-7, section 7 |
+| Payments | Store billing only; crystal packs, pass products and offers; no paid random items (chests are bought with earned coins only); coins and crystals have no cash value | `docs/economy.md` EP-3, EP-5, EP-7, section 7 |
 | Communication | Emoji and preset quick messages only; no free text chat, no voice | `docs/localization.md` 5.7, #149 |
 | Ads and tracking | None; no advertising id | `docs/privacy.md` P-3 |
 | Support URL | The FAQ web pages | `docs/launch-runbook.md` 9.4 |
@@ -77,7 +77,7 @@ Placeholders in angle brackets are replaced before submission (ST-1, ST-7, ST-8)
 | CR-5 | No ranking, price or promotion words in the title, name, subtitle, short description, keywords or captions ("free", "best", "top", "#1", "new", "sale", "download"), no emoji there, no calls to install. The description may say "free" only for the free pass track, and currently does not. |
 | CR-6 | The brand name is written `HypeDomino` in every locale, in Latin script (OQ-1). |
 | CR-7 | Keywords: comma separated with no spaces around commas, no repeats, and no word already in the name or subtitle, since the App Store indexes those already. Every keyword describes the game truthfully. |
-| CR-8 | The currency, the pass, ranks and game terms use the same words as the approved in-game text of that language (OQ-7). Until those keys exist, the files use "sikkə", "coin", "монеты" for coins and "mövsüm bileti", "sezon kartı", "сезонный пропуск" for the pass. |
+| CR-8 | The currency, the pass, ranks and game terms use the same words as the approved in-game text of that language (OQ-7). Until those keys exist, the files use "sikkə", "coin", "монеты" for coins. The pass is "Hype Pass" in every language (`docs/pass-missions-medals.md` OQ-11). |
 | CR-9 | Each language reads as written by a native speaker for players of that market, not as a translation: `az` and `tr` are written separately, not converted from each other; `ru` uses common domino terms (дубль, базар, кости). A native reviewer approves each file (`docs/localization.md` 6.1 step 2); the owner approves the store-facing set (step 4). |
 | CR-10 | Casing in `az` and `tr` uses the language's own capitals: `i`/`İ` and `ı`/`I` (`docs/localization.md` 4.6). Headlines are written in capitals in the file, never uppercased by a tool. |
 | CR-11 | The copy is written for players aged 13 and older: competitive play, seasons and friends. It does not address children (`docs/privacy.md` 7.1, AR-14). |
@@ -92,7 +92,7 @@ Placeholders in angle brackets are replaced before submission (ST-1, ST-7, ST-8)
 | CL-3 | In 2v2 partners sit opposite each other | R-6 |
 | CL-4 | 1v1 and 2v2 are both ranked, each with its own rank and leaderboard, by season | R-53, `docs/ranking.md` 1, 7 |
 | CL-5 | Casual play with the same rules and no rating | R-56 |
-| CL-6 | Custom rooms with friends by invite link or room code; the creator sets up the teams; friend lobby with 3D characters between matches | R-55, `docs/friend-lobby.md` 1 to 3 |
+| CL-6 | Custom rooms with friends by invite link or room code; the creator sets up the teams; friend lobby between matches | R-55, `docs/friend-lobby.md` 1 to 3 |
 | CL-7 | A placement whose open ends total a multiple of five scores that total; special cases named | R-25, R-28 to R-30 |
 | CL-8 | The first double with tiles on both sides becomes the spinner and opens up to four ends; there is one per hand | R-17, R-18 |
 | CL-9 | The team that plays all its tiles first scores the pips left in the opponents' hands; the 300 rule is named as a special case | R-32, R-33, R-41 |
@@ -101,14 +101,14 @@ Placeholders in angle brackets are replaced before submission (ST-1, ST-7, ST-8)
 | CL-12 | The server checks every move, point and reward | NT-1, NT-2, ADR 0003 |
 | CL-13 | Nothing for sale changes rank, tiles or rules; no pay-to-win | `docs/economy.md` EP-2 |
 | CL-14 | A bot plays for a player who drops out until they return; the match goes on | R-51, R-52 |
-| CL-15 | Cosmetic types: characters, avatars, frames, tables, emoji, lobby actions | `docs/cosmetics.md` 2 |
-| CL-16 | Every shop offer shows exactly what it grants | `docs/economy.md` EP-3 |
+| CL-15 | Cosmetic types: avatars, frames, tables, tile skins, emoji | `docs/cosmetics.md` 2 |
+| CL-16 | Every shop offer shows exactly what it grants; a chest shows its pool, odds and pity before purchase | `docs/economy.md` EP-3 |
 | CL-17 | Emoji and quick messages in a match; friends, online presence, invites | `docs/localization.md` 5.7, #151, #152, #153 |
 | CL-18 | Coins are earned by playing; daily and weekly missions; a season pass; medals | `docs/economy.md` 2, `docs/pass-missions-medals.md` 1 to 5 |
 | CL-19 | No ads | `docs/privacy.md` P-3 |
 | CL-20 | Four languages | `docs/localization.md` 1 |
 | CL-21 | Accounts 13 and older | `docs/privacy.md` 7.3 |
-| CL-22 | Optional purchases: coin packs, the premium pass, offers; coins have no cash value and cannot be withdrawn | `docs/economy.md` EP-5, 7.1 to 7.3 |
+| CL-22 | Optional purchases: crystal packs, the premium pass, offers; coins and crystals have no cash value and cannot be withdrawn | `docs/economy.md` EP-5, 7.1 to 7.3 |
 | CL-23 | The game's help explains the special cases | `docs/launch-runbook.md` 9.4 (FAQ "How to play") |
 
 Claims deliberately left out until they are measured or built: frame rate and device performance (`docs/performance.md` gates are unmeasured), offline or practice play (none exists), any tournament or event format (#146 has not defined one).
@@ -131,14 +131,14 @@ The term lists are generic on purpose: they name no game or product (CR-2). What
 
 ## 5. Graphics
 
-No art exists yet. Production belongs to Epic 15 (#165): UI kit #168, tiles and tables #169, characters #170, avatars #171 and #172, frames #173, table backgrounds #174, emoji #175, effects #176, sound #177; the style is `docs/art-direction.md` (#166) and the workflow `docs/asset-workflow.md` (#167). Every store graphic passes the cultural review (`docs/localization.md` 6.1 step 4).
+No art exists yet. Production belongs to Epic 15 (#165): UI kit #168, tiles and tables #169, avatars #171 and #172, frames #173, table backgrounds #174, emoji #175, effects #176, sound #177; the style is `docs/art-direction.md` (#166) and the workflow `docs/asset-workflow.md` (#167). Every store graphic passes the cultural review (`docs/localization.md` 6.1 step 4).
 
 ### 5.1 Icon
 
 | Id | Requirement |
 |---|---|
 | IC-1 | One icon design for both stores and every locale. Original, no text or letters, no coins, chips, cards or other casino cues, no rarity marks (`docs/art-direction.md` 2, 3, 8). Reads as a silhouette at small sizes |
-| IC-2 | Colours follow `docs/art-direction.md` section 2: named tokens for UI and role colours, character art in its own reviewed palette. No new colour is defined here |
+| IC-2 | Colours follow `docs/art-direction.md` section 2: named tokens for UI and role colours, cosmetic art in its own reviewed palette. No new colour is defined here |
 | IC-3 | Google Play listing icon: 512 x 512 px, 32-bit PNG, at most 1024 KB, full square. Play applies the mask and shadow, so the file has neither |
 | IC-4 | Android launcher: adaptive icon with a foreground and a background layer of 108 x 108 dp, the motif inside the central 66 dp safe zone (72 dp visible), plus a monochrome layer for themed icons. Legacy and round icons are generated from it in Unity Player Settings |
 | IC-5 | App Store icon: 1024 x 1024 px PNG, no transparency, square corners (iOS applies the mask). Dark and tinted variants are supplied for the iOS home screen appearances |
@@ -159,18 +159,18 @@ Orientation follows OQ-3 (default landscape); only that orientation is produced.
 
 - Every image set exists once per listing locale (2.3): the UI in the capture is in that locale's language and the caption comes from that locale's file.
 - The first three images carry the decision (search results show them first): S-1, S-2 and S-3 in that order.
-- The feature graphic carries no words other than the `HypeDomino` name (CR-6); it shows the table and characters, never a price or a call to install.
+- The feature graphic carries no words other than the `HypeDomino` name (CR-6); it shows the table and cosmetics, never a price or a call to install.
 
 ### 5.3 Shot list
 
 | Shot | Screen | State to capture | Caption field |
 |---|---|---|---|
 | S-1 | 2v2 match | A placement that scores: open ends on a multiple of five, `scoreCascade` at its peak step, both team meters visible | `caption.S-1` |
-| S-2 | Friend lobby (FL-1) | Four members as their 3D characters, one playing a lobby action, one emoji above a character | `caption.S-2` |
+| S-2 | Friend lobby (FL-1) | Four members as their avatars in animated frames, one emoji above an avatar | `caption.S-2` |
 | S-3 | Rank screen | Ranked 1v1 and 2v2 ranks side by side or the mode switch visible, a leaderboard behind | `caption.S-3` |
 | S-4 | 2v2 match | A spinner with tiles on all four arms | `caption.S-4` |
 | S-5 | Team setup (FL-2) | Teams split, the invite panel open with the link and room code | `caption.S-5` |
-| S-6 | Collection | Characters and tables of several rarity tiers, rarity drawn by the client | `caption.S-6` |
+| S-6 | Collection | Avatars and tables of several rarity tiers, rarity drawn by the client | `caption.S-6` |
 | S-7 | Pass | Both tracks with exact rewards shown, a mission panel | `caption.S-7` |
 | S-8 | Match end | The `domino` banner with emoji reactions from the seats | `caption.S-8` |
 
@@ -195,7 +195,7 @@ One 30-second master edit serves both stores: the Google Play promo video (a You
 | TR-1 | 0 to 3 | The hook: a scoring placement and `scoreCascade`, no logo first |
 | TR-2 | 3 to 9 | A 2v2 hand: partners across the table, a double turning into the spinner, a second scoring placement |
 | TR-3 | 9 to 14 | A 1v1 hand: a draw from the boneyard, the last tile, the `domino` banner |
-| TR-4 | 14 to 19 | The friend lobby: characters, a lobby action, emoji |
+| TR-4 | 14 to 19 | The friend lobby: avatars in frames, emoji |
 | TR-5 | 19 to 24 | Ranked: a rank up (`rankUp`), a leaderboard |
 | TR-6 | 24 to 30 | The collection, then an end card with the icon and `HypeDomino` |
 
@@ -216,15 +216,15 @@ The answers follow from the documents named per row. The questionnaire wording c
 | Id | Topic | Answer | Source |
 |---|---|---|---|
 | AR-1 | Category | Game | |
-| AR-2 | Violence, blood, gore | No. Cartoon impact effects only, no weapons, no harm to characters | `docs/localization.md` 6, `docs/art-direction.md` 8 |
+| AR-2 | Violence, blood, gore | No. Cartoon impact effects only, no weapons, no harm to anyone shown | `docs/localization.md` 6, `docs/art-direction.md` 8 |
 | AR-3 | Fear, horror | No | `docs/localization.md` 6 |
 | AR-4 | Sexuality, nudity, suggestive themes | No | `docs/localization.md` 6 |
 | AR-5 | Language: profanity, crude humour, discrimination | No. All text is ours and reviewed; player names are filtered and moderated | `docs/localization.md` 5.3, 6 |
 | AR-6 | Alcohol, tobacco, drugs | No | `docs/localization.md` 6 |
 | AR-7 | Simulated gambling | No. Dominoes scoring is not a wager; no casino presentation | `docs/economy.md` EP-4, `docs/localization.md` 6 |
 | AR-8 | Real-money gambling, or winning money or items of real value | No. No entry fees, no stakes, no transfers; coins have no cash value and cannot be withdrawn | `docs/economy.md` EP-4, EP-5 |
-| AR-9 | Digital purchases | Yes: coin packs, pass products, offers | `docs/economy.md` 7 |
-| AR-10 | Purchasable random items | No. No paid randomised items at launch | `docs/economy.md` EP-3 |
+| AR-9 | Digital purchases | Yes: crystal packs, pass products, offers | `docs/economy.md` 7 |
+| AR-10 | Purchasable random items | No. Chests have random contents but are bought only with coins, which are earned by play and never sold, directly or through crystals | `docs/economy.md` EP-3 |
 | AR-11 | Users interact or communicate | Yes. Emoji and preset quick messages from a fixed catalogue, friend invites, nicknames and custom room names that other players see. No free text chat, no voice, no image or file sharing. Names are filtered, players can report, block and mute | `docs/localization.md` 5.7, 5.8, #149, #155 |
 | AR-12 | Shares the user's current physical location with other users | No. The account country is visible through country leaderboards, but it is a profile setting, not a current location | `docs/privacy.md` D-8, 10.3 |
 | AR-13 | Unrestricted internet access | No. The in-game help shows only our own FAQ pages (`docs/launch-runbook.md` 9.4); this holds only if that view cannot browse outside them (ST-16) | |
@@ -305,8 +305,8 @@ Google Play Data safety and Apple App Privacy are answered from `docs/privacy.md
 |---|---|---|---|---|
 | EX-1 | Both | First screenshot | S-1 scoring moment against S-2 friend lobby first | Learns whether play or social sells the game |
 | EX-2 | Play, `az` and `tr` localized | Short description | Rules hook against social hook (`play.short@B`) | Primary markets first |
-| EX-3 | Both | Icon | Tile motif against character motif | Needs two approved icon designs (IC-1) and IC-6 |
-| EX-4 | Play | Feature graphic | Table scene against characters | Default graphics experiment |
+| EX-3 | Both | Icon | Tile motif against avatar motif | Needs two approved icon designs (IC-1) and IC-6 |
+| EX-4 | Play | Feature graphic | Table scene against a collection of avatars and frames | Default graphics experiment |
 | EX-5 | Both | Video | With against without the promo video or preview | Measures the trailer before a second edit is made |
 
 ## 9. Pre-submission checklist
@@ -331,7 +331,7 @@ Release manager owns the list and records its evidence in the release issue; it 
 | ST-14 | Audience declarations from 6.3 | Release manager | Console screenshot |
 | ST-15 | Data safety and App Privacy from `docs/privacy.md` 10.1 and 10.2 | Product owner | `docs/privacy.md` L-24, L-25 |
 | ST-16 | Declarations of section 7; the in-game help view cannot browse outside our FAQ pages (AR-13) | Release manager, Client lead | Console screenshots, device test |
-| ST-17 | In-app products created with the ids of `docs/economy.md` 7 and matching the admin shop; product names and descriptions localized in four languages | Live-ops lead | GN-22 evidence |
+| ST-17 | In-app products created with the ids of `docs/economy.md` 7 and matching the admin shop; country prices pushed from the published `store_prices` table (or set from its CSV export as the fallback) per `docs/economy.md` 7.4, Azerbaijan and Turkey among them; product names and descriptions localized in four languages | Live-ops lead | GN-22 evidence |
 | ST-18 | Category and tags set (SF-16, SF-17) | Release manager | Console screenshot |
 | ST-19 | Countries: every store country except Russia, or the soft launch subset of #196 | Release manager | Console screenshot; `docs/privacy.md` 9.3 |
 | ST-20 | Review notes entered (DC-3); `CasualBotFillSeconds` above 0 in the production config | Release manager, Live-ops lead | Notes text, config version |
@@ -351,5 +351,5 @@ Each default applies until the owner decides otherwise on #194.
 | OQ-4 | Device classes | Android phones and tablets, with tablet screenshots; iOS iPhone only, so no iPad screenshots or previews | The device matrix (`docs/performance.md`) has no tablet tier yet; Play installs on tablets anyway, while an iPhone-only iOS build keeps iPad out of scope until a tablet tier is measured |
 | OQ-5 | App Store primary language; Azerbaijani on the App Store | Primary English (U.S.). If App Store Connect offers no Azerbaijani metadata, the `az` file is used on Google Play only and Azerbaijani players on iOS see the English page | English is the final fallback (`docs/localization.md` 1.2) |
 | OQ-6 | Quick messages and names as "Messaging" and "User-generated content" on the App Store, if they raise the rating above 4+ | Answer honestly and accept the computed rating; update `docs/localization.md` 7 | Changing the feature to keep a label is a product decision, not a listing one |
-| OQ-7 | In-game names of the coin and the pass per language | Copy uses "sikkə", "coin", "монеты" and "mövsüm bileti", "sezon kartı", "сезонный пропуск" until the approved text keys exist, then follows them (CR-8) | The store page and the game must use one word |
+| OQ-7 | In-game names of the coin and the pass per language | Copy uses "sikkə", "coin", "монеты" until the approved text keys exist, then follows them (CR-8). The pass is "Hype Pass" in every language (owner decision 2026-11-12) | The store page and the game must use one word |
 | OQ-8 | Answer to Play's "could the listing unintentionally appeal to children" | No, with the copy and graphics kept to CR-11 and the cultural checklist | Option A (`docs/privacy.md` 7.3) only holds if the listing does not target children |

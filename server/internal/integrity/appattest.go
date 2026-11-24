@@ -2,6 +2,7 @@ package integrity
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/sha256"
@@ -74,8 +75,8 @@ func NewAppAttest(config AppAttestConfig, nonces *Nonces, clock Clock) (*AppAtte
 	}, nil
 }
 
-func (a *AppAttest) Attest(policy Policy, binding Binding, nonce string, keyID, attestation []byte) (Decision, AttestedKey, error) {
-	nonceReason, err := a.nonces.redeem(nonce, binding)
+func (a *AppAttest) Attest(ctx context.Context, policy Policy, binding Binding, nonce string, keyID, attestation []byte) (Decision, AttestedKey, error) {
+	nonceReason, err := a.nonces.redeem(ctx, nonce, binding)
 	if err != nil {
 		return Decision{}, AttestedKey{}, err
 	}
@@ -89,12 +90,12 @@ func (a *AppAttest) Attest(policy Policy, binding Binding, nonce string, keyID, 
 	return decide(policy, binding.Purpose, nil), key, nil
 }
 
-func (a *AppAttest) Assert(policy Policy, binding Binding, nonce string, key AttestedKey, assertion []byte) (Decision, uint32, error) {
+func (a *AppAttest) Assert(ctx context.Context, policy Policy, binding Binding, nonce string, key AttestedKey, assertion []byte) (Decision, uint32, error) {
 	publicKey, err := ecdsa.ParseUncompressedPublicKey(elliptic.P256(), key.PublicKey)
 	if err != nil {
 		return Decision{}, key.Counter, fmt.Errorf("%w: %v", errMalformedAttestKey, err)
 	}
-	nonceReason, err := a.nonces.redeem(nonce, binding)
+	nonceReason, err := a.nonces.redeem(ctx, nonce, binding)
 	if err != nil {
 		return Decision{}, key.Counter, err
 	}

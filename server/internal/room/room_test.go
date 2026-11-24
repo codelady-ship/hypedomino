@@ -273,6 +273,51 @@ func TestHumansPlayAWholeMatchAndTheRecordVerifies(t *testing.T) {
 	}
 }
 
+func TestViewsShowTheTilesLeftOnlyBetweenHandsAndTheLockedTeams(t *testing.T) {
+	config := rules.DefaultConfig()
+	tab := newTable(t, rules.Mode2v2, 3)
+	sequences := map[rules.Seat]uint64{}
+	seat := tab.mode.Seats()[0]
+	between, playing := 0, 0
+	for steps := 0; tab.humanStep(sequences); steps++ {
+		if steps > 20000 {
+			t.Fatal("match does not end")
+		}
+		v := tab.snapshot(seat)
+		if v.TargetScore != config.TargetScore || v.LockThreshold != config.HandPointsLockThreshold {
+			t.Fatalf("view marks %d and %d, config says %d and %d", v.TargetScore, v.LockThreshold, config.TargetScore, config.HandPointsLockThreshold)
+		}
+		if v.State == StateOpening {
+			for _, team := range []rules.Team{rules.TeamA, rules.TeamB} {
+				if v.Locked[team] != (v.Scores[team] >= config.HandPointsLockThreshold) {
+					t.Fatalf("team %s locked %v with %v at the start of the hand", team, v.Locked[team], v.Scores)
+				}
+			}
+		}
+		if !v.HasLastResult {
+			continue
+		}
+		if v.State == StatePlaying {
+			playing++
+			if v.LastEnd.Left != nil {
+				t.Fatalf("a view during play shows the tiles left of the last hand: %+v", v.LastEnd)
+			}
+			continue
+		}
+		between++
+		pips := rules.TeamPoints{}
+		for _, s := range tab.mode.Seats() {
+			pips[s.Team()] += v.LastEnd.Left[s].Pips()
+		}
+		if pips != v.LastResult.Pips || v.LastEnd.Status == rules.HandContinues {
+			t.Fatalf("tiles left count %v, result says %v, ending %s", pips, v.LastResult.Pips, v.LastEnd.Status)
+		}
+	}
+	if between == 0 || playing == 0 {
+		t.Fatalf("saw %d views between hands and %d during play after a hand", between, playing)
+	}
+}
+
 func TestTimeoutsHandTheSeatToTheBotAndReconnectTakesItBack(t *testing.T) {
 	tab := newTable(t, rules.Mode2v2, 4)
 	tab.settle()
@@ -309,7 +354,7 @@ func TestTimeoutsHandTheSeatToTheBotAndReconnectTakesItBack(t *testing.T) {
 		t.Fatalf("an AFK seat moved itself: %+v", m)
 	}
 	tab.room.Reconnect(opener, tab.sinks[opener])
-	if v := tab.view(opener); v.Controllers[opener] != rules.ControllerPlayer || v.Presence[opener] != (rules.PresenceReport{Timeouts: 3, MarkedAfk: true}) {
+	if v := tab.view(opener); v.Controllers[opener] != rules.ControllerPlayer || v.Presence[opener] != (rules.PresenceReport{Timeouts: 3, MarkedAfk: true}) || v.Timeouts[opener] != 0 {
 		t.Fatalf("reconnect did not take the seat back: %+v", v)
 	}
 }
@@ -341,6 +386,11 @@ func TestALeaverIsPlayedByTheBotUntilTheyComeBack(t *testing.T) {
 	}
 	if err := replay.Verify(tab.record()); err != nil {
 		t.Fatal(err)
+	}
+	recorded := tab.record()
+	tab.stop()
+	if kept, ok := tab.room.FinalRecord(); !ok || !kept.HasResult || len(kept.Intents) != len(recorded.Intents) {
+		t.Fatalf("final record %v %+v", ok, kept.Result)
 	}
 	if final.Presence[leaver] != (rules.PresenceReport{Left: true}) || final.Presence[other] != (rules.PresenceReport{}) {
 		t.Fatalf("presence reports %+v", final.Presence)
@@ -425,6 +475,9 @@ func TestADisconnectKeepsTheSeatUntilTheSameSinkIsReplaced(t *testing.T) {
 	if v.Controllers[gone] != rules.ControllerPlayer || v.State != StatePlaying || v.Current != other {
 		t.Fatalf("after a disconnect and one timeout: %+v", v)
 	}
+	if !v.Disconnected[gone] || v.Disconnected[other] || v.Timeouts[gone] != 1 || v.Timeouts[other] != 0 || v.AfkTimeouts != rules.DefaultConfig().AfkConsecutiveTimeouts {
+		t.Fatalf("the view does not show the disconnect and its timeout: disconnected %v, timeouts %v, afk at %d", v.Disconnected, v.Timeouts, v.AfkTimeouts)
+	}
 	if messages := tab.inbox(gone); len(messages) != 0 {
 		t.Fatalf("a disconnected seat received %d messages", len(messages))
 	}
@@ -437,7 +490,7 @@ func TestADisconnectKeepsTheSeatUntilTheSameSinkIsReplaced(t *testing.T) {
 	fresh := make(chanSink, 64)
 	tab.sinks[gone] = fresh
 	tab.room.Join(gone, fresh)
-	if v := tab.view(gone); v.Controllers[gone] != rules.ControllerPlayer || len(v.Hand) != 6 {
+	if v := tab.view(gone); v.Controllers[gone] != rules.ControllerPlayer || len(v.Hand) != 6 || v.Disconnected[gone] {
 		t.Fatalf("joining the seat again: %+v", v)
 	}
 	tab.room.Leave(gone)
@@ -489,9 +542,31 @@ func snapshotOf(r *Room, seat rules.Seat) View {
 	return <-reply
 }
 
+func TestTheViewCarriesTheTurnLengthAndWarningOfTheMatchConfig(t *testing.T) {
+	clock := newFakeClock()
+	config := rules.DefaultConfig()
+	config.TurnSeconds = 30
+	config.TurnWarningSeconds = 7
+	room := New(Options{Mode: rules.Mode1v1, Config: config, Bot: bot.DefaultConfig(), Seed: 9, Clock: clock})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go room.Run(ctx)
+	for _, seat := range rules.Mode1v1.Seats() {
+		room.Join(seat, make(chanSink, 64))
+		room.Loading(seat, 100, true)
+	}
+	v := snapshotOf(room, rules.SeatX)
+	if v.State != StateOpening || v.TurnSeconds != 30 || v.TurnWarning != 7 {
+		t.Fatalf("view turn length %d and warning %d in state %v", v.TurnSeconds, v.TurnWarning, v.State)
+	}
+	if !v.TurnDeadline.Equal(clock.Now().Add(30 * time.Second)) {
+		t.Fatalf("deadline %v is not one turn length after %v", v.TurnDeadline, clock.Now())
+	}
+}
+
 func TestLoadingShowsTheRosterProgressAndDeadline(t *testing.T) {
 	clock := newFakeClock()
-	roster := []Player{{Seat: rules.SeatX, Nickname: "ayla", Character: "nar", RankLabel: "Silver II"}, {Seat: rules.SeatY, Nickname: "bot", Bot: true}}
+	roster := []Player{{Seat: rules.SeatX, Nickname: "ayla", Avatar: "avatar.nar", RankLabel: "Silver II"}, {Seat: rules.SeatY, Nickname: "bot", Bot: true}}
 	room := New(Options{Mode: rules.Mode1v1, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), Seed: 9, Clock: clock, Roster: roster})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -499,6 +574,9 @@ func TestLoadingShowsTheRosterProgressAndDeadline(t *testing.T) {
 	sink := make(chanSink, 16)
 	room.Join(rules.SeatX, sink)
 	m := <-sink
+	if m.View.Disconnected[rules.SeatX] || m.View.Disconnected[rules.SeatY] {
+		t.Fatalf("a joined human or a bot seat shows as disconnected: %v", m.View.Disconnected)
+	}
 	if m.View.State != StateLoading || !m.View.LoadingDeadline.Equal(clock.Now().Add(rules.LoadingLimit(rules.DefaultConfig()))) || !reflect.DeepEqual(m.View.Roster, roster) {
 		t.Fatalf("loading view %+v", m.View)
 	}

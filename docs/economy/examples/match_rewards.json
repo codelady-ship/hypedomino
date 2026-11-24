@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "ranked1v1": {
+    "win": 30,
+    "loss": 10
+  },
+  "ranked2v2": {
+    "win": 40,
+    "loss": 14
+  },
+  "casual1v1": {
+    "win": 18,
+    "loss": 6
+  },
+  "casual2v2": {
+    "win": 24,
+    "loss": 8
+  },
+  "botSeatRewardPercent": 50,
+  "dailyMatchCoinCap": 400,
+  "firstWinBonusCoins": 100
+}

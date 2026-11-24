@@ -13,34 +13,23 @@
     "items": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/item" } }
   },
   "$defs": {
-    "itemType": { "enum": ["avatar", "character", "frame", "table", "emoji", "action"] },
-    "itemId": { "type": "string", "pattern": "^(avatar|character|frame|table|emoji|action)\\.[a-z0-9_]+$" },
-    "nameKey": { "type": "string", "pattern": "^cosmetic\\.(avatar|character|frame|table|emoji|action)\\.[a-z0-9_]+\\.name$" },
+    "itemType": { "enum": ["avatar", "frame", "table", "tile", "emoji"] },
+    "itemId": { "type": "string", "pattern": "^(avatar|frame|table|tile|emoji)\\.[a-z0-9_]+$" },
+    "nameKey": { "type": "string", "pattern": "^cosmetic\\.(avatar|frame|table|tile|emoji)\\.[a-z0-9_]+\\.name$" },
     "rarityId": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-    "address": { "type": "string", "pattern": "^cosmetic/(avatar|character|frame|table|emoji|action)/[a-z0-9_]+/(static|anim|model|model_hq|clip/(idle|win|lose|reaction)|layer/[a-z0-9_]+)$" },
+    "address": { "type": "string", "pattern": "^cosmetic/(avatar|frame|table|tile|emoji)/[a-z0-9_]+/(static|anim|layer/[a-z0-9_]+)$" },
     "referenceId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]*$" },
     "source": {
       "type": "object",
       "required": ["type"],
       "additionalProperties": false,
       "properties": {
-        "type": { "enum": ["default", "shop", "pass", "mission", "promo", "rank_reward", "event"] },
+        "type": { "enum": ["default", "shop", "pass", "mission", "promo", "rank_reward", "first_purchase", "event", "chest"] },
         "ref": { "$ref": "#/$defs/referenceId" }
       },
       "if": { "required": ["type"], "properties": { "type": { "const": "default" } } },
       "then": { "properties": { "ref": false } },
       "else": { "required": ["ref"] }
-    },
-    "clips": {
-      "type": "object",
-      "required": ["idle", "win", "lose", "reaction"],
-      "additionalProperties": false,
-      "properties": {
-        "idle": { "$ref": "#/$defs/address" },
-        "win": { "$ref": "#/$defs/address" },
-        "lose": { "$ref": "#/$defs/address" },
-        "reaction": { "$ref": "#/$defs/address" }
-      }
     },
     "layer": {
       "type": "object",
@@ -72,45 +61,26 @@
         "artSource": { "enum": ["handmade", "ai_assisted"] },
         "culturalReview": { "const": "approved" },
         "animationAddress": { "$ref": "#/$defs/address" },
-        "clips": { "$ref": "#/$defs/clips" },
-        "modelAddress": { "$ref": "#/$defs/address" },
-        "modelHqAddress": { "$ref": "#/$defs/address" },
         "layers": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/layer" } },
         "group": { "$ref": "#/$defs/referenceId" }
       },
       "allOf": [
         {
-          "if": { "required": ["type"], "properties": { "type": { "enum": ["avatar", "frame", "emoji"] } } },
+          "if": { "required": ["type"], "properties": { "type": { "enum": ["avatar", "frame", "tile", "emoji"] } } },
           "then": {
-            "properties": { "clips": false, "layers": false, "modelAddress": false, "modelHqAddress": false },
+            "properties": { "layers": false },
             "if": { "required": ["animated"], "properties": { "animated": { "const": true } } },
             "then": { "required": ["animationAddress"] },
             "else": { "properties": { "animationAddress": false } }
           }
         },
         {
-          "if": { "required": ["type"], "properties": { "type": { "const": "character" } } },
-          "then": {
-            "properties": { "animationAddress": false, "layers": false },
-            "if": { "required": ["animated"], "properties": { "animated": { "const": true } } },
-            "then": { "required": ["clips", "modelAddress"] },
-            "else": { "properties": { "clips": false, "modelAddress": false, "modelHqAddress": false } }
-          }
-        },
-        {
           "if": { "required": ["type"], "properties": { "type": { "const": "table" } } },
           "then": {
-            "properties": { "animationAddress": false, "clips": false, "modelAddress": false, "modelHqAddress": false },
+            "properties": { "animationAddress": false },
             "if": { "required": ["animated"], "properties": { "animated": { "const": true } } },
             "then": { "required": ["layers"] },
             "else": { "properties": { "layers": false } }
-          }
-        },
-        {
-          "if": { "required": ["type"], "properties": { "type": { "const": "action" } } },
-          "then": {
-            "required": ["animationAddress"],
-            "properties": { "animated": { "const": true }, "clips": false, "layers": false, "modelAddress": false, "modelHqAddress": false }
           }
         },
         {

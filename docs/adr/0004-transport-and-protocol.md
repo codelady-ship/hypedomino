@@ -15,7 +15,7 @@ Turn-based real-time play with small messages, mobile networks that change IP an
 - Versioning:
   - The package is versioned by major (`hypedomino.v1`). A breaking redesign is a new package (`v2`) served in parallel for a transition window, and needs its own ADR.
   - Within a major version only additive changes are allowed. Field numbers are never reused or renumbered; removed fields are `reserved` with their names. Every enum has an `UNSPECIFIED` zero value, and unknown values must be handled safely.
-  - The first message after connect is a client hello carrying the app version and protocol major. The server compares the app version with an admin-managed minimum supported version and answers accept or `UPDATE_REQUIRED`. On `UPDATE_REQUIRED` the client blocks play and shows a store-update screen. The minimum version is config, not a constant.
+  - The first message after connect is a client hello carrying the app version and protocol major. The server compares the app version with an admin-managed minimum supported version and answers accept, `UPDATE_REQUIRED` or `MAINTENANCE`. On `UPDATE_REQUIRED` the client blocks play and shows a store-update screen; on `MAINTENANCE` it shows the maintenance screen with the end time from the hello (#146). The minimum version is config, not a constant.
 - Reconnect: a session token plus the last acknowledged sequence lets the server resume the room or resend a snapshot. Timeouts and grace windows are admin-tunable.
 
 ## Alternatives considered and why rejected

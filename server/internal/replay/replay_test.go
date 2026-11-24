@@ -158,17 +158,18 @@ func TestMalformedBytesAreRejected(t *testing.T) {
 	record := recordMatch(t, rules.Mode1v1, 2)
 	data, _ := record.MarshalBinary()
 	cases := map[string][]byte{
-		"empty":       {},
-		"magic":       append([]byte("XXX"), data[3:]...),
-		"version":     append(append([]byte{}, data[:3]...), append([]byte{9}, data[4:]...)...),
-		"mode":        append(append([]byte{}, data[:4]...), append([]byte{7}, data[5:]...)...),
-		"truncated":   data[:len(data)/2],
-		"trailing":    append(append([]byte{}, data...), 0),
-		"header only": data[:5],
-		"seed cut":    data[:9],
-		"bad tile":    tileTampered(data),
-		"bad result":  append(append([]byte{}, data[:len(data)-1]...), 9),
-		"bad end":     endTampered(data),
+		"empty":          {},
+		"magic":          append([]byte("XXX"), data[3:]...),
+		"version":        append(append([]byte{}, data[:3]...), append([]byte{9}, data[4:]...)...),
+		"mode":           append(append([]byte{}, data[:4]...), append([]byte{7}, data[5:]...)...),
+		"truncated":      data[:len(data)/2],
+		"trailing":       append(append([]byte{}, data...), 0),
+		"header only":    data[:5],
+		"seed cut":       data[:9],
+		"bad tile":       tileTampered(data),
+		"bad result":     append(append([]byte{}, data[:len(data)-1]...), 9),
+		"bad end":        endTampered(data),
+		"endless redeal": endlessRedeal(record),
 	}
 	for name, bytes := range cases {
 		var decoded Record
@@ -176,6 +177,12 @@ func TestMalformedBytesAreRejected(t *testing.T) {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
+}
+
+func endlessRedeal(record Record) []byte {
+	record.Config.RedealDoublesThreshold = 0
+	out, _ := record.MarshalBinary()
+	return out
 }
 
 func tileTampered(data []byte) []byte {

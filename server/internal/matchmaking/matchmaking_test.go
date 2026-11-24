@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/bot"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
@@ -131,6 +132,25 @@ func TestQueuesModesAndRegionsNeverMix(t *testing.T) {
 	}
 }
 
+func TestShadowbannedAccountsArePairedOnlyWithEachOther(t *testing.T) {
+	honest := entry("honest", rules.Mode1v1, QueueRanked, 1200, time.Minute)
+	cheater := entry("cheater", rules.Mode1v1, QueueRanked, 1200, time.Minute)
+	cheater.Shadowbanned = true
+	matches, remaining := Form(DefaultConfig(), []Entry{honest, cheater}, start, seeded(1))
+	if len(matches) != 0 || len(remaining) != 2 {
+		t.Fatalf("a shadowbanned account met an honest one: %+v", matches)
+	}
+	other := entry("other", rules.Mode1v1, QueueRanked, 1200, time.Minute)
+	other.Shadowbanned = true
+	matches, remaining = Form(DefaultConfig(), []Entry{honest, cheater, other}, start, seeded(1))
+	if len(matches) != 1 || len(remaining) != 1 || remaining[0].Account != "honest" {
+		t.Fatalf("the cheater pool did not pair: %+v left %+v", matches, remaining)
+	}
+	if seats := accounts(matches[0]); len(seats) != 2 {
+		t.Fatalf("cheater pool match %+v", matches[0])
+	}
+}
+
 func TestRankedQueueNeverSeatsABot(t *testing.T) {
 	for _, mode := range []rules.Mode{rules.Mode1v1, rules.Mode2v2} {
 		entries := []Entry{entry("alone", mode, QueueRanked, 1200, 24*time.Hour)}
@@ -251,5 +271,106 @@ func TestAnAccountInARunningMatchCannotQueue(t *testing.T) {
 	}
 	if pool.Queued("playing") || !pool.Queued("free") {
 		t.Fatal("the guarded account was queued")
+	}
+}
+
+func ranked(account string, mode rules.Mode, mmr, rank int, waited time.Duration) Entry {
+	e := entry(account, mode, QueueRanked, mmr, waited)
+	e.Rank, e.Placed = rank, true
+	return e
+}
+
+func TestPlacedRankedPlayersStayWithinTheRankWindow(t *testing.T) {
+	config := DefaultConfig()
+	entries := []Entry{
+		ranked("gold", rules.Mode1v1, 1400, 13, time.Hour),
+		ranked("diamond", rules.Mode1v1, 1420, 24, time.Hour),
+		ranked("platinum", rules.Mode1v1, 1450, 19, time.Hour),
+	}
+	matches, remaining := Form(config, entries, start, seeded(1))
+	if len(matches) != 1 || len(remaining) != 1 || remaining[0].Account != "diamond" {
+		t.Fatalf("matches %+v remaining %+v", matches, remaining)
+	}
+	if _, ok := accounts(matches[0])["gold"]; !ok {
+		t.Fatalf("gold is not seated: %+v", matches[0])
+	}
+	placing := entry("placing", rules.Mode1v1, QueueRanked, 1420, time.Hour)
+	matches, remaining = Form(config, []Entry{ranked("gold", rules.Mode1v1, 1400, 13, time.Hour), ranked("diamond", rules.Mode1v1, 1420, 24, time.Hour), placing}, start, seeded(1))
+	if len(matches) != 1 || len(remaining) != 1 || remaining[0].Account != "diamond" {
+		t.Fatalf("placement: matches %+v remaining %+v", matches, remaining)
+	}
+	casual := []Entry{entry("gold", rules.Mode1v1, QueueRanked, 1400, time.Hour), entry("diamond", rules.Mode1v1, QueueRanked, 1420, time.Hour)}
+	casual[0].Rank, casual[0].Placed, casual[1].Rank, casual[1].Placed = 13, true, 24, true
+	if matches, _ := Form(config, casual, start, seeded(1)); len(matches) != 0 {
+		t.Fatalf("casual entries obey the rank window: %+v", matches)
+	}
+	for i := range casual {
+		casual[i].Queue = QueueCasual
+	}
+	if matches, _ := Form(config, casual, start, seeded(1)); len(matches) != 1 {
+		t.Fatalf("casual queue ignores ranks: %+v", matches)
+	}
+	config.RankWindowDivisions = 0
+	if matches, _ := Form(config, entries, start, seeded(1)); len(matches) != 1 || len(accounts(matches[0])) != 2 {
+		t.Fatalf("disabled rank window: %+v", matches)
+	}
+}
+
+func TestAFormedMatchKnowsItsQueueAndTeams(t *testing.T) {
+	entries := []Entry{
+		ranked("a", rules.Mode2v2, 1200, 10, time.Minute),
+		ranked("b", rules.Mode2v2, 1200, 10, time.Minute),
+		ranked("c", rules.Mode2v2, 1200, 10, time.Minute),
+		ranked("d", rules.Mode2v2, 1200, 10, time.Minute),
+		entry("e", rules.Mode1v1, QueueCasual, 1200, time.Minute),
+		entry("f", rules.Mode1v1, QueueCasual, 1200, time.Minute),
+	}
+	matches, _ := Form(DefaultConfig(), entries, start, seeded(3))
+	if len(matches) != 2 {
+		t.Fatalf("matches %+v", matches)
+	}
+	for _, match := range matches {
+		teams := match.Teams()
+		switch match.Mode {
+		case rules.Mode2v2:
+			if !match.Ranked() || len(teams[0]) != 2 || len(teams[1]) != 2 {
+				t.Fatalf("2v2 %+v teams %v", match, teams)
+			}
+		case rules.Mode1v1:
+			if match.Ranked() || len(teams[0]) != 1 || len(teams[1]) != 1 {
+				t.Fatalf("1v1 %+v teams %v", match, teams)
+			}
+		}
+	}
+}
+
+func TestPlayersWhoMetTooOftenAreKeptApart(t *testing.T) {
+	a := ranked("a", rules.Mode1v1, 1200, 10, time.Hour)
+	a.Avoid = []string{"b"}
+	b := ranked("b", rules.Mode1v1, 1200, 10, time.Hour)
+	c := ranked("c", rules.Mode1v1, 1200, 10, time.Minute)
+	matches, remaining := Form(DefaultConfig(), []Entry{a, b, c}, start, seeded(1))
+	if len(matches) != 1 || len(remaining) != 1 || remaining[0].Account != "b" {
+		t.Fatalf("matches %+v remaining %+v", matches, remaining)
+	}
+	if _, ok := accounts(matches[0])["a"]; !ok {
+		t.Fatalf("a not seated %+v", matches[0])
+	}
+	b.Avoid = []string{"a"}
+	a.Avoid = nil
+	if matches, _ := Form(DefaultConfig(), []Entry{a, b}, start, seeded(1)); len(matches) != 0 {
+		t.Fatalf("the other side's list is ignored: %+v", matches)
+	}
+}
+
+func TestTheMatchmakingConfigKeepsDefaultsAndRefusesUnknownKeysAndBadValues(t *testing.T) {
+	config, err := Parse([]byte(`{"mmrWindowStart":150,"casualBotLevel":"easy"}`))
+	if err != nil || config.MmrWindowStart != 150 || config.MmrWindowMax != 400 || config.BotLevel(QueueCasual) != bot.Easy || config.BotLevel(QueueRanked) != bot.Medium {
+		t.Fatalf("config %+v, %v", config, err)
+	}
+	for _, raw := range []string{`{"mmrWindowStart":500}`, `{"mmrWindowStepSeconds":0}`, `{"casualBotFillSeconds":-1}`, `{"rankedBotLevel":"brutal"}`, `{"queueTimeout":5}`, `[]`} {
+		if _, err := Parse([]byte(raw)); !errors.Is(err, ErrInvalidConfig) {
+			t.Fatalf("%s accepted: %v", raw, err)
+		}
 	}
 }

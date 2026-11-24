@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+configMapGenerator:
+  - name: prometheus-rules-server
+    files:
+      - server-latency.rules.yaml
+    options:
+      labels:
+        app.kubernetes.io/part-of: hypedomino
+        prometheus.io/rules: "true"
+generatorOptions:
+  disableNameSuffixHash: true

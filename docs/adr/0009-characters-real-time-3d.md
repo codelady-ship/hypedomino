@@ -1,10 +1,12 @@
 # 0009. Characters: real-time 3D in the Universal Renderer
 
-Status: Accepted
+Status: Superseded (owner decision 2026-11-12: no 3D characters)
 Date: 2026-10-27
 Issue: #166
 
 Supersedes the renderer choice of ADR 0001 (URP 2D renderer). Everything else in ADR 0001 stands.
+
+**Superseded 2026-11-12.** The owner decided that the game has no 3D characters anywhere: not at the match table, in the friend lobby, the shop or the collection. The `character` cosmetic type and the `action` type that drove its lobby clips are removed (`docs/cosmetics.md`), and nothing in the game is drawn as a 3D mesh. The client project keeps the Universal Renderer this ADR introduced; the URP asset is unchanged. Going back to the 2D renderer would be its own change with a measurement. The rest of this record is kept as history.
 
 ## Context
 The owner chose a premium, semi-realistic look for characters (2026-10-26) and wants it to scale with the graphics setting: the highest quality at the top setting, lower resolution when the player lowers it (2026-10-27). A first production test built two characters through image-to-3D, rigging and rendered sprite sheets. It showed the limits of sprites for this look:

@@ -1,0 +1,63 @@
+rule_files:
+  - server-latency.rules.yaml
+evaluation_interval: 1m
+tests:
+  - name: slow moves for 15 minutes page
+    interval: 1m
+    input_series:
+      - series: move_roundtrip_seconds_bucket{le="0.1"}
+        values: 0+5880x40
+      - series: move_roundtrip_seconds_bucket{le="0.15"}
+        values: 0+6000x40
+      - series: move_roundtrip_seconds_bucket{le="+Inf"}
+        values: 0+6000x40
+      - series: move_roundtrip_seconds_count
+        values: 0+6000x40
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: GameNodeMoveRoundTripOverBudget
+        exp_alerts: []
+      - eval_time: 25m
+        alertname: GameNodeMoveRoundTripOverBudget
+        exp_alerts:
+          - exp_labels:
+              severity: sev2
+              team: server
+            exp_annotations:
+              summary: Move round-trip p99 over the 100 ms budget for 15 minutes
+              description: >-
+                The server histogram move_roundtrip_seconds reports a p99 of 125ms
+                over the last 5 minutes, above the 100 ms budget of docs/performance.md 6.2, for 15 minutes.
+                It measures only the in-process share of the round-trip, so players see at least this much.
+                On a shared vCPU game node this is the trigger to move the game node to dedicated vCPU (ADR 0014).
+              runbook: docs/launch-runbook.md 5.6 Game node to dedicated vCPU
+  - name: moves within budget stay quiet
+    interval: 1m
+    input_series:
+      - series: move_roundtrip_seconds_bucket{le="0.1"}
+        values: 0+5997x40
+      - series: move_roundtrip_seconds_bucket{le="0.15"}
+        values: 0+6000x40
+      - series: move_roundtrip_seconds_bucket{le="+Inf"}
+        values: 0+6000x40
+      - series: move_roundtrip_seconds_count
+        values: 0+6000x40
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: GameNodeMoveRoundTripOverBudget
+        exp_alerts: []
+  - name: a few slow moves at night stay quiet
+    interval: 1m
+    input_series:
+      - series: move_roundtrip_seconds_bucket{le="0.1"}
+        values: 0+0x40
+      - series: move_roundtrip_seconds_bucket{le="0.15"}
+        values: 0+30x40
+      - series: move_roundtrip_seconds_bucket{le="+Inf"}
+        values: 0+30x40
+      - series: move_roundtrip_seconds_count
+        values: 0+30x40
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: GameNodeMoveRoundTripOverBudget
+        exp_alerts: []

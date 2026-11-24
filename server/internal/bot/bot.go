@@ -46,6 +46,23 @@ func (l Level) String() string {
 	return levelNames[l]
 }
 
+func (l Level) MarshalText() ([]byte, error) {
+	if l >= levelCount {
+		return nil, fmt.Errorf("bot: invalid level %d", l)
+	}
+	return []byte(levelNames[l]), nil
+}
+
+func (l *Level) UnmarshalText(text []byte) error {
+	for level, name := range levelNames {
+		if name == string(text) {
+			*l = Level(level)
+			return nil
+		}
+	}
+	return fmt.Errorf("bot: unknown level %q", text)
+}
+
 type Weights struct {
 	Score       int
 	Pips        int

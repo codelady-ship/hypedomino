@@ -1,7 +1,9 @@
 package cosmetics
 
 import (
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,15 +15,14 @@ import (
 const SchemaVersion = 1
 
 const (
-	TypeAvatar    = "avatar"
-	TypeCharacter = "character"
-	TypeFrame     = "frame"
-	TypeTable     = "table"
-	TypeEmoji     = "emoji"
-	TypeAction    = "action"
+	TypeAvatar = "avatar"
+	TypeFrame  = "frame"
+	TypeTable  = "table"
+	TypeTile   = "tile"
+	TypeEmoji  = "emoji"
 )
 
-var Types = []string{TypeAvatar, TypeCharacter, TypeFrame, TypeTable, TypeEmoji, TypeAction}
+var Types = []string{TypeAvatar, TypeFrame, TypeTable, TypeTile, TypeEmoji}
 
 const (
 	Live     = "live"
@@ -78,6 +79,7 @@ func (i Item) Equippable() bool {
 
 type Catalog struct {
 	Version int
+	Hash    string
 	items   map[string]Item
 	order   []string
 }
@@ -88,7 +90,7 @@ type manifest struct {
 	Items           []Item `json:"items"`
 }
 
-var idPattern = regexp.MustCompile(`^(avatar|character|frame|table|emoji|action)\.[a-z0-9_]+$`)
+var idPattern = regexp.MustCompile(`^(` + strings.Join(Types, "|") + `)\.[a-z0-9_]+$`)
 
 func Builtin() *Catalog {
 	catalog, err := Parse(builtin)
@@ -106,6 +108,15 @@ func Load(path string) (*Catalog, error) {
 	return Parse(raw)
 }
 
+func Hash(raw []byte) string {
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
+
+func File(hash string) string {
+	return "cosmetics/" + hash + ".json"
+}
+
 func Parse(raw []byte) (*Catalog, error) {
 	var m manifest
 	if err := json.Unmarshal(raw, &m); err != nil {
@@ -117,7 +128,7 @@ func Parse(raw []byte) (*Catalog, error) {
 	if m.ManifestVersion < 1 || len(m.Items) == 0 {
 		return nil, fmt.Errorf("%w: manifestVersion and items are required", ErrInvalid)
 	}
-	c := &Catalog{Version: m.ManifestVersion, items: make(map[string]Item, len(m.Items))}
+	c := &Catalog{Version: m.ManifestVersion, Hash: Hash(raw), items: make(map[string]Item, len(m.Items))}
 	for _, item := range m.Items {
 		if err := check(item); err != nil {
 			return nil, err
@@ -129,7 +140,7 @@ func Parse(raw []byte) (*Catalog, error) {
 		c.order = append(c.order, item.ID)
 	}
 	for _, t := range Types {
-		if _, ok := c.Default(t); !ok && t != TypeAction {
+		if _, ok := c.Default(t); !ok {
 			return nil, fmt.Errorf("%w: no live default %s", ErrInvalid, t)
 		}
 	}
@@ -161,8 +172,8 @@ func check(item Item) error {
 		}
 		seen[s] = true
 	}
-	if item.Default() && (item.Availability != Live || item.Animated || item.Type == TypeAction) {
-		return fmt.Errorf("%w: default item %s must be live, static and not an action", ErrInvalid, item.ID)
+	if item.Default() && (item.Availability != Live || item.Animated) {
+		return fmt.Errorf("%w: default item %s must be live and static", ErrInvalid, item.ID)
 	}
 	return nil
 }
@@ -203,4 +214,8 @@ func (c *Catalog) Defaults() []Item {
 		}
 	}
 	return items
+}
+
+func ValidItemID(id string) bool {
+	return idPattern.MatchString(id)
 }

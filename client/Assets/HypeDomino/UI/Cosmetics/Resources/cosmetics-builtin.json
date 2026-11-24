@@ -1,0 +1,93 @@
+{
+  "$schema": "../schema.json",
+  "schemaVersion": 1,
+  "manifestVersion": 1,
+  "items": [
+    {
+      "id": "avatar.starter",
+      "type": "avatar",
+      "revision": 1,
+      "nameKey": "cosmetic.avatar.starter.name",
+      "rarityId": "common",
+      "animated": false,
+      "staticAddress": "cosmetic/avatar/starter/static",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "default"
+        }
+      ],
+      "artSource": "handmade",
+      "culturalReview": "approved"
+    },
+    {
+      "id": "frame.starter",
+      "type": "frame",
+      "revision": 1,
+      "nameKey": "cosmetic.frame.starter.name",
+      "rarityId": "common",
+      "animated": false,
+      "staticAddress": "cosmetic/frame/starter/static",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "default"
+        }
+      ],
+      "artSource": "handmade",
+      "culturalReview": "approved"
+    },
+    {
+      "id": "table.starter",
+      "type": "table",
+      "revision": 2,
+      "nameKey": "cosmetic.table.starter.name",
+      "rarityId": "common",
+      "animated": false,
+      "staticAddress": "cosmetic/table/starter/static",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "default"
+        }
+      ],
+      "artSource": "ai_assisted",
+      "culturalReview": "approved"
+    },
+    {
+      "id": "tile.starter",
+      "type": "tile",
+      "revision": 1,
+      "nameKey": "cosmetic.tile.starter.name",
+      "rarityId": "common",
+      "animated": false,
+      "staticAddress": "cosmetic/tile/starter/static",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "default"
+        }
+      ],
+      "artSource": "handmade",
+      "culturalReview": "approved"
+    },
+    {
+      "id": "emoji.smile",
+      "type": "emoji",
+      "revision": 1,
+      "nameKey": "cosmetic.emoji.smile.name",
+      "rarityId": "common",
+      "animated": false,
+      "staticAddress": "cosmetic/emoji/smile/static",
+      "group": "basic",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "default"
+        }
+      ],
+      "artSource": "handmade",
+      "culturalReview": "approved"
+    }
+  ]
+}

@@ -19,7 +19,7 @@ test("the committed sample season matches the XP formula and the economy coin bu
 test("the sample table has one row per level", () => {
   const rows = parseSampleTable(docText);
   assert.equal(rows.length, 100);
-  assert.deepEqual(rows[0], { level: 1, xpTotal: 0, free: "30 coins", premium: "30 coins + `character.s1_navigator` (`epic`)" });
+  assert.deepEqual(rows[0], { level: 1, xpTotal: 0, free: "30 coins", premium: "6 crystals + `avatar.s1_navigator` (`epic`)" });
 });
 
 test("the XP formula grows linearly and then flattens at the maximum", () => {
@@ -38,15 +38,15 @@ test("a free track that does not pay the economy budget is reported", () => {
 });
 
 test("a changed economy budget is reported", () => {
-  assertReported(checkPassSeason(docText, csvText.replace("PassPremiumTrackCoins,3000,", "PassPremiumTrackCoins,3500,")), "premium track pays 3000 coins, PassPremiumTrackCoins is 3500");
+  assertReported(checkPassSeason(docText, csvText.replace("PassPremiumTrackCrystals,600,", "PassPremiumTrackCrystals,700,")), "premium track pays 600 crystals, PassPremiumTrackCrystals is 700");
 });
 
 test("a missing level is reported", () => {
-  assertReported(checkPassSeason(docText.replace("| 42 | 35750 | - | 30 coins |\n", ""), csvText), "sample table has 99 levels, PassLevels is 100");
+  assertReported(checkPassSeason(docText.replace("| 42 | 35750 | - | 6 crystals |\n", ""), csvText), "sample table has 99 levels, PassLevels is 100");
 });
 
 test("a premium level without a reward is reported", () => {
-  assertReported(checkPassSeason(docText.replace("| 42 | 35750 | - | 30 coins |", "| 42 | 35750 | - | - |"), csvText), "level 42: premium track has no reward");
+  assertReported(checkPassSeason(docText.replace("| 42 | 35750 | - | 6 crystals |", "| 42 | 35750 | - | - |"), csvText), "level 42: premium track has no reward");
 });
 
 test("a curve missing from the config table is reported", () => {

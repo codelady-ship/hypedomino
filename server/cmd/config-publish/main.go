@@ -8,11 +8,28 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/Alievs-corp/hypedomino/server/internal/cosmetics"
+	"github.com/Alievs-corp/hypedomino/server/internal/dailylogin"
 	"github.com/Alievs-corp/hypedomino/server/internal/db"
+	"github.com/Alievs-corp/hypedomino/server/internal/gamestrings"
+	"github.com/Alievs-corp/hypedomino/server/internal/liveops"
+	"github.com/Alievs-corp/hypedomino/server/internal/matchmaking"
+	"github.com/Alievs-corp/hypedomino/server/internal/matchreward"
+	"github.com/Alievs-corp/hypedomino/server/internal/medal"
+	"github.com/Alievs-corp/hypedomino/server/internal/mission"
+	"github.com/Alievs-corp/hypedomino/server/internal/pass"
+	"github.com/Alievs-corp/hypedomino/server/internal/penalties"
+	"github.com/Alievs-corp/hypedomino/server/internal/rating"
+	"github.com/Alievs-corp/hypedomino/server/internal/rulesconfig"
 	"github.com/Alievs-corp/hypedomino/server/internal/shop"
 	"github.com/Alievs-corp/hypedomino/server/internal/snapshot"
+	"github.com/Alievs-corp/hypedomino/server/internal/storeprice"
 )
 
 func main() {
@@ -20,7 +37,7 @@ func main() {
 	domain := flags.String("domain", shop.Domain, "config domain to publish")
 	file := flags.String("file", "", "JSON file with the new snapshot")
 	flags.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: config-publish -domain shop -file shop.json")
+		fmt.Fprintln(os.Stderr, "usage: config-publish -domain "+strings.Join(domains, "|")+" -file snapshot.json")
 		flags.PrintDefaults()
 	}
 	flags.Parse(os.Args[1:])
@@ -37,6 +54,8 @@ func main() {
 	}
 }
 
+var domains = []string{cosmetics.Domain, dailylogin.Domain, gamestrings.Domain, liveops.Domain, matchmaking.Domain, matchreward.Domain, medal.Domain, mission.Domain, pass.Domain, penalties.Domain, rating.Domain, rulesconfig.Domain, shop.Domain, storeprice.Domain}
+
 var errDomain = errors.New("unknown config domain")
 
 func run(ctx context.Context, url, domain, file string, out io.Writer) error {
@@ -52,6 +71,9 @@ func run(ctx context.Context, url, domain, file string, out io.Writer) error {
 		return err
 	}
 	defer pool.Close()
+	if err := checkAgainstPublished(ctx, pool, domain, raw); err != nil {
+		return err
+	}
 	version, err := snapshot.Publish(ctx, pool, domain, raw)
 	if err != nil {
 		return err
@@ -62,9 +84,195 @@ func run(ctx context.Context, url, domain, file string, out io.Writer) error {
 
 func validate(domain string, raw []byte) error {
 	switch domain {
+	case dailylogin.Domain:
+		_, err := dailylogin.Parse(raw)
+		return err
+	case penalties.Domain:
+		_, err := penalties.Parse(raw)
+		return err
+	case matchmaking.Domain:
+		_, err := matchmaking.Parse(raw)
+		return err
+	case matchreward.Domain:
+		_, err := matchreward.Parse(raw)
+		return err
+	case medal.Domain:
+		_, err := medal.Parse(raw)
+		return err
+	case mission.Domain:
+		_, err := mission.Parse(raw)
+		return err
+	case pass.Domain:
+		_, err := pass.Parse(raw)
+		return err
 	case shop.Domain:
 		_, err := shop.Parse(raw, shop.DefaultConfig())
 		return err
+	case rulesconfig.Domain:
+		_, err := rulesconfig.Parse(raw)
+		return err
+	case liveops.Domain:
+		_, err := liveops.Parse(raw)
+		return err
+	case cosmetics.Domain:
+		_, err := cosmetics.ParseManifest(raw)
+		return err
+	case gamestrings.Domain:
+		_, err := gamestrings.ParseLocalization(raw)
+		return err
+	case rating.Domain:
+		_, err := rating.Parse(raw)
+		return err
+	case storeprice.Domain:
+		_, err := storeprice.Parse(raw)
+		return err
 	}
 	return fmt.Errorf("%w: %s", errDomain, domain)
+}
+
+func checkAgainstPublished(ctx context.Context, pool *pgxpool.Pool, domain string, raw []byte) error {
+	switch domain {
+	case cosmetics.Domain:
+		return followsPublished(ctx, pool, raw)
+	case pass.Domain:
+		return passFollowsPublished(ctx, pool, raw)
+	case mission.Domain:
+		return missionSourcesArePublished(ctx, pool, raw)
+	case shop.Domain:
+		return catalogIsPublishable(ctx, pool, raw)
+	case rating.Domain:
+		return ratingFitsPublishedPenalties(ctx, pool, raw)
+	case penalties.Domain:
+		return penaltiesFitPublishedRating(ctx, pool, raw)
+	case gamestrings.Domain:
+		localization, err := gamestrings.ParseLocalization(raw)
+		if err != nil {
+			return err
+		}
+		_, err = gamestrings.NewStore(pool).Resolve(ctx, localization)
+		return err
+	}
+	return nil
+}
+
+func catalogIsPublishable(ctx context.Context, pool *pgxpool.Pool, raw []byte) error {
+	catalog, err := shop.Parse(raw, shop.DefaultConfig())
+	if err != nil {
+		return err
+	}
+	items, err := cosmetics.Published(ctx, pool)
+	if err != nil {
+		return err
+	}
+	if err := catalog.CheckSources(items); err != nil {
+		return err
+	}
+	inEffect, err := snapshot.InEffectWithinDays(ctx, pool, shop.Domain, shop.DefaultConfig().ReferencePriceDays)
+	if err != nil {
+		return err
+	}
+	return catalog.CheckReferencePrices(inEffect)
+}
+
+func missionSourcesArePublished(ctx context.Context, pool *pgxpool.Pool, raw []byte) error {
+	catalog, err := mission.Parse(raw)
+	if err != nil {
+		return err
+	}
+	medals := medal.Default()
+	_, published, err := snapshot.Latest(ctx, pool, medal.Domain)
+	switch {
+	case err == nil:
+		if medals, err = medal.Parse(published); err != nil {
+			return err
+		}
+	case !errors.Is(err, snapshot.ErrNone):
+		return err
+	}
+	items, err := cosmetics.Published(ctx, pool)
+	if err != nil {
+		return err
+	}
+	return catalog.CheckSources(func(id string, source cosmetics.Source) bool {
+		found, ok := medals.Medal(id)
+		return ok && found.Lists(source)
+	}, func(id string, source cosmetics.Source) bool {
+		item, ok := items.Item(id)
+		return ok && item.Grantable(source)
+	})
+}
+
+func followsPublished(ctx context.Context, pool *pgxpool.Pool, raw []byte) error {
+	_, published, err := snapshot.Latest(ctx, pool, cosmetics.Domain)
+	if errors.Is(err, snapshot.ErrNone) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	previous, err := cosmetics.ParseManifest(published)
+	if err != nil {
+		return err
+	}
+	next, err := cosmetics.ParseManifest(raw)
+	if err != nil {
+		return err
+	}
+	return cosmetics.CheckSuccessor(previous, next)
+}
+
+func passFollowsPublished(ctx context.Context, pool *pgxpool.Pool, raw []byte) error {
+	_, published, err := snapshot.Latest(ctx, pool, pass.Domain)
+	if errors.Is(err, snapshot.ErrNone) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	previous, err := pass.Parse(published)
+	if err != nil {
+		return err
+	}
+	next, err := pass.Parse(raw)
+	if err != nil {
+		return err
+	}
+	_, err = pass.CheckFrozen(previous, next, time.Now(), nil)
+	return err
+}
+
+func ratingFitsPublishedPenalties(ctx context.Context, pool *pgxpool.Pool, raw []byte) error {
+	next, err := rating.Parse(raw)
+	if err != nil {
+		return err
+	}
+	offenses := penalties.DefaultConfig()
+	_, published, err := snapshot.Latest(ctx, pool, penalties.Domain)
+	switch {
+	case err == nil:
+		if offenses, err = penalties.Parse(published); err != nil {
+			return err
+		}
+	case !errors.Is(err, snapshot.ErrNone):
+		return err
+	}
+	return next.CheckOffensePenalty(offenses.OffenseRatingPenalty)
+}
+
+func penaltiesFitPublishedRating(ctx context.Context, pool *pgxpool.Pool, raw []byte) error {
+	next, err := penalties.Parse(raw)
+	if err != nil {
+		return err
+	}
+	ranked := rating.Default()
+	_, published, err := snapshot.Latest(ctx, pool, rating.Domain)
+	switch {
+	case err == nil:
+		if ranked, err = rating.Parse(published); err != nil {
+			return err
+		}
+	case !errors.Is(err, snapshot.ErrNone):
+		return err
+	}
+	return ranked.CheckOffensePenalty(next.OffenseRatingPenalty)
 }

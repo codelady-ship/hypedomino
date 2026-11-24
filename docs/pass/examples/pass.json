@@ -1,0 +1,888 @@
+{
+  "schema": 1,
+  "freeTrackCoins": 1500,
+  "premiumTrackCrystals": 600,
+  "premiumPlusLevels": 20,
+  "matchXp1v1": {
+    "win": 100,
+    "loss": 60
+  },
+  "matchXp2v2": {
+    "win": 140,
+    "loss": 80
+  },
+  "dailyMatchXpCap": 2000,
+  "botSeatRewardPercent": 50,
+  "levelCoinPrice": 200,
+  "levelCrystalPrice": 40,
+  "seasons": [
+    {
+      "id": "season_1",
+      "start": "2026-12-01T00:00:00Z",
+      "end": "2027-03-01T00:00:00Z",
+      "curve": {
+        "levels": 100,
+        "xpBase": 300,
+        "xpStep": 50,
+        "xpMax": 1000
+      },
+      "free": {
+        "1": {
+          "id": "bundle.pass_season_1_free_1",
+          "revision": 1,
+          "coins": 30
+        },
+        "3": {
+          "id": "bundle.pass_season_1_free_3",
+          "revision": 1,
+          "coins": 30
+        },
+        "5": {
+          "id": "bundle.pass_season_1_free_5",
+          "revision": 1,
+          "coins": 30
+        },
+        "7": {
+          "id": "bundle.pass_season_1_free_7",
+          "revision": 1,
+          "coins": 30
+        },
+        "9": {
+          "id": "bundle.pass_season_1_free_9",
+          "revision": 1,
+          "coins": 30
+        },
+        "10": {
+          "id": "bundle.pass_season_1_free_10",
+          "revision": 1,
+          "cosmetics": [
+            "emoji.s1_wave"
+          ]
+        },
+        "11": {
+          "id": "bundle.pass_season_1_free_11",
+          "revision": 1,
+          "coins": 30
+        },
+        "13": {
+          "id": "bundle.pass_season_1_free_13",
+          "revision": 1,
+          "coins": 30
+        },
+        "15": {
+          "id": "bundle.pass_season_1_free_15",
+          "revision": 1,
+          "coins": 30
+        },
+        "17": {
+          "id": "bundle.pass_season_1_free_17",
+          "revision": 1,
+          "coins": 30
+        },
+        "19": {
+          "id": "bundle.pass_season_1_free_19",
+          "revision": 1,
+          "coins": 30
+        },
+        "20": {
+          "id": "bundle.pass_season_1_free_20",
+          "revision": 1,
+          "cosmetics": [
+            "avatar.s1_sailor"
+          ]
+        },
+        "21": {
+          "id": "bundle.pass_season_1_free_21",
+          "revision": 1,
+          "coins": 30
+        },
+        "23": {
+          "id": "bundle.pass_season_1_free_23",
+          "revision": 1,
+          "coins": 30
+        },
+        "25": {
+          "id": "bundle.pass_season_1_free_25",
+          "revision": 1,
+          "coins": 30
+        },
+        "27": {
+          "id": "bundle.pass_season_1_free_27",
+          "revision": 1,
+          "coins": 30
+        },
+        "29": {
+          "id": "bundle.pass_season_1_free_29",
+          "revision": 1,
+          "coins": 30
+        },
+        "30": {
+          "id": "bundle.pass_season_1_free_30",
+          "revision": 1,
+          "cosmetics": [
+            "frame.s1_rope"
+          ]
+        },
+        "31": {
+          "id": "bundle.pass_season_1_free_31",
+          "revision": 1,
+          "coins": 30
+        },
+        "33": {
+          "id": "bundle.pass_season_1_free_33",
+          "revision": 1,
+          "coins": 30
+        },
+        "35": {
+          "id": "bundle.pass_season_1_free_35",
+          "revision": 1,
+          "coins": 30
+        },
+        "37": {
+          "id": "bundle.pass_season_1_free_37",
+          "revision": 1,
+          "coins": 30
+        },
+        "39": {
+          "id": "bundle.pass_season_1_free_39",
+          "revision": 1,
+          "coins": 30
+        },
+        "40": {
+          "id": "bundle.pass_season_1_free_40",
+          "revision": 1,
+          "cosmetics": [
+            "emoji.s1_thumbs"
+          ]
+        },
+        "41": {
+          "id": "bundle.pass_season_1_free_41",
+          "revision": 1,
+          "coins": 30
+        },
+        "43": {
+          "id": "bundle.pass_season_1_free_43",
+          "revision": 1,
+          "coins": 30
+        },
+        "45": {
+          "id": "bundle.pass_season_1_free_45",
+          "revision": 1,
+          "coins": 30
+        },
+        "47": {
+          "id": "bundle.pass_season_1_free_47",
+          "revision": 1,
+          "coins": 30
+        },
+        "49": {
+          "id": "bundle.pass_season_1_free_49",
+          "revision": 1,
+          "coins": 30
+        },
+        "50": {
+          "id": "bundle.pass_season_1_free_50",
+          "revision": 1,
+          "cosmetics": [
+            "avatar.s1_captain"
+          ]
+        },
+        "51": {
+          "id": "bundle.pass_season_1_free_51",
+          "revision": 1,
+          "coins": 30
+        },
+        "53": {
+          "id": "bundle.pass_season_1_free_53",
+          "revision": 1,
+          "coins": 30
+        },
+        "55": {
+          "id": "bundle.pass_season_1_free_55",
+          "revision": 1,
+          "coins": 30
+        },
+        "57": {
+          "id": "bundle.pass_season_1_free_57",
+          "revision": 1,
+          "coins": 30
+        },
+        "59": {
+          "id": "bundle.pass_season_1_free_59",
+          "revision": 1,
+          "coins": 30
+        },
+        "60": {
+          "id": "bundle.pass_season_1_free_60",
+          "revision": 1,
+          "cosmetics": [
+            "table.s1_harbor"
+          ]
+        },
+        "61": {
+          "id": "bundle.pass_season_1_free_61",
+          "revision": 1,
+          "coins": 30
+        },
+        "63": {
+          "id": "bundle.pass_season_1_free_63",
+          "revision": 1,
+          "coins": 30
+        },
+        "65": {
+          "id": "bundle.pass_season_1_free_65",
+          "revision": 1,
+          "coins": 30
+        },
+        "67": {
+          "id": "bundle.pass_season_1_free_67",
+          "revision": 1,
+          "coins": 30
+        },
+        "69": {
+          "id": "bundle.pass_season_1_free_69",
+          "revision": 1,
+          "coins": 30
+        },
+        "70": {
+          "id": "bundle.pass_season_1_free_70",
+          "revision": 1,
+          "cosmetics": [
+            "frame.s1_anchor"
+          ]
+        },
+        "71": {
+          "id": "bundle.pass_season_1_free_71",
+          "revision": 1,
+          "coins": 30
+        },
+        "73": {
+          "id": "bundle.pass_season_1_free_73",
+          "revision": 1,
+          "coins": 30
+        },
+        "75": {
+          "id": "bundle.pass_season_1_free_75",
+          "revision": 1,
+          "coins": 30
+        },
+        "77": {
+          "id": "bundle.pass_season_1_free_77",
+          "revision": 1,
+          "coins": 30
+        },
+        "79": {
+          "id": "bundle.pass_season_1_free_79",
+          "revision": 1,
+          "coins": 30
+        },
+        "80": {
+          "id": "bundle.pass_season_1_free_80",
+          "revision": 1,
+          "cosmetics": [
+            "emoji.s1_cheer"
+          ]
+        },
+        "81": {
+          "id": "bundle.pass_season_1_free_81",
+          "revision": 1,
+          "coins": 30
+        },
+        "83": {
+          "id": "bundle.pass_season_1_free_83",
+          "revision": 1,
+          "coins": 30
+        },
+        "85": {
+          "id": "bundle.pass_season_1_free_85",
+          "revision": 1,
+          "coins": 30
+        },
+        "87": {
+          "id": "bundle.pass_season_1_free_87",
+          "revision": 1,
+          "coins": 30
+        },
+        "89": {
+          "id": "bundle.pass_season_1_free_89",
+          "revision": 1,
+          "coins": 30
+        },
+        "90": {
+          "id": "bundle.pass_season_1_free_90",
+          "revision": 1,
+          "cosmetics": [
+            "table.s1_lighthouse"
+          ]
+        },
+        "91": {
+          "id": "bundle.pass_season_1_free_91",
+          "revision": 1,
+          "coins": 30
+        },
+        "93": {
+          "id": "bundle.pass_season_1_free_93",
+          "revision": 1,
+          "coins": 30
+        },
+        "95": {
+          "id": "bundle.pass_season_1_free_95",
+          "revision": 1,
+          "coins": 30
+        },
+        "97": {
+          "id": "bundle.pass_season_1_free_97",
+          "revision": 1,
+          "coins": 30
+        },
+        "99": {
+          "id": "bundle.pass_season_1_free_99",
+          "revision": 1,
+          "coins": 30
+        },
+        "100": {
+          "id": "bundle.pass_season_1_free_100",
+          "revision": 1,
+          "cosmetics": [
+            "frame.s1_compass"
+          ]
+        }
+      },
+      "premium": {
+        "1": {
+          "id": "bundle.pass_season_1_premium_1",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "avatar.s1_navigator"
+          ]
+        },
+        "2": {
+          "id": "bundle.pass_season_1_premium_2",
+          "revision": 1,
+          "crystals": 6
+        },
+        "3": {
+          "id": "bundle.pass_season_1_premium_3",
+          "revision": 1,
+          "crystals": 6
+        },
+        "4": {
+          "id": "bundle.pass_season_1_premium_4",
+          "revision": 1,
+          "crystals": 6
+        },
+        "5": {
+          "id": "bundle.pass_season_1_premium_5",
+          "revision": 1,
+          "crystals": 6
+        },
+        "6": {
+          "id": "bundle.pass_season_1_premium_6",
+          "revision": 1,
+          "crystals": 6
+        },
+        "7": {
+          "id": "bundle.pass_season_1_premium_7",
+          "revision": 1,
+          "crystals": 6
+        },
+        "8": {
+          "id": "bundle.pass_season_1_premium_8",
+          "revision": 1,
+          "crystals": 6
+        },
+        "9": {
+          "id": "bundle.pass_season_1_premium_9",
+          "revision": 1,
+          "crystals": 6
+        },
+        "10": {
+          "id": "bundle.pass_season_1_premium_10",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "avatar.s1_pirate"
+          ]
+        },
+        "11": {
+          "id": "bundle.pass_season_1_premium_11",
+          "revision": 1,
+          "crystals": 6
+        },
+        "12": {
+          "id": "bundle.pass_season_1_premium_12",
+          "revision": 1,
+          "crystals": 6
+        },
+        "13": {
+          "id": "bundle.pass_season_1_premium_13",
+          "revision": 1,
+          "crystals": 6
+        },
+        "14": {
+          "id": "bundle.pass_season_1_premium_14",
+          "revision": 1,
+          "crystals": 6
+        },
+        "15": {
+          "id": "bundle.pass_season_1_premium_15",
+          "revision": 1,
+          "crystals": 6
+        },
+        "16": {
+          "id": "bundle.pass_season_1_premium_16",
+          "revision": 1,
+          "crystals": 6
+        },
+        "17": {
+          "id": "bundle.pass_season_1_premium_17",
+          "revision": 1,
+          "crystals": 6
+        },
+        "18": {
+          "id": "bundle.pass_season_1_premium_18",
+          "revision": 1,
+          "crystals": 6
+        },
+        "19": {
+          "id": "bundle.pass_season_1_premium_19",
+          "revision": 1,
+          "crystals": 6
+        },
+        "20": {
+          "id": "bundle.pass_season_1_premium_20",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "emoji.s1_wink"
+          ]
+        },
+        "21": {
+          "id": "bundle.pass_season_1_premium_21",
+          "revision": 1,
+          "crystals": 6
+        },
+        "22": {
+          "id": "bundle.pass_season_1_premium_22",
+          "revision": 1,
+          "crystals": 6
+        },
+        "23": {
+          "id": "bundle.pass_season_1_premium_23",
+          "revision": 1,
+          "crystals": 6
+        },
+        "24": {
+          "id": "bundle.pass_season_1_premium_24",
+          "revision": 1,
+          "crystals": 6
+        },
+        "25": {
+          "id": "bundle.pass_season_1_premium_25",
+          "revision": 1,
+          "crystals": 6
+        },
+        "26": {
+          "id": "bundle.pass_season_1_premium_26",
+          "revision": 1,
+          "crystals": 6
+        },
+        "27": {
+          "id": "bundle.pass_season_1_premium_27",
+          "revision": 1,
+          "crystals": 6
+        },
+        "28": {
+          "id": "bundle.pass_season_1_premium_28",
+          "revision": 1,
+          "crystals": 6
+        },
+        "29": {
+          "id": "bundle.pass_season_1_premium_29",
+          "revision": 1,
+          "crystals": 6
+        },
+        "30": {
+          "id": "bundle.pass_season_1_premium_30",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "frame.s1_wave"
+          ]
+        },
+        "31": {
+          "id": "bundle.pass_season_1_premium_31",
+          "revision": 1,
+          "crystals": 6
+        },
+        "32": {
+          "id": "bundle.pass_season_1_premium_32",
+          "revision": 1,
+          "crystals": 6
+        },
+        "33": {
+          "id": "bundle.pass_season_1_premium_33",
+          "revision": 1,
+          "crystals": 6
+        },
+        "34": {
+          "id": "bundle.pass_season_1_premium_34",
+          "revision": 1,
+          "crystals": 6
+        },
+        "35": {
+          "id": "bundle.pass_season_1_premium_35",
+          "revision": 1,
+          "crystals": 6
+        },
+        "36": {
+          "id": "bundle.pass_season_1_premium_36",
+          "revision": 1,
+          "crystals": 6
+        },
+        "37": {
+          "id": "bundle.pass_season_1_premium_37",
+          "revision": 1,
+          "crystals": 6
+        },
+        "38": {
+          "id": "bundle.pass_season_1_premium_38",
+          "revision": 1,
+          "crystals": 6
+        },
+        "39": {
+          "id": "bundle.pass_season_1_premium_39",
+          "revision": 1,
+          "crystals": 6
+        },
+        "40": {
+          "id": "bundle.pass_season_1_premium_40",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "table.s1_reef"
+          ]
+        },
+        "41": {
+          "id": "bundle.pass_season_1_premium_41",
+          "revision": 1,
+          "crystals": 6
+        },
+        "42": {
+          "id": "bundle.pass_season_1_premium_42",
+          "revision": 1,
+          "crystals": 6
+        },
+        "43": {
+          "id": "bundle.pass_season_1_premium_43",
+          "revision": 1,
+          "crystals": 6
+        },
+        "44": {
+          "id": "bundle.pass_season_1_premium_44",
+          "revision": 1,
+          "crystals": 6
+        },
+        "45": {
+          "id": "bundle.pass_season_1_premium_45",
+          "revision": 1,
+          "crystals": 6
+        },
+        "46": {
+          "id": "bundle.pass_season_1_premium_46",
+          "revision": 1,
+          "crystals": 6
+        },
+        "47": {
+          "id": "bundle.pass_season_1_premium_47",
+          "revision": 1,
+          "crystals": 6
+        },
+        "48": {
+          "id": "bundle.pass_season_1_premium_48",
+          "revision": 1,
+          "crystals": 6
+        },
+        "49": {
+          "id": "bundle.pass_season_1_premium_49",
+          "revision": 1,
+          "crystals": 6
+        },
+        "50": {
+          "id": "bundle.pass_season_1_premium_50",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "avatar.s1_admiral"
+          ]
+        },
+        "51": {
+          "id": "bundle.pass_season_1_premium_51",
+          "revision": 1,
+          "crystals": 6
+        },
+        "52": {
+          "id": "bundle.pass_season_1_premium_52",
+          "revision": 1,
+          "crystals": 6
+        },
+        "53": {
+          "id": "bundle.pass_season_1_premium_53",
+          "revision": 1,
+          "crystals": 6
+        },
+        "54": {
+          "id": "bundle.pass_season_1_premium_54",
+          "revision": 1,
+          "crystals": 6
+        },
+        "55": {
+          "id": "bundle.pass_season_1_premium_55",
+          "revision": 1,
+          "crystals": 6
+        },
+        "56": {
+          "id": "bundle.pass_season_1_premium_56",
+          "revision": 1,
+          "crystals": 6
+        },
+        "57": {
+          "id": "bundle.pass_season_1_premium_57",
+          "revision": 1,
+          "crystals": 6
+        },
+        "58": {
+          "id": "bundle.pass_season_1_premium_58",
+          "revision": 1,
+          "crystals": 6
+        },
+        "59": {
+          "id": "bundle.pass_season_1_premium_59",
+          "revision": 1,
+          "crystals": 6
+        },
+        "60": {
+          "id": "bundle.pass_season_1_premium_60",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "emoji.s1_storm"
+          ]
+        },
+        "61": {
+          "id": "bundle.pass_season_1_premium_61",
+          "revision": 1,
+          "crystals": 6
+        },
+        "62": {
+          "id": "bundle.pass_season_1_premium_62",
+          "revision": 1,
+          "crystals": 6
+        },
+        "63": {
+          "id": "bundle.pass_season_1_premium_63",
+          "revision": 1,
+          "crystals": 6
+        },
+        "64": {
+          "id": "bundle.pass_season_1_premium_64",
+          "revision": 1,
+          "crystals": 6
+        },
+        "65": {
+          "id": "bundle.pass_season_1_premium_65",
+          "revision": 1,
+          "crystals": 6
+        },
+        "66": {
+          "id": "bundle.pass_season_1_premium_66",
+          "revision": 1,
+          "crystals": 6
+        },
+        "67": {
+          "id": "bundle.pass_season_1_premium_67",
+          "revision": 1,
+          "crystals": 6
+        },
+        "68": {
+          "id": "bundle.pass_season_1_premium_68",
+          "revision": 1,
+          "crystals": 6
+        },
+        "69": {
+          "id": "bundle.pass_season_1_premium_69",
+          "revision": 1,
+          "crystals": 6
+        },
+        "70": {
+          "id": "bundle.pass_season_1_premium_70",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "frame.s1_kraken"
+          ]
+        },
+        "71": {
+          "id": "bundle.pass_season_1_premium_71",
+          "revision": 1,
+          "crystals": 6
+        },
+        "72": {
+          "id": "bundle.pass_season_1_premium_72",
+          "revision": 1,
+          "crystals": 6
+        },
+        "73": {
+          "id": "bundle.pass_season_1_premium_73",
+          "revision": 1,
+          "crystals": 6
+        },
+        "74": {
+          "id": "bundle.pass_season_1_premium_74",
+          "revision": 1,
+          "crystals": 6
+        },
+        "75": {
+          "id": "bundle.pass_season_1_premium_75",
+          "revision": 1,
+          "crystals": 6
+        },
+        "76": {
+          "id": "bundle.pass_season_1_premium_76",
+          "revision": 1,
+          "crystals": 6
+        },
+        "77": {
+          "id": "bundle.pass_season_1_premium_77",
+          "revision": 1,
+          "crystals": 6
+        },
+        "78": {
+          "id": "bundle.pass_season_1_premium_78",
+          "revision": 1,
+          "crystals": 6
+        },
+        "79": {
+          "id": "bundle.pass_season_1_premium_79",
+          "revision": 1,
+          "crystals": 6
+        },
+        "80": {
+          "id": "bundle.pass_season_1_premium_80",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "table.s1_deep_sea"
+          ]
+        },
+        "81": {
+          "id": "bundle.pass_season_1_premium_81",
+          "revision": 1,
+          "crystals": 6
+        },
+        "82": {
+          "id": "bundle.pass_season_1_premium_82",
+          "revision": 1,
+          "crystals": 6
+        },
+        "83": {
+          "id": "bundle.pass_season_1_premium_83",
+          "revision": 1,
+          "crystals": 6
+        },
+        "84": {
+          "id": "bundle.pass_season_1_premium_84",
+          "revision": 1,
+          "crystals": 6
+        },
+        "85": {
+          "id": "bundle.pass_season_1_premium_85",
+          "revision": 1,
+          "crystals": 6
+        },
+        "86": {
+          "id": "bundle.pass_season_1_premium_86",
+          "revision": 1,
+          "crystals": 6
+        },
+        "87": {
+          "id": "bundle.pass_season_1_premium_87",
+          "revision": 1,
+          "crystals": 6
+        },
+        "88": {
+          "id": "bundle.pass_season_1_premium_88",
+          "revision": 1,
+          "crystals": 6
+        },
+        "89": {
+          "id": "bundle.pass_season_1_premium_89",
+          "revision": 1,
+          "crystals": 6
+        },
+        "90": {
+          "id": "bundle.pass_season_1_premium_90",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "emoji.s1_treasure_map"
+          ]
+        },
+        "91": {
+          "id": "bundle.pass_season_1_premium_91",
+          "revision": 1,
+          "crystals": 6
+        },
+        "92": {
+          "id": "bundle.pass_season_1_premium_92",
+          "revision": 1,
+          "crystals": 6
+        },
+        "93": {
+          "id": "bundle.pass_season_1_premium_93",
+          "revision": 1,
+          "crystals": 6
+        },
+        "94": {
+          "id": "bundle.pass_season_1_premium_94",
+          "revision": 1,
+          "crystals": 6
+        },
+        "95": {
+          "id": "bundle.pass_season_1_premium_95",
+          "revision": 1,
+          "crystals": 6
+        },
+        "96": {
+          "id": "bundle.pass_season_1_premium_96",
+          "revision": 1,
+          "crystals": 6
+        },
+        "97": {
+          "id": "bundle.pass_season_1_premium_97",
+          "revision": 1,
+          "crystals": 6
+        },
+        "98": {
+          "id": "bundle.pass_season_1_premium_98",
+          "revision": 1,
+          "crystals": 6
+        },
+        "99": {
+          "id": "bundle.pass_season_1_premium_99",
+          "revision": 1,
+          "crystals": 6
+        },
+        "100": {
+          "id": "bundle.pass_season_1_premium_100",
+          "revision": 1,
+          "crystals": 6,
+          "cosmetics": [
+            "avatar.s1_sea_queen"
+          ]
+        }
+      }
+    }
+  ]
+}

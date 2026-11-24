@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/gateway"
+	"github.com/Alievs-corp/hypedomino/server/internal/panics"
 	pb "github.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1"
 	"github.com/Alievs-corp/hypedomino/server/internal/replay"
 )
@@ -61,7 +62,12 @@ func (r *Relay) Connect(ctx context.Context, conn *gateway.Conn, hello *pb.Clien
 	if !errors.Is(err, gateway.ErrUnauthenticated) || Relayed(ctx) {
 		return session, err
 	}
-	node, lookupErr := r.cluster.Lookup(ctx, hello.GetSessionToken())
+	key := hello.GetSessionToken()
+	var routed *gateway.RoutedElsewhere
+	if errors.As(err, &routed) {
+		key = routed.Key
+	}
+	node, lookupErr := r.cluster.Lookup(ctx, key)
 	if lookupErr != nil || node.ID == r.cluster.NodeID() || node.Addr == "" {
 		return nil, gateway.ErrUnauthenticated
 	}
@@ -97,6 +103,7 @@ type relaySession struct {
 	conn    *gateway.Conn
 	acked   atomic.Uint64
 	inMatch bool
+	nonce   uint64
 	mu      sync.Mutex
 	done    chan struct{}
 	once    sync.Once
@@ -120,6 +127,7 @@ func (s *relaySession) handshake(ctx context.Context, hello *pb.ClientHello) err
 	}
 	s.acked.Store(reply.GetAckedSequence())
 	s.inMatch = reply.GetServerHello().GetInMatch()
+	s.nonce = reply.GetServerHello().GetSessionNonce()
 	return nil
 }
 
@@ -157,7 +165,34 @@ func (s *relaySession) InMatch() bool {
 }
 
 func (s *relaySession) Loading(progress int, ready bool) {
-	frame := &pb.Envelope{ProtocolVersion: gateway.ProtocolVersion, Payload: &pb.Envelope_LoadingIntent{LoadingIntent: &pb.LoadingIntent{Progress: uint32(progress), Ready: ready}}}
+	frame := &pb.Envelope{ProtocolVersion: gateway.ProtocolVersion, SessionNonce: s.nonce, Payload: &pb.Envelope_LoadingIntent{LoadingIntent: &pb.LoadingIntent{Progress: uint32(progress), Ready: ready}}}
+	if err := s.write(context.Background(), frame); err != nil {
+		s.conn.Close(websocket.StatusGoingAway, "hosting node unreachable")
+	}
+}
+
+func (s *relaySession) Emoji(item string) {
+	s.forward(&pb.Envelope{Payload: &pb.Envelope_EmojiIntent{EmojiIntent: &pb.EmojiIntent{ItemId: item}}})
+}
+
+func (s *relaySession) QuickMessage(key string, teamOnly bool) {
+	s.forward(&pb.Envelope{Payload: &pb.Envelope_QuickMessageIntent{QuickMessageIntent: &pb.QuickMessageIntent{Key: key, TeamOnly: teamOnly}}})
+}
+
+func (s *relaySession) JoinQueue(intent *pb.JoinQueueIntent) {
+	s.forward(&pb.Envelope{Payload: &pb.Envelope_JoinQueueIntent{JoinQueueIntent: intent}})
+}
+
+func (s *relaySession) LeaveQueue() {
+	s.forward(&pb.Envelope{Payload: &pb.Envelope_LeaveQueueIntent{LeaveQueueIntent: &pb.LeaveQueueIntent{}}})
+}
+
+func (s *relaySession) Lobby(intent *pb.LobbyIntent) {
+	s.forward(&pb.Envelope{Payload: &pb.Envelope_LobbyIntent{LobbyIntent: intent}})
+}
+
+func (s *relaySession) forward(frame *pb.Envelope) {
+	frame.ProtocolVersion, frame.SessionNonce = gateway.ProtocolVersion, s.nonce
 	if err := s.write(context.Background(), frame); err != nil {
 		s.conn.Close(websocket.StatusGoingAway, "hosting node unreachable")
 	}
@@ -169,6 +204,11 @@ func (s *relaySession) Attach() {
 
 func (s *relaySession) pump() {
 	defer s.Close()
+	defer func() {
+		if panics.Caught("cluster relay", recover()) {
+			s.conn.Close(websocket.StatusInternalError, "internal error")
+		}
+	}()
 	for {
 		frame, err := s.read(context.Background())
 		if err != nil {
@@ -191,6 +231,7 @@ func (s *relaySession) Intent(sequence uint64, intent replay.Intent) {
 	}
 	frame.ProtocolVersion = gateway.ProtocolVersion
 	frame.Sequence = sequence
+	frame.SessionNonce = s.nonce
 	if err := s.write(context.Background(), frame); err != nil {
 		s.conn.Close(websocket.StatusGoingAway, "hosting node unreachable")
 	}

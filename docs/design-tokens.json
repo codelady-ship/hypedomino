@@ -12,29 +12,40 @@
   },
   "color": {
     "background": {
-      "base": "#0D0B24",
-      "raised": "#17143A"
+      "base": "#0B0605",
+      "raised": "#1A0C0A"
     },
     "surface": {
-      "default": "#221D52",
-      "raised": "#2D2768"
+      "default": "#2C1510",
+      "raised": "#4B1D0F"
     },
-    "scrim": "#06051A",
-    "shadow": "#05030F",
+    "scrim": "#0A0302",
+    "shadow": "#050203",
     "text": {
-      "primary": "#FFFFFF",
-      "secondary": "#D4CFF7",
-      "muted": "#A49DDB"
+      "primary": "#FBE9C2",
+      "secondary": "#E8D3A5",
+      "muted": "#CDB37C"
     },
     "role": {
-      "primary": { "fill": "#FF3D9A", "on": "#120A2C", "text": "#FF8CC4" },
-      "secondary": { "fill": "#26D4FF", "on": "#120A2C", "text": "#7FE6FF" },
-      "success": { "fill": "#35E07A", "on": "#120A2C", "text": "#7DF0AB" },
-      "warning": { "fill": "#FFB020", "on": "#120A2C", "text": "#FFCB6B" },
-      "danger": { "fill": "#FF4D5E", "on": "#120A2C", "text": "#FF95A0" },
-      "score": { "fill": "#FFE03D", "on": "#120A2C", "text": "#FFE97A" },
-      "teamA": { "fill": "#3D8BFF", "on": "#120A2C", "text": "#94C0FF" },
-      "teamB": { "fill": "#FF7A2E", "on": "#120A2C", "text": "#FFAD80" }
+      "primary": { "fill": "#E6C068", "on": "#0B0605", "text": "#FFF4C2" },
+      "secondary": { "fill": "#F3D17A", "on": "#0B0605", "text": "#F3D17A" },
+      "success": { "fill": "#35E07A", "on": "#0B0605", "text": "#7DF0AB" },
+      "warning": { "fill": "#FFB020", "on": "#0B0605", "text": "#FFCB6B" },
+      "danger": { "fill": "#FF4D5E", "on": "#0B0605", "text": "#FF95A0" },
+      "score": { "fill": "#F3CF72", "on": "#0B0605", "text": "#FFF6D0" },
+      "teamA": { "fill": "#3D8BFF", "on": "#0B0605", "text": "#94C0FF" },
+      "teamB": { "fill": "#FF7A2E", "on": "#0B0605", "text": "#FFAD80" }
+    },
+    "gold": {
+      "hi": "#FFF4C2",
+      "default": "#E6C068",
+      "mid": "#C99A3C",
+      "lo": "#7A5418"
+    },
+    "wood": {
+      "hi": "#5A2414",
+      "default": "#3A150B",
+      "lo": "#240C06"
     }
   },
   "opacity": {
@@ -47,28 +58,33 @@
     "diamondMinSize": 72,
     "flowPeriodMs": 2400,
     "tiers": {
-      "common": { "ordinal": 1, "nameKey": "rarity.common.name", "fill": "#A3A6BF", "on": "#120A2C", "text": "#C9CBDB", "pips": 1, "glow": "none", "flow": false },
-      "rare": { "ordinal": 2, "nameKey": "rarity.rare.name", "fill": "#5C78FF", "on": "#120A2C", "text": "#A3B3FF", "pips": 2, "glow": "soft", "flow": false },
-      "epic": { "ordinal": 3, "nameKey": "rarity.epic.name", "fill": "#B45CFF", "on": "#120A2C", "text": "#D3A3FF", "pips": 3, "glow": "strong", "flow": false },
-      "legendary": { "ordinal": 4, "nameKey": "rarity.legendary.name", "fill": "#FFC23D", "on": "#120A2C", "text": "#FFD98A", "pips": 4, "glow": "intense", "flow": false },
-      "mythic": { "ordinal": 5, "nameKey": "rarity.mythic.name", "fill": "#FF4530", "on": "#120A2C", "text": "#FF9C8F", "pips": 5, "glow": "intense", "flow": true }
+      "common": { "ordinal": 1, "nameKey": "rarity.common.name", "fill": "#A3A6BF", "on": "#0B0605", "text": "#C9CBDB", "pips": 1, "glow": "none", "flow": false },
+      "rare": { "ordinal": 2, "nameKey": "rarity.rare.name", "fill": "#5C78FF", "on": "#0B0605", "text": "#A3B3FF", "pips": 2, "glow": "soft", "flow": false },
+      "epic": { "ordinal": 3, "nameKey": "rarity.epic.name", "fill": "#B45CFF", "on": "#0B0605", "text": "#D3A3FF", "pips": 3, "glow": "strong", "flow": false },
+      "legendary": { "ordinal": 4, "nameKey": "rarity.legendary.name", "fill": "#FFC23D", "on": "#0B0605", "text": "#FFD98A", "pips": 4, "glow": "intense", "flow": false },
+      "mythic": { "ordinal": 5, "nameKey": "rarity.mythic.name", "fill": "#FF4530", "on": "#0B0605", "text": "#FF9C8F", "pips": 5, "glow": "intense", "flow": true }
     }
   },
   "typography": {
     "family": {
-      "display": { "name": "Unbounded", "license": "OFL-1.1", "weights": [700, 900] },
-      "ui": { "name": "Nunito", "license": "OFL-1.1", "weights": [600, 800, 900] }
+      "numeral": { "name": "Cinzel", "license": "OFL-1.1", "style": "normal", "weights": [700, 900] },
+      "display": { "name": "Playfair Display", "license": "OFL-1.1", "style": "italic", "weights": [700, 900] },
+      "hint": { "name": "Cormorant Garamond", "license": "OFL-1.1", "style": "italic", "weights": [500, 700] },
+      "ui": { "name": "Josefin Sans", "license": "OFL-1.1", "style": "normal", "weights": [300, 400, 600] },
+      "uiCyrillic": { "name": "Montserrat", "license": "OFL-1.1", "style": "normal", "weights": [300, 400, 600], "fallbackFor": "ui" }
     },
     "minimumSize": 30,
     "scale": {
-      "caption": { "family": "ui", "weight": 600, "size": 30, "lineHeight": 1.3 },
-      "body": { "family": "ui", "weight": 600, "size": 38, "lineHeight": 1.35 },
-      "label": { "family": "ui", "weight": 800, "size": 44, "lineHeight": 1.2 },
-      "counter": { "family": "ui", "weight": 900, "size": 56, "lineHeight": 1.0 },
+      "caption": { "family": "ui", "weight": 400, "size": 30, "lineHeight": 1.3 },
+      "body": { "family": "ui", "weight": 400, "size": 38, "lineHeight": 1.35 },
+      "label": { "family": "ui", "weight": 300, "size": 44, "lineHeight": 1.2 },
+      "counter": { "family": "numeral", "weight": 900, "size": 56, "lineHeight": 1.0 },
       "title": { "family": "display", "weight": 700, "size": 54, "lineHeight": 1.15 },
       "heading": { "family": "display", "weight": 900, "size": 68, "lineHeight": 1.1 },
       "display": { "family": "display", "weight": 900, "size": 86, "lineHeight": 1.05 },
-      "score": { "family": "display", "weight": 900, "size": 108, "lineHeight": 1.0 }
+      "score": { "family": "numeral", "weight": 900, "size": 108, "lineHeight": 1.0 },
+      "name": { "family": "display", "weight": 900, "size": 38, "lineHeight": 1.0 },
+      "hint": { "family": "hint", "weight": 700, "size": 46, "lineHeight": 1.2 }
     }
   },
   "radius": {
@@ -89,7 +105,10 @@
     "xxxl": 64
   },
   "size": {
-    "touchTargetMin": 120
+    "touchTargetMin": 120,
+    "seatPanelWidth": 264,
+    "seatPanelHeight": 216,
+    "handHeight": 224
   },
   "elevation": {
     "e0": { "offsetY": 0, "alpha": 0 },
@@ -146,7 +165,8 @@
         "maxParticles": 150,
         "maxOverdrawLayers": 2,
         "maxTweens": 32,
-        "animatedCosmetics": false
+        "animatedCosmetics": false,
+        "maxAnimatedCosmetics": 0
       },
       "medium": {
         "tier": "Mid",
@@ -162,7 +182,8 @@
         "maxParticles": 400,
         "maxOverdrawLayers": 3,
         "maxTweens": 64,
-        "animatedCosmetics": true
+        "animatedCosmetics": true,
+        "maxAnimatedCosmetics": 10
       },
       "high": {
         "tier": "High",
@@ -178,7 +199,8 @@
         "maxParticles": 800,
         "maxOverdrawLayers": 4,
         "maxTweens": 96,
-        "animatedCosmetics": true
+        "animatedCosmetics": true,
+        "maxAnimatedCosmetics": 10
       }
     },
     "budgets": {
@@ -243,6 +265,29 @@
       "blockEnd": ["tilePlace", "scorePopup", "scoreCascade", "block", "emoji"],
       "matchEnd": ["scorePopup", "scoreCascade", "matchWin", "emoji"],
       "results": ["scorePopup", "rankUp"]
+    },
+    "graphics": {
+      "levels": {
+        "low": { "effectLevel": "low", "maxRenderShortSide": 720 },
+        "medium": { "effectLevel": "medium", "maxRenderShortSide": 1080 },
+        "high": { "effectLevel": "high", "maxRenderShortSide": 1080 },
+        "ultra": { "effectLevel": "high", "maxRenderShortSide": 2160 }
+      },
+      "tiers": {
+        "low": { "auto": "low", "highest": "low" },
+        "mid": { "auto": "medium", "highest": "medium" },
+        "high": { "auto": "high", "highest": "ultra" }
+      },
+      "deviceClass": {
+        "lowBelowMemoryMb": 3200,
+        "highFromMemoryMb": 7000,
+        "highFromRefreshHz": 120,
+        "lowGpuPatterns": ["^Mali-(T\\d+|G31|G51|G52|G71|G72)\\b", "^Adreno \\(TM\\) ([1-5]\\d\\d|60\\d)\\b", "^PowerVR Rogue"],
+        "highGpuPatterns": ["^Adreno \\(TM\\) (7[3-9]\\d|8\\d\\d)\\b", "^Mali-G7[1-2]\\d\\b", "^Immortalis", "^Samsung Xclipse", "^Apple (A1[5-9]|A[2-9]\\d|M\\d)\\b"]
+      },
+      "probe": { "warmupFrames": 300, "frames": 1800 },
+      "thermal": { "recoverAfterSeconds": 60 },
+      "frameRate": { "options": [30, 60, 90, 120], "autoMax": 60, "menuMax": 60, "batterySaver": 30 }
     }
   },
   "scoreCascade": {

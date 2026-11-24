@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/partnerfit"
 	"github.com/Alievs-corp/hypedomino/server/internal/profile"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
@@ -33,10 +34,11 @@ const (
 )
 
 const (
-	TopicRating   = "rating"
-	TopicXp       = "xp"
-	TopicMissions = "missions"
-	TopicEconomy  = "economy"
+	TopicRating    = "rating"
+	TopicXp        = "xp"
+	TopicMissions  = "missions"
+	TopicEconomy   = "economy"
+	TopicAnalytics = "analytics"
 )
 
 type Participant struct {
@@ -83,6 +85,7 @@ type Finished struct {
 	Cancelled   bool
 	Replay      []byte
 	Results     map[rules.Seat]string
+	PartnerFit  map[rules.Seat]partnerfit.Count
 	Events      []Event
 	Outbox      []Message
 }
@@ -177,6 +180,16 @@ func (s *Store) Finish(ctx context.Context, f Finished) error {
 			return fmt.Errorf("%w: seat %s is not in match %s", ErrInvalid, seat, f.ID)
 		}
 	}
+	for seat, fit := range f.PartnerFit {
+		tag, err := tx.Exec(ctx, `update match_participants set partner_decisions = $4, partner_fits = $5 where match_id = $1 and started_at = $2 and seat = $3`,
+			f.ID, f.StartedAt, int16(seat), fit.Decisions, fit.Fits)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return fmt.Errorf("%w: partner fit for seat %s outside match %s", ErrInvalid, seat, f.ID)
+		}
+	}
 	for _, e := range f.Events {
 		payload, err := json.Marshal(e.Payload)
 		if err != nil {
@@ -207,6 +220,15 @@ func (s *Store) Finish(ctx context.Context, f Finished) error {
 		}
 	}
 	return tx.Commit(ctx)
+}
+
+func (s *Store) Running(ctx context.Context, account string, startedAfter time.Time) (bool, error) {
+	var running bool
+	err := s.pool.QueryRow(ctx, `select exists (
+		select 1 from match_participants p
+		join matches m on m.id = p.match_id and m.started_at = p.started_at
+		where p.account_id = $1 and p.started_at > $2 and m.started_at > $2 and m.ended_at is null)`, account, startedAfter).Scan(&running)
+	return running, err
 }
 
 func (s *Store) Pending(ctx context.Context, topic string, limit int) ([]Pending, error) {
@@ -309,6 +331,7 @@ func MatchMessages(kind string, key string, payload any) []Message {
 	if kind == KindCustom {
 		topics = []string{TopicMissions}
 	}
+	topics = append(topics, TopicAnalytics)
 	out := make([]Message, 0, len(topics))
 	for _, topic := range topics {
 		out = append(out, Message{Topic: topic, Key: key, Payload: payload})

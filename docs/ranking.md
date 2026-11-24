@@ -12,7 +12,7 @@ Related: `docs/rules.md` R-43 to R-55 (match result, timer, AFK, leavers, ranked
 - A match cancelled by the server (server fault, region outage) changes nothing for anyone.
 - A match counts toward the season in which it started.
 - Applying a match result is idempotent by match id: replaying the same match end never changes MMR or LP twice.
-- Matchmaking quality (MMR window, wait expansion) is #48 and #118. Abuse detection (win-trading, boosting) is #121. Season rewards are #120.
+- Matchmaking quality (MMR window, wait expansion) is #48 and #118. Abuse detection (win-trading, boosting) is section 11 (#121). Season rewards are #120.
 
 ## 2. Terms
 
@@ -46,13 +46,15 @@ Rounding everywhere in this document is to the nearest integer, halves away from
 
 The tier list and the division count are fixed by this document; changing them is a spec change.
 
+- Client (#119): `Game/Ranking/RankBadge.TryRead` reads the server's rank label (the `rank_label` of a match roster entry, `docs/matchmaking.md` section 4) into the tier and the division a rank badge shows: `Gold II` is Gold, division 2; `Master`, `Grandmaster` and `Challenger` have no division; an empty label is a player in placement, who shows no badge. A label in any other form is refused and shows no badge. The client never works out a rank, a tier or LP itself.
+
 ### 3.1 Divisions (Iron IV to Diamond I)
 
 - LP runs from 0 to `DivisionLp` (default 100).
 - Promotion: when LP reaches `DivisionLp` or more, the player moves up one division (Diamond I moves to Master) and keeps the excess: new LP = LP - `DivisionLp`.
 - Demotion: when LP would go below 0, the player moves down one division with LP = `DemotionLp` (default 75).
 - Iron IV is the floor: LP stops at 0.
-- A match moves a player at most one division. Publish validation rejects `LpChangeMax` + `OffenseRatingPenalty` >= `DivisionLp`.
+- A match moves a player at most one division. Publish validation rejects `LpChangeMax` + `OffenseRatingPenalty` >= `DivisionLp`, whether the `rating` or the `penalties` domain changes; `OffenseRatingPenalty` and `PartnerLossReductionPercent` live only in the `penalties` domain (owner decision 2026-11-09).
 
 ### 3.2 Apex tiers (Master and above)
 
@@ -144,6 +146,8 @@ The seat played by the bot after R-51 or R-52 keeps its human player's MMR in `R
 
 Division moves: Gold I 90 LP wins +21: Platinum IV 11 LP. Gold III 10 LP loses -18: Gold IV 75 LP. Iron IV 10 LP loses -18: Iron IV 0 LP.
 
+- Implemented in `server/internal/rating` (#112): sections 3.1, 3.2, 4 and the worked examples are table-driven tests; coefficients are the `rating` config snapshot domain with one `Config` per mode (`docs/ranking/examples/rating.json`), and every applied match records the version it used. Results arrive through the game server's relay on the `rating` outbox topic (`HD_OUTBOX_POLL`, #440): `rating.Store.Publish` builds the result from the `matchstore.Outcome` (team, win and offender flag per player, and the `OffenseRatingPenalty` and `PartnerLossReductionPercent` in force when the room opened; an outcome written without them uses the current `penalties` config) and skips a cancelled match (section 1); a redelivered match is a duplicate. Matchmade rooms write the outcome when they end (`docs/matchmaking.md` section 4). Grandmaster and Challenger (#113) are recomputed per mode by `rating.Store.RecalculateApex` once a day at `ApexRecalcHourUtc` under an advisory lock, in the order of 8.1 without its apex part (LP, then the server time of the match that set the LP, ranked wins, account id); the season-end run is #115.
+
 ## 5. Placement
 
 - The first `PlacementMatches` (default 5) ranked matches of a season in a mode are placement matches. Until they are done the player has no visible rank in that mode and is not on its leaderboards.
@@ -156,6 +160,8 @@ Division moves: Gold I 90 LP wins +21: Platinum IV 11 LP. Gold III 10 LP loses -
   4. The result is never below Iron IV and never above Diamond I. LP starts at 0.
 - A player who does not finish placement before the season ends has no final rank for that season.
 
+- Implemented in `server/internal/rating` (#114): `Config.Place` sets the first rank of a season from the MMR after `PlacementMatches`, limited for a returning player to the reset rank of 7.2 minus `PlacementMaxDropDivisions` and plus `PlacementMaxClimbDivisions`, and for a new player to `NewPlayerPlacementCap`; LP starts at 0 after the summed placement penalties. The examples of 7.3 are tests.
+
 ## 6. No dodge
 
 A ranked match has no accept or decline step (R-53), so there is no dodge and no dodge penalty. A player who has not loaded when the loading phase ends starts the match disconnected (R-57) and falls under the leave rules of `docs/penalties.md`: back within `ReconnectGraceSeconds` is no offense, later is a leave.
@@ -167,6 +173,11 @@ A ranked match has no accept or decline step (R-53), so there is no dodge and no
 - A season is created in the admin panel with a start and an end in server time (ADR 0007). Default length `SeasonLengthMonths` (default 3) calendar months. The next season starts at the end of the previous one, with no gap.
 - Section 3 structure, `PlacementMatches`, the reset table and the apex slot rules are frozen while a season runs. MMR and LP coefficients (section 4) can change mid-season and apply to matches that start after the publish; each match records the config version it used (ADR 0006).
 - Season end runs once per mode and is idempotent (#115): final apex recalculation, leaderboard snapshot, final ranks stored for rewards (#120), reset ranks computed for the next season.
+
+- Implemented in `server/internal/rating` (#115): seasons are rows of `ranked_seasons` (scheduled from the admin API, `docs/admin.md` Ranked seasons note, #143, or `cmd/ranked-season`), contiguous by construction; the end runs once per mode when the end time has passed (apex recalculation, `season_results` snapshot in the order of 8.1, reset ranks, the next season created with `SeasonLengthMonths` if none exists, with the id `season.<yyyy_mm>` of its start, the name key `<id>.name` and, unless that key already exists in the game strings, an `approved` `en` placeholder name `Season <yyyy-mm>` to replace on `/strings` (owner decision 2026-11-20, #143)), a result of a closed season changes MMR only, and `state` is derived from the times and the per-mode close marks. The Redis leaderboards are #116.
+- Season rewards (#120): once a mode is closed, `rating.Store.DistributeRewards` walks the `season_results` snapshot in position order and, per player in its own transaction, claims a `season_rewards` row (the primary key makes the grant happen once), grants `RankRewardCoins` of the final tier plus the `RankRewards` bundle of that tier through the reward engine (key `rank:<seasonId>:<mode>`, source `rank_reward` with the bundle id), and awards the emblems of 8.3; the mode is then marked rewarded and a lost mark only replays the skip. A season created with `-no-rewards` (beta, soft launch) is marked rewarded without a grant. `GET /ranked/rewards` is the player's mailbox (`unseen` count, `POST /ranked/rewards/seen` clears it) and `GET /ranked/emblems` lists the emblems.
+
+- Player's own standing (#119): `GET /ranked/me` answers the current season (`id`, `name_key`, `starts_at`, `ends_at` in server time, for the season counter) and one entry per mode: `placed`, `placement_played` of `placement_matches` (`PlacementMatches`), `rank` (the rank label, the apex tier for Master and above), `tier`, `lp`, `division_lp` (`DivisionLp`, the size of the LP bar below the apex tiers) and the season's ranked `wins`. Until placement ends `rank` and `tier` are empty and `lp` is 0 (section 5); a rating row of an earlier season that the season end has not moved yet reads as not placed. MMR is never sent. 404 `rating.season_unknown` when no season is running. Client: `Game/Ranking/RankStandingLoader` reads it into `RankStanding`, with a `RankBadge` per mode and the season countdown on the server clock.
 
 ### 7.2 Soft reset
 
@@ -253,10 +264,14 @@ Every local leaderboard uses the same order. Apex recalculation (section 3.2) us
 | Region | Players whose leaderboard country belongs to that region. `LeaderboardRegions` maps each region to its countries; a country belongs to at most one region. |
 | Friends | The global order filtered to the viewer and their friends (social epic) |
 
-- A player's leaderboard country is their account country (#117: profile, IP fallback) at their first ranked match of the season in the mode. It stays fixed for that season and mode, so moving country cannot be used to top a smaller board. Players without a country appear on the global and friends boards only.
+- A player's leaderboard country is their account country (#117: profile, IP fallback) at their first ranked match of the season in the mode played while the account has a country. It stays fixed for that season and mode, so moving country cannot be used to top a smaller board. Players without a country appear on the global and friends boards only.
 - Each board shows the top `LeaderboardTopSize` (default 200) and the viewer's own position and neighbours, whatever their position.
 - The season-end snapshot freezes every board of the season. Past seasons stay readable.
-- Every row of every board opens that player's public profile (`docs/privacy.md` section 5): nickname, equipped cosmetics, rank and the emblem showcase (8.4). A player can browse the global board and any country or region board, not only their own.
+- An admin can remove a single player from the boards of one season and mode, live or frozen, with an audited reason (owner decision 2026-11-20, `docs/admin.md` 6.2). The player stays off those boards for that season, keeps rank, LP and MMR, and earns no emblem from them (8.3). No board is ever reset as a whole.
+- Every row of every board shows the player's nickname, rank and LP, public to every viewer (owner decision 2026-11-21 on #852, `docs/privacy.md` section 5), and opens that player's public profile: nickname, equipped cosmetics, rank and the emblem showcase (8.4). A player can browse the global board and any country or region board, not only their own.
+
+- Implemented in `server/internal/leaderboard` (#116): the global board per season and mode as a Redis sorted set in the order of 8.1 (score: rank index, apex tier, LP; member: time the LP was set, wins, account id), updated by the rating store on every change and rebuilt from PostgreSQL when missing; `GET /leaderboard/{mode}` serves the top `LeaderboardTopSize` and the viewer's position with neighbours; each row carries `position`, `account_id`, `nickname` (from `profiles`, read in one query per reply; empty for an account without a profile), `rank` (the rank label), `lp`, `tier` and `wins`, and never MMR. Country and region boards (#117): the same sets per board (`country:<CC>`, `region:<id>` from `LeaderboardRegions`) fed by the same update and rebuild paths; the leaderboard country is frozen in `ratings.board_country` at the first ranked result played while the account has a country, snapshotted into `season_results` and cleared for the next season; the account country is set from the profile (`PUT /profile/country`, one change per `CountryChangeCooldown`, default 180 days) or adopted from the connection country at sign-in. Friends board (#153): `?board=friends` reads the global set for the viewer and their active friends, numbers them 1 to n in the global order and returns the viewer with neighbours the same way; it has no set of its own. Removal (#143): `leaderboard_removals` holds one row per season, mode and account; the live update, the rebuild of a live or frozen board and the emblem run leave those accounts out, and the admin API takes the account off the Redis sets of that season and mode at once.
+- Client (#119): `Game/Ranking/LeaderboardLoader` reads `GET /leaderboard/{mode}` for a board into `LeaderboardStanding` (top rows, the viewer's own row when listed, neighbours) with a `RankBadge` per row, from the server's rank label, or from the tier for an apex row, and the server's nickname and LP of the row. `Game/Ranking/LeaderboardView` shows the rows in a recycling list. An empty nickname stays empty in the model; the leaderboard screen shows the neutral placeholder name of `docs/privacy.md` section 5 for it once that string exists (#851).
 
 ### 8.3 Leaderboard emblems
 
@@ -265,8 +280,9 @@ Owner decision (2026-10-26). A season-end finish near the top of a board earns a
 - Brackets come from `EmblemBrackets` (default 1, 50, 100, 200): final position 1 earns Top 1, 2 to 50 Top 50, 51 to 100 Top 100, 101 to 200 Top 200. Only the best bracket per board is awarded.
 - Emblems are awarded for the global board and for the player's country and region boards, per mode. Friends boards award nothing.
 - An emblem records mode, season, board (global, country code or region id) and bracket. It is awarded once by the idempotent season-end job (#115) from the frozen snapshot, never from a live position, and is kept for the account's lifetime.
-- Shadowbanned accounts are not on public boards (`docs/anti-cheat.md` section 3), so they earn no emblem. An emblem awarded through a position later found to be cheated is revoked by an admin with an audited reason (#209).
+- Shadowbanned accounts and players removed from a board (8.2) are not on public boards (`docs/anti-cheat.md` section 3), so they earn no emblem there. An emblem awarded through a position later found to be cheated is revoked by an admin with an audited reason (#209).
 - Emblem art is one static asset per bracket and board scope (global, local), with the season and the country or region shown as text, not baked into art (#178).
+- Implemented in `server/internal/rating` (#120): positions on the global, country and region boards come from the frozen `season_results` order (country and region positions are counted inside the snapshot), the best bracket of `EmblemBrackets` per board is written to `leaderboard_emblems` by the season reward run, once per account, mode, season and board; `revoked_at` and `revoke_reason` are reserved for the admin revocation of #209.
 
 ### 8.4 Profile emblem showcase
 
@@ -274,6 +290,7 @@ Owner decision (2026-10-26). A season-end finish near the top of a board earns a
 - The client sends only the chosen emblem ids. The server accepts an id only if the account owns that emblem and stores the showcase; other players always see the server's copy (`docs/anti-cheat.md` NT-9).
 - A revoked emblem leaves the showcase at once.
 - The medal collection screen lists emblems in their own section; emblems are not medals (`docs/pass-missions-medals.md` 5.5).
+- Implemented in `server/internal/rating`: an emblem id is `<mode>:<seasonId>:<board>`. `PUT /ranked/emblems/showcase` with `{"emblems": [ids]}` stores the ordered choice in `emblem_showcases` (400 `ranked.showcase_invalid` for too many or repeated ids, 409 `ranked.emblem_not_owned`). `GET /ranked/emblems` returns the emblems and the showcase; a read drops revoked or unowned ids. The match roster carries the showcase as `emblems`. The public profile `GET /profile/{account}` carries `ranked`: `ranks` with the rank label of each placed mode and `emblems` with the full showcase emblems in order.
 
 ## 9. No bot fill in ranked play
 
@@ -283,9 +300,20 @@ Owner decision on #8 (2026-10-26).
 - The server bot takes a seat in a ranked match only to replace a player during the match (R-50 to R-52). Its MMR and LP handling is section 4.5.
 - Bot fill after a long wait (#48, config) applies to casual queues only (R-56). Nothing in this document is read or written by a casual match.
 
+## 11. Rating abuse
+
+Rules of #121. Win trading and boosting work through the same pair of accounts, so every rule looks at pairs.
+
+- Repeat limit: two accounts that met in `RepeatPairMax` (default 3) ranked matches of a mode within `RepeatPairWindowHours` (default 24) are not matched again in that mode until the window has passed, whatever their MMR. The queue entry carries the accounts to avoid (`docs/matchmaking.md` section 2).
+- Pair signals: after every applied ranked result, each opponent pair of the match is counted over `PairWindowHours` (default 168). From `PairMinMatches` (default 6) matches a `pair_frequency` signal is recorded for both accounts; when one side won at least `FeedingSharePercent` (default 80) of them it is `feeding` (the loser feeds, the winner is boosted); when both sides won at least `WinTradeSharePercent` (default 35) it is `win_trade`. A signal carries the counterpart, the matches, the wins, the offenses (leaves and AFK of either side, the throw pattern that replaces a dodge, section 6) and the window, is updated as the counts grow and is published on the `rating_signals` outbox topic for the risk score (`docs/anti-cheat.md` 5, `CollusionWeight`).
+- Partner signals (#183): ranked 2v2 partners are drawn at random (R-54), so the same two accounts as partners again and again point to queue sniping, the only way to choose a partner in ranked. After every applied ranked 2v2 result the partner pair of each team is counted over `PairWindowHours`; from `PartnerMinMatches` (default 3) matches together a `partner_frequency` signal is recorded for both accounts, with the matches, the wins of the team and the offenses. For an account with a `partner_frequency` signal the recorded deals of the window decide `partner_fit`: a decision is a placement where the player had at least two legal placements that leave a different number of the partner's tiles placeable on the resulting open ends, and it fits when the chosen placement leaves the most (a tie fits). When the account has at least `FitMinDecisions` (default 100) decisions with that partner and as many with its other partners, and its fit rate with that partner is at least `FitMarginPercent` (default 20) percentage points above its fit rate with the others, a `partner_fit` signal is recorded for the account with the partner as counterpart. Hidden tiles are read only from the server's own deal, never from a client.
+- A signal never changes a rating by itself: the response is the risk score, review and an admin's reversal (`docs/anti-cheat.md` V-9, #209).
+
+- Implemented in `server/internal/rating` (#121): `abuse` keys of the `rating` config, `Store.Avoid` and `Store.Queue` for the queue, `rating_signals` table, `Store.Signals` per account and the outbox rows; the admin analysis screen reads `rating_signals` (admin epic). Partner fit (#183): `partnerfit.Measure` counts the decisions and fits of each seat from a match record, and `matchstore.Finish` keeps them on `match_participants` (`partner_decisions`, `partner_fits`); after a `partner_frequency` signal the rating store sums these columns over the ranked 2v2 matches of the window, split by partner, and records `partner_fit` with the same matches, wins and offenses as the partner pair. Matches without a measurement are left out.
+
 ## 10. Config
 
-Every key has one value per mode (1v1, 2v2); both start at the same default. Structural keys (section 7.1) are frozen while a season runs.
+Every key has one value per mode (1v1, 2v2); both start at the same default. Structural keys (section 7.1) are frozen while a season runs; the admin API refuses them with 409 `frozen` until the season is closed in both modes (`docs/admin.md`, Ranking config note).
 
 | Key | Default | Section |
 |---|---|---|
@@ -317,6 +345,13 @@ Every key has one value per mode (1v1, 2v2); both start at the same default. Str
 | `SeasonResetTable` | generated, section 7.3 | 7.2 |
 | `LeaderboardTopSize` | 200 | 8.2 |
 | `LeaderboardRegions` | set by the owner before launch | 8.2 |
+| `RankRewards` | none; per final tier a reward bundle | 7.1, `docs/economy.md` 2.6 |
+| `RepeatPairWindowHours`, `RepeatPairMax` | 24, 3 | 11 |
+| `PairWindowHours`, `PairMinMatches` | 168, 6 | 11 |
+| `FeedingSharePercent`, `WinTradeSharePercent` | 80, 35 | 11 |
+| `PartnerMinMatches` | 3 | 11 |
+| `FitMinDecisions`, `FitMarginPercent` | 100, 20 | 11 |
+| `CountryChangeCooldown` | 180 days | 8.2 |
 | `EmblemBrackets` | 1, 50, 100, 200 | 8.3 |
 | `ProfileEmblemSlots` | 3 | 8.4 |
 

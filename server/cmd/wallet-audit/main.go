@@ -51,14 +51,14 @@ func run(ctx context.Context, url string, fix bool, out io.Writer) (int, error) 
 		return 0, err
 	}
 	for _, m := range mismatches {
-		fmt.Fprintf(out, "%s stored %d ledger %d\n", m.Account, m.Stored, m.Computed)
+		fmt.Fprintf(out, "%s %s stored %d ledger %d\n", m.Account, m.Currency, m.Stored, m.Computed)
 		if !fix {
 			continue
 		}
-		if _, _, err := store.Reconcile(ctx, m.Account, time.Now()); err != nil {
+		if _, _, err := store.Reconcile(ctx, m.Account, m.Currency, time.Now()); err != nil {
 			return len(mismatches), err
 		}
-		fmt.Fprintf(out, "%s reconciled\n", m.Account)
+		fmt.Fprintf(out, "%s %s reconciled\n", m.Account, m.Currency)
 	}
 	fmt.Fprintf(out, "%d wallet(s) mismatched\n", len(mismatches))
 	return len(mismatches), nil

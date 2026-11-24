@@ -185,8 +185,15 @@ func TestLogoutAllRevokesEveryLiveFamilyOfTheAccount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err := pool.Exec(ctx, `insert into push_devices (token, account_id, platform, registered_at) values ('push-a', $1, 'android', $3), ('push-b', $1, 'ios', $3), ('push-o', $2, 'android', $3)`, acc, other, start); err != nil {
+		t.Fatal(err)
+	}
 	if n, err := store.RevokeAccount(ctx, acc, start.Add(time.Minute)); err != nil || n != 2 {
 		t.Fatalf("revoked %d %v", n, err)
+	}
+	var mine, others int
+	if err := pool.QueryRow(ctx, `select count(*) filter (where account_id = $1), count(*) filter (where account_id = $2) from push_devices`, acc, other).Scan(&mine, &others); err != nil || mine != 0 || others != 1 {
+		t.Fatalf("push devices after logout-all: own %d other %d %v", mine, others, err)
 	}
 	for _, refresh := range refreshes {
 		if _, _, err := store.Rotate(ctx, refresh, "phone", start.Add(2*time.Minute), ttl, grace); !errors.Is(err, token.ErrRevoked) {

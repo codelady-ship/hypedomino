@@ -8,7 +8,7 @@ Real-time online multiplayer mobile domino game. Hyperactive, colorful, effect-h
 - Never mention any third-party game name in code, docs, issues, commits or assets. Describe behavior on its own terms.
 
 ## Monorepo
-- `client/` Unity 6 LTS, URP (Universal Renderer, 2D sprites and real-time 3D characters, ADR 0009), C#, Addressables
+- `client/` Unity 6 LTS, URP (Universal Renderer, 2D sprites; no 3D characters, ADR 0009 superseded), C#, Addressables
 - `server/` Go, WebSocket (binary protobuf), PostgreSQL, Redis
 - `admin/` Next.js, TypeScript, Tailwind
 - `proto/` shared protobuf contracts
@@ -25,11 +25,12 @@ Real-time online multiplayer mobile domino game. Hyperactive, colorful, effect-h
 - No allocations in hot paths on the client (Update loops, input, animation). Pool everything that spawns repeatedly.
 - Every number that designers may tune comes from admin-managed config, not constants.
 - Zero trust in the client: no balance, price, reward, inventory or score value is ever accepted from or stored authoritatively on the client. The client sends intents only; modified APKs and memory editors must gain nothing. See Epic 18 and `docs/anti-cheat.md`.
+- Review every change against NT-1 to NT-12 in `docs/anti-cheat.md` section 2. Device storage (PlayerPrefs, files, caches) holds only the keys listed under Device storage there; a new key is added to that table in the same PR.
 - Purchases are granted only after server-side receipt validation. Time-based logic uses server time only.
 - Secrets only from environment. Never commit keys, tokens or service accounts.
 
 ## Performance budgets
-- Client: stable 60 fps on mid-range Android, 120 fps option on capable devices; cold start under 3 s; match scene draw calls under 150; GC alloc 0 B/frame during a match.
+- Client: stable 60 fps on mid-range Android, 120 fps option on capable devices; cold start under 3 s; match scene draw calls under 150; GC alloc 0 B/frame during a match. UI canvas update (`PostLateUpdate.PlayerUpdateCanvases`) p95 at most 1.5 ms per frame, 0.3 ms on a static screen.
 - Install size under 150 MB; extra content via Addressables/CDN on demand.
 - Server: p99 move round-trip under 100 ms in region; 10k concurrent rooms per node target.
 - Any change touching these paths must include a measurement in the PR.
@@ -71,7 +72,6 @@ gh pr create --base main --title "..." --body "..."
 
 ## Asset pipeline
 - Concept and raw art: ChatGPT (browser), then cleanup in Adobe (Photoshop, Illustrator, After Effects) or Blender.
-- Characters: concept turnaround, image-to-3D, Blender clean-up, retopology, texture bake and rig, shipped as real-time skinned 3D models with levels of detail via Addressables (ADR 0009, `docs/asset-workflow.md` 5.5).
 - Animated avatars and other 2D assets: Blender/After Effects to sprite sheets or skeletal 2D rigs, packed into atlases, compressed (ASTC) and shipped via Addressables.
 - Every asset has a rarity, a status color and a manifest entry managed from the admin panel.
 - Static fallback exists for every animated asset.

@@ -1,0 +1,105 @@
+name: hypedomino
+
+x-go: &go
+  image: golang:1.27.3-bookworm
+  working_dir: /repo/server
+  volumes:
+    - .:/repo
+    - go-cache:/go/pkg/mod
+    - go-build:/root/.cache/go-build
+  env_file: .env
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hypedomino
+      POSTGRES_DB: hypedomino
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./tools/dev:/seed:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "hypedomino", "-d", "hypedomino"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  migrate:
+    <<: *go
+    command: ["go", "run", "./cmd/migrate", "up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  seed:
+    <<: *go
+    command: ["sh", "/repo/tools/dev/publish-configs.sh"]
+    profiles: ["seed"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  server:
+    build: ./server
+    env_file: .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    develop:
+      watch:
+        - path: ./server
+          action: rebuild
+
+  admin-api:
+    <<: *go
+    command: ["go", "run", "./cmd/admin-api"]
+    ports:
+      - "8090:8090"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    develop:
+      watch:
+        - path: ./server
+          action: restart
+
+  admin:
+    image: node:24-bookworm-slim
+    working_dir: /repo/admin
+    command: ["sh", "-c", "corepack enable && pnpm install --frozen-lockfile && pnpm dev --hostname 0.0.0.0"]
+    environment:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      HD_ADMIN_API_URL: http://admin-api:8090
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./admin:/repo/admin
+      - admin-modules:/repo/admin/node_modules
+    depends_on:
+      - admin-api
+
+volumes:
+  postgres:
+  go-cache:
+  go-build:
+  admin-modules:

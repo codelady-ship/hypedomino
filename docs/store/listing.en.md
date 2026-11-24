@@ -35,7 +35,7 @@ domino,board game,multiplayer,tiles,double six,friends,pvp,team,partner,spinner,
 ## apple.promo
 
 ```text
-Every five counts. Climb the 1v1 and 2v2 ranked ladders, invite friends to your own room and collect characters to show off at the table.
+Every five counts. Climb the 1v1 and 2v2 ranked ladders, invite friends to your own room and collect avatars and frames to show off at the table.
 ```
 
 ## description
@@ -60,20 +60,20 @@ FAIR BY DESIGN
 • If a player drops out, a bot plays their turns until they come back, so the match goes on.
 
 MAKE IT YOURS
-Collect characters, avatars, frames, tables, emoji and lobby actions. Show them off at the table and in the friend lobby, where your 3D characters meet between matches. Every shop offer shows exactly what you get.
+Collect avatars, frames, tables, tile skins and emoji. Show them off at the table and in the friend lobby between matches. Every shop offer shows exactly what you get.
 
 PLAY TOGETHER
 React with emoji and quick messages during the match. Add friends, see who is online and invite them to your room.
 
 SEASONS AND PROGRESS
-Earn coins by playing. Complete daily and weekly missions, unlock the rewards of the season pass and collect medals.
+Earn coins by playing. Complete daily and weekly missions, unlock the rewards of the Hype Pass and collect medals.
 
 GOOD TO KNOW
 • An internet connection is required.
 • No ads.
 • Available in English, Azerbaijani, Turkish and Russian.
 • Accounts are for players aged 13 and older.
-• Optional in-app purchases: coin packs, the premium season pass and offers. Coins have no cash value and cannot be withdrawn.
+• Optional in-app purchases: crystal packs, the premium Hype Pass and offers. Coins and crystals have no cash value and cannot be withdrawn.
 ```
 
 ## caption.S-1
@@ -109,13 +109,13 @@ Invite friends by link or code
 ## caption.S-6
 
 ```text
-Collect characters and tables
+Collect avatars and tables
 ```
 
 ## caption.S-7
 
 ```text
-Climb the season pass
+Climb the Hype Pass
 ```
 
 ## caption.S-8

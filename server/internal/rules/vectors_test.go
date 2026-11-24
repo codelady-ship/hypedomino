@@ -25,19 +25,20 @@ type vectorFile struct {
 }
 
 var vectorRunners = map[string]func(*testing.T, vector){
-	"deal":          runDealVector,
-	"seat":          runSeatVector,
-	"place":         runPlaceVector,
-	"draw":          runDrawVector,
-	"opening-score": runOpeningScoreVector,
-	"turn":          runTurnVector,
-	"hand-status":   runHandStatusVector,
-	"round":         runRoundVector,
-	"hand-end":      runHandEndVector,
-	"first-opener":  runFirstOpenerVector,
-	"match-end":     runMatchEndVector,
-	"turn-timer":    runTurnTimerVector,
-	"afk":           runAfkVector,
+	"deal":           runDealVector,
+	"seat":           runSeatVector,
+	"place":          runPlaceVector,
+	"draw":           runDrawVector,
+	"opening-score":  runOpeningScoreVector,
+	"turn":           runTurnVector,
+	"hand-status":    runHandStatusVector,
+	"round":          runRoundVector,
+	"hand-end":       runHandEndVector,
+	"first-opener":   runFirstOpenerVector,
+	"match-end":      runMatchEndVector,
+	"turn-timer":     runTurnTimerVector,
+	"afk":            runAfkVector,
+	"doubles-redeal": runDoublesRedealVector,
 }
 
 func TestRuleVectors(t *testing.T) {
@@ -410,6 +411,24 @@ func runFirstOpenerVector(t *testing.T, v vector) {
 	}
 	if opening.Seat != *expect.Opener || opening.Tile != *expect.Tile || opening.Seat.Next() != *expect.Next {
 		t.Fatalf("opening = %s %s next %s, want %s %s next %s", opening.Seat, opening.Tile, opening.Seat.Next(), *expect.Opener, *expect.Tile, *expect.Next)
+	}
+}
+
+func runDoublesRedealVector(t *testing.T, v vector) {
+	var given struct {
+		Hands    map[Seat]Hand
+		Boneyard Boneyard
+	}
+	var expect struct {
+		Redeal bool
+	}
+	decodeVector(t, v.Given, &given)
+	decodeVector(t, v.Expect, &expect)
+	if err := ValidateDeal(v.Mode, DefaultConfig(), Deal{Hands: given.Hands, Boneyard: given.Boneyard}); err != nil {
+		t.Fatalf("deal: %v", err)
+	}
+	if got := NeedsDoublesRedeal(v.Mode, DefaultConfig(), given.Hands); got != expect.Redeal {
+		t.Fatalf("redeal = %v, want %v", got, expect.Redeal)
 	}
 }
 

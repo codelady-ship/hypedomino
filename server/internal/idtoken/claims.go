@@ -67,6 +67,7 @@ type claims struct {
 	Email         string       `json:"email"`
 	EmailVerified flexibleBool `json:"email_verified"`
 	PrivateEmail  flexibleBool `json:"is_private_email"`
+	HostedDomain  string       `json:"hd"`
 }
 
 func decodeClaims(payload []byte) (claims, error) {
@@ -123,5 +124,6 @@ func (c claims) identity(provider Provider) Identity {
 		Email:         c.Email,
 		EmailVerified: bool(c.EmailVerified),
 		PrivateEmail:  bool(c.PrivateEmail),
+		HostedDomain:  c.HostedDomain,
 	}
 }

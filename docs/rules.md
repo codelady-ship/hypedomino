@@ -4,7 +4,7 @@ Single source of truth for the game rules. The rules engine (`server/internal/ru
 
 Every rule has a stable id (`R-1`, `R-2`, ...). Test vectors (`docs/rules-vectors`, #4) reference these ids. Ids are never reused or renumbered; a removed rule keeps its id marked as removed.
 
-Owner decisions behind this version: #3 and #4 (2026-10-25); match start, loading phase and rejoining, R-53, R-57 and R-58, and the friend lobby flow of R-55 (2026-10-28, #85, #154).
+Owner decisions behind this version: #3 and #4 (2026-10-25); the redeal on six doubles, R-59 (2026-11-14); match start, loading phase and rejoining, R-53, R-57 and R-58, and the friend lobby flow of R-55 (2026-10-28, #85, #154).
 
 ## Terms
 
@@ -28,6 +28,7 @@ Owner decisions behind this version: #3 and #4 (2026-10-25); match start, loadin
 - **R-2** Every player is dealt 7 tiles at the start of each hand.
 - **R-3** In 2v2 all 28 tiles are dealt and there is no boneyard. In 1v1 the remaining 14 tiles form the boneyard.
 - **R-4** Shuffling happens on the server using a cryptographically secure random source. A client never receives any tile that its player does not hold.
+- **R-59** In every hand of every mode, when any one player is dealt `RedealDoublesThreshold` (default 6) or more doubles, all tiles are reshuffled and dealt again before the hand opens. Doubles are counted per player, never summed across partners. The redeal changes no score and no opening team; it repeats until no player holds that many doubles, and in the first hand R-9 to R-11 then apply to the final deal.
 
 ## 2. Modes, seats and turn order
 
@@ -107,6 +108,8 @@ Owner decisions behind this version: #3 and #4 (2026-10-25); match start, loadin
 - **R-51** After a number of consecutive timeouts set in admin config, the player is marked AFK and the bot plays the rest of the match for them. The player can take back control by reconnecting; the consecutive-timeout count then starts again from zero. Penalties for going AFK are defined in `docs/penalties.md`.
 - **R-52** A player who leaves the match is replaced by the bot. If they come back before the match ends, they take back control from the bot; the consecutive-timeout count then starts again from zero. Their partner keeps playing either way. A leaver who stays away too long is penalised as defined in `docs/penalties.md`.
 
+The turn timer shows R-49 to the players and changes nothing about it: the match view carries the turn length (`TurnSeconds`) next to the turn deadline, and the timer ring turns to the warning colour once `TurnWarningSeconds` (admin config, default 5 seconds) or less remain, by server time (owner decision 2026-11-14, `docs/ui-motion.md` Turn timer).
+
 ## 12. Ranked, casual and custom play; match start
 
 - **R-53** 1v1 and 2v2 are both ranked. Each mode has its own rating, rank and leaderboard. A ranked match opens directly once matchmaking has formed it (`docs/ranking.md`): there is no accept step, room, seat choice or team split, only the loading phase of R-57.
@@ -123,6 +126,7 @@ Rule values live in `rules.Config` so they can change without code changes. The 
 | Field | Default | Rules |
 |---|---|---|
 | `HandSize` | 7 | R-2 |
+| `RedealDoublesThreshold` | 6 | R-59 |
 | `TargetScore` | 365 | R-43 |
 | `HandPointsLockThreshold` | 300 | R-30, R-41 |
 | `ScoringMultiple` | 5 | R-25, R-33, R-37, R-38 |
@@ -130,8 +134,25 @@ Rule values live in `rules.Config` so they can change without code changes. The 
 | `ScoringOpeningTile` | 5-5 | R-29 |
 | `ScoringOpeningPoints` | 10 | R-29 |
 | `TurnSeconds` | admin config, 20 | R-49 |
+| `TurnWarningSeconds` | admin config, 5 | R-49 (display only) |
 | `AfkConsecutiveTimeouts` | admin config, 3 | R-51 |
 | `MatchLoadingSeconds` | admin config, 10 | R-57 |
+
+The admin config fields form the `rules` domain (`docs/admin.md` 3.1, 5.14). The admin edits them within these bounds:
+
+| Key | Type | Unit | Default | Min | Max |
+|---|---|---|---|---|---|
+| `TurnSeconds` | integer | seconds | 20 | 10 | 60 |
+| `TurnWarningSeconds` | integer | seconds | 5 | 1 | 10 |
+| `AfkConsecutiveTimeouts` | integer | timeouts | 3 | 1 | 10 |
+| `MatchLoadingSeconds` | integer | seconds | 10 | 5 | 60 |
+
+- **Refused snapshots.** A snapshot is refused if it has an unknown key, a value that is not an integer, or a value outside its bounds. The server then keeps its current values.
+- **Missing keys.** A key that the snapshot leaves out keeps its default.
+- **Warning bound.** `TurnWarningSeconds` is at most 10, the lowest `TurnSeconds`, so the warning never starts before the turn does.
+- **When a new value applies.** Only to matches that open after the server loads it. Matches in progress keep the values they started with.
+
+This is implemented in `server/internal/rulesconfig` (#145). The admin API edits, publishes and rolls back the domain (`docs/admin.md` 9.1), and `config-publish -domain rules` checks a snapshot the same way before publishing it.
 
 ## 14. Worked examples
 
@@ -248,3 +269,9 @@ The turn time is 20 seconds.
 - South does not act in time, so the bot places a legal tile for South.
 - South keeps timing out until the admin-configured limit is reached. South is marked AFK, and the bot plays South's remaining turns. North keeps playing.
 - If South leaves the match, the bot plays South's turns. If South comes back before the match ends, South takes back control. If South stayed away longer than the admin-configured grace time, or never comes back, South is penalised for leaving (`docs/penalties.md`).
+
+### Example 14: redeal on six doubles (R-59)
+
+- 2v2, a later hand. North is dealt 0-0, 1-1, 2-2, 3-3, 5-5, 6-6 and 2-4: six doubles, so all 28 tiles are reshuffled and dealt again. The team that was to open still opens, and the scores do not change.
+- 2v2. North holds four doubles and South, North's partner, holds three. No single player holds six, so the hand is played.
+- 1v1, first hand. X is dealt all seven doubles: the tiles are dealt again, and R-9 to R-11 decide the opener from the new deal.

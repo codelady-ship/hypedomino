@@ -27,6 +27,7 @@ type Pair struct {
 	RefreshToken string
 	ExpiresIn    int
 	Session      string
+	RequestKey   []byte
 }
 
 type Service struct {
@@ -77,7 +78,7 @@ func (s *Service) pair(f Family, refresh string) (Pair, error) {
 	if err != nil {
 		return Pair{}, err
 	}
-	return Pair{AccessToken: access, RefreshToken: refresh, ExpiresIn: int(s.config.AccessTTL / time.Second), Session: f.ID}, nil
+	return Pair{AccessToken: access, RefreshToken: refresh, ExpiresIn: int(s.config.AccessTTL / time.Second), Session: f.ID, RequestKey: requestKey(s.signer.sign.Secret, f.ID)}, nil
 }
 
 func (s *Service) Logout(ctx context.Context, refresh string) error {
@@ -98,4 +99,8 @@ func (s *Service) Authenticate(access string) (string, string, error) {
 		return "", "", err
 	}
 	return claims.Account, claims.Session, nil
+}
+
+func (s *Service) RequestKey(claims Claims) ([]byte, error) {
+	return s.signer.RequestKey(claims)
 }

@@ -1,0 +1,57 @@
+{
+  "slug": "teal_lattice",
+  "canvas": [
+    1280,
+    720
+  ],
+  "seed": 17415,
+  "edges": {"depth": 222},
+  "back": {
+    "concept": "concept/20261115-01.png",
+    "tone": {
+      "radius": [
+        0.44,
+        0.4
+      ],
+      "edge": 0.25,
+      "soften": 0.5,
+      "gain": 1.0,
+      "sigma": 12
+    }
+  },
+  "motion": {
+    "frames": 10,
+    "key": 7,
+    "parts": [
+      {
+        "kind": "fringe",
+        "silk": [
+          [
+            226,
+            212,
+            186
+          ],
+          [
+            200,
+            156,
+            116
+          ],
+          [
+            214,
+            198,
+            170
+          ]
+        ],
+        "origin": 174,
+        "top": 190,
+        "step": 5.5,
+        "length": 40,
+        "thread": 2.4,
+        "swing": 7,
+        "wavelength": 420,
+        "bead": 3.2,
+        "group": 6
+      }
+    ]
+  }
+}

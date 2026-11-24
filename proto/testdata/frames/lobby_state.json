@@ -1,0 +1,12 @@
+{
+  "protocolVersion": 1,
+  "lobbyState": {
+    "code": "K7QM3X",
+    "leaderAccountId": "0b7c3f2e-5a41-4d8e-9c1f-2a6b8d4e7f10",
+    "memberAccountIds": ["0b7c3f2e-5a41-4d8e-9c1f-2a6b8d4e7f10", "5e2d9a14-7c3b-4f60-8a1e-9d4c2b6f3a87"],
+    "phase": "LOBBY_PHASE_TEAMS",
+    "mode": "MODE_1V1",
+    "seats": [{ "seat": "SEAT_X", "accountId": "0b7c3f2e-5a41-4d8e-9c1f-2a6b8d4e7f10" }, { "seat": "SEAT_Y" }],
+    "refusal": "LOBBY_REFUSAL_SEATS_OPEN"
+  }
+}

@@ -19,11 +19,11 @@ Constraints:
 ### Platform
 - Kubernetes, as k3s on Hetzner Cloud servers in Germany (Falkenstein `fsn1` and Nuremberg `nbg1`), one cluster per environment (`staging`, `production`, E-1).
 - Infrastructure as code with OpenTofu and the `hcloud` provider; state in a Hetzner Object Storage bucket per environment with versioning on. Cluster, load balancer, firewall, volumes and DNS are all created by it; nothing is clicked in the console (GN-8 evidence is the apply log).
-- Images: `ghcr.io/alievs-corp/hypedomino-server`, tagged with the commit SHA by the release workflow (#27). Manifests reference the tag, never `latest`.
+- Images: `ghcr.io/alievs-corp/hypedomino-server`, tagged with the full commit SHA by `.github/workflows/server-image.yml` (#25). Manifests reference the tag, never `latest`.
 - Manifests live in `deploy/k8s`: `base` holds the shape every environment shares, an overlay per environment sets the image tag, replicas, resources and the `server-env` secret source. Environments differ only by overlay values and secrets (E-4).
 
 ### Image
-- `server/Dockerfile`: static `CGO_ENABLED=0` build on the Go version of `server/go.mod`, runtime `gcr.io/distroless/static-debian12:nonroot` (no shell, no package manager), numeric user `65532`, read-only root filesystem, every capability dropped.
+- `server/Dockerfile`: static `CGO_ENABLED=0` build on the Go version of `server/go.mod`, runtime `gcr.io/distroless/static-debian12:nonroot` (no shell, no package manager), numeric user `65532`, read-only root filesystem, every capability dropped. The image carries `/server` (the entrypoint), `/migrate` and `/account-deletion`, so the migration runner and the deletion CronJob run the same promoted build (#601).
 - Health is checked by the orchestrator over HTTP (`/healthz` liveness, `/readyz` readiness), not by a command inside the image.
 
 ### Rolling deploy with drain
@@ -31,7 +31,7 @@ Constraints:
 - Termination order of an old pod: it leaves the Service endpoints, a `preStop` sleep of 10 s lets the load balancer and kube-proxy stop sending it new connections, then `SIGTERM` starts the drain of the binary.
 - `terminationGracePeriodSeconds` = `preStop` + `HD_DRAIN_TIMEOUT` + `HD_SHUTDOWN_TIMEOUT` + 60 s margin = 980 s with the defaults. Raising `HD_DRAIN_TIMEOUT` requires raising it in the same change; otherwise the kubelet kills rooms the binary would have let finish.
 - A `PodDisruptionBudget` of `maxUnavailable: 1` keeps node maintenance from draining several game pods at once.
-- Migrations run as one Kubernetes `Job` from the new image before the rollout starts (`docs/environments.md` M-5); a failed job stops the deploy. The job manifest arrives with the migration tool (#55).
+- Migrations run as one Kubernetes `Job` from the new image before the rollout starts (`docs/environments.md` M-5); a failed job stops the deploy. The job is `deploy/k8s/base/migrate.yaml` and `tools/deploy/apply-release.sh` orders it before the rollout (`docs/launch-runbook.md` 5.1).
 
 ### Rollback
 - Rollback is `kubectl rollout undo deployment/server` or a deploy of the previous SHA tag through the same workflow. It is a rolling deploy like any other: new matches start on the previous version as soon as its pods are ready; matches already running on the bad version finish under the drain.

@@ -43,7 +43,7 @@ func (f *fakeShop) View(_ context.Context, account string, at time.Time) (shop.V
 	if account == "empty" {
 		return shop.View{}, shop.ErrNoCatalog
 	}
-	return shop.View{Version: 7, Sections: []shop.SectionView{{Section: shop.SectionCoins, Offers: []shop.OfferView{{ID: "offer.coins_tier1", ProductID: "coins_tier1", Purchasable: true}}}}}, nil
+	return shop.View{Version: 7, Sections: []shop.SectionView{{Section: shop.SectionCrystals, Offers: []shop.OfferView{{ID: "offer.crystals_tier1", ProductID: "crystals_tier1", Purchasable: true}}}}}, nil
 }
 
 func (f *fakeShop) Buy(_ context.Context, account, offer, requestID string, _ time.Time) (shop.Purchase, error) {
@@ -79,7 +79,7 @@ func (f *fakeShop) Buy(_ context.Context, account, offer, requestID string, _ ti
 func (f *fakeShop) Begin(_ context.Context, account, offer string, _ time.Time) (shop.Checkout, error) {
 	f.calls = append(f.calls, "begin "+account+" "+offer)
 	if offer == "offer.coins" {
-		return shop.Checkout{}, shop.ErrCoinsOnly
+		return shop.Checkout{}, shop.ErrInGameOnly
 	}
 	return shop.Checkout{Offer: offer, ProductID: "offer_starter", AccountToken: shop.AccountToken(account)}, nil
 }
@@ -164,7 +164,7 @@ func TestTheHandlerAnswersViewPurchaseAndCheckout(t *testing.T) {
 	if code != http.StatusOK || body["product_id"] != "offer_starter" || body["account_token"] != shop.AccountToken("a1") {
 		t.Fatalf("checkout %d %v", code, body)
 	}
-	if code, body := serve(t, handler, http.MethodPost, "/shop/begin", "access:a1", `{"offer":"offer.coins"}`); code != http.StatusConflict || body["error"] != "offer.coins_only" {
+	if code, body := serve(t, handler, http.MethodPost, "/shop/begin", "access:a1", `{"offer":"offer.coins"}`); code != http.StatusConflict || body["error"] != "offer.in_game_only" {
 		t.Fatalf("checkout of a coin offer %d %v", code, body)
 	}
 	if code, _ := serve(t, handler, http.MethodGet, "/shop/buy", "access:a1", ""); code != http.StatusMethodNotAllowed {
@@ -172,5 +172,25 @@ func TestTheHandlerAnswersViewPurchaseAndCheckout(t *testing.T) {
 	}
 	if fake.calls[0] != "view a1 2026-10-30T12:00:00Z" || fake.calls[len(fake.calls)-1] != "begin a1 offer.coins" {
 		t.Fatalf("calls %v", fake.calls)
+	}
+}
+
+func TestTheKillSwitchClosesCheckoutOnly(t *testing.T) {
+	fake := &fakeShop{}
+	handler := shop.NewHandler(fakeVerifier{}, fake, slog.New(slog.NewTextHandler(io.Discard, nil)), time.Now)
+	closed := true
+	handler.CloseCheckoutWhen(func() bool { return closed })
+	if code, body := serve(t, handler, http.MethodPost, "/shop/begin", "access:a1", `{"offer":"offer.starter"}`); code != http.StatusServiceUnavailable || body["error"] != "purchases.disabled" {
+		t.Fatalf("closed checkout %d %v", code, body)
+	}
+	if len(fake.calls) != 0 {
+		t.Fatalf("a closed checkout reached the shop: %v", fake.calls)
+	}
+	if code, _ := serve(t, handler, http.MethodPost, "/shop/buy", "access:a1", `{"offer":"offer.coins","request_id":"r1"}`); code == http.StatusServiceUnavailable {
+		t.Fatal("the kill switch closed a coin purchase")
+	}
+	closed = false
+	if code, _ := serve(t, handler, http.MethodPost, "/shop/begin", "access:a1", `{"offer":"offer.starter"}`); code != http.StatusOK {
+		t.Fatalf("open checkout %d", code)
 	}
 }

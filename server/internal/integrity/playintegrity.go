@@ -101,15 +101,15 @@ func (p *PlayIntegrity) Check(ctx context.Context, policy Policy, binding Bindin
 	if err != nil {
 		return Decision{}, fmt.Errorf("integrity: decode token: %w", err)
 	}
-	reasons, err := p.evaluate(policy, binding, payload)
+	reasons, err := p.evaluate(ctx, policy, binding, payload)
 	if err != nil {
 		return Decision{}, err
 	}
 	return decide(policy, binding.Purpose, reasons), nil
 }
 
-func (p *PlayIntegrity) evaluate(policy Policy, binding Binding, payload PlayIntegrityPayload) ([]Reason, error) {
-	nonceReason, err := p.nonces.redeem(requestNonce(payload.RequestDetails), binding)
+func (p *PlayIntegrity) evaluate(ctx context.Context, policy Policy, binding Binding, payload PlayIntegrityPayload) ([]Reason, error) {
+	nonceReason, err := p.nonces.redeem(ctx, requestNonce(payload.RequestDetails), binding)
 	if err != nil {
 		return nil, err
 	}

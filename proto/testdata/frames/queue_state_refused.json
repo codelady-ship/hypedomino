@@ -1,0 +1,4 @@
+{
+  "protocolVersion": 1,
+  "queueState": { "status": "QUEUE_STATUS_REFUSED", "mode": "MODE_1V1", "queue": "QUEUE_KIND_RANKED", "refusal": "QUEUE_REFUSAL_MATCHMAKING_BAN", "refusedUntilUnixMs": "1793010000000" }
+}

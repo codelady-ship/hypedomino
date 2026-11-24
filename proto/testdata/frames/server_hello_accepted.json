@@ -5,6 +5,14 @@
     "status": "HELLO_STATUS_ACCEPTED",
     "minimumAppVersion": "1.0.0",
     "serverTimeUnixMs": "1761480000000",
-    "catalogVersion": "2026.10.26-1"
+    "catalogVersion": "2026.10.26-1",
+    "stringBundles": [
+      {"language": "en", "version": 4, "hash": "9f2c1e0b7a4d5e6f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7"},
+      {"language": "az", "version": 2, "hash": "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809"}
+    ],
+    "fallbackChains": [
+      {"language": "az", "languages": ["az", "tr", "en"]},
+      {"language": "en", "languages": ["en"]}
+    ]
   }
 }

@@ -23,6 +23,11 @@ client/[Oo]bj/
 client/[Bb]uild/
 client/[Bb]uilds/
 client/[Ll]ogs/
+client/Signing/
+client/Assets/HypeDomino/Bench/Generated/
+client/Assets/HypeDomino/Bench/Generated.meta
+client/Assets/HypeDomino/Net/Resources/
+client/Assets/HypeDomino/Net/Resources.meta
 client/[Uu]ser[Ss]ettings/
 client/[Mm]emory[Cc]aptures/
 client/[Rr]ecordings/
@@ -65,3 +70,6 @@ pnpm-debug.log*
 
 *.blend1
 *.blend2
+
+graphify-out/
+.claude/settings.local.json

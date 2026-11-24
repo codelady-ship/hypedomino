@@ -103,7 +103,7 @@ func newPlayFixture(t *testing.T) *playFixture {
 
 func (f *playFixture) token(t *testing.T, binding Binding, edit func(*PlayIntegrityPayload)) string {
 	t.Helper()
-	nonce, err := f.nonces.Issue(binding)
+	nonce, err := f.nonces.Issue(context.Background(), binding)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,8 +3,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { schemaErrors } from "../rules-vectors/rules-vectors.mjs";
 
-export const itemTypes = ["avatar", "character", "frame", "table", "emoji", "action"];
-const typesWithoutDefault = new Set(["action"]);
+export const itemTypes = ["avatar", "frame", "table", "tile", "emoji"];
 
 const assetBase = (id) => `cosmetic/${id.replace(".", "/")}`;
 
@@ -12,9 +11,6 @@ function addressErrors(item) {
   const base = assetBase(item.id);
   const expected = [["staticAddress", item.staticAddress, `${base}/static`]];
   if (item.animationAddress) expected.push(["animationAddress", item.animationAddress, `${base}/anim`]);
-  if (item.modelAddress) expected.push(["modelAddress", item.modelAddress, `${base}/model`]);
-  if (item.modelHqAddress) expected.push(["modelHqAddress", item.modelHqAddress, `${base}/model_hq`]);
-  for (const [clip, address] of Object.entries(item.clips ?? {})) expected.push([`clips.${clip}`, address, `${base}/clip/${clip}`]);
   for (const layer of item.layers ?? []) expected.push([`layers.${layer.name}`, layer.address, `${base}/layer/${layer.name}`]);
   return expected.filter(([, actual, wanted]) => actual !== wanted).map(([field, actual, wanted]) => `${field} is ${actual}, expected ${wanted}`);
 }
@@ -36,7 +32,6 @@ function itemErrors(item) {
   if (item.nameKey !== `cosmetic.${item.id}.name`) errors.push(`nameKey is ${item.nameKey}, expected cosmetic.${item.id}.name`);
   if (isDefault(item) && item.availability !== "live") errors.push(`default item is ${item.availability}, must be live`);
   if (isDefault(item) && item.animated) errors.push("default item is animated, must be static");
-  if (isDefault(item) && typesWithoutDefault.has(item.type)) errors.push(`${item.type} cannot have a default source`);
   return [...errors, ...addressErrors(item), ...layerErrors(item)];
 }
 
@@ -49,7 +44,7 @@ export function checkManifest(schema, manifest) {
     seen.add(item.id);
     errors.push(...itemErrors(item).map((error) => `${item.id}: ${error}`));
   }
-  for (const type of itemTypes.filter((type) => !typesWithoutDefault.has(type))) {
+  for (const type of itemTypes) {
     const hasLiveDefault = manifest.items.some((item) => item.type === type && item.availability === "live" && isDefault(item));
     if (!hasLiveDefault) errors.push(`${type}: no live item with a default source`);
   }

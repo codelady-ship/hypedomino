@@ -1,6 +1,7 @@
 package integrity
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -23,8 +24,8 @@ type Nonce struct {
 }
 
 type NonceStore interface {
-	Put(nonce Nonce) error
-	Take(value string) (Nonce, bool, error)
+	Put(ctx context.Context, nonce Nonce) error
+	Take(ctx context.Context, value string) (Nonce, bool, error)
 }
 
 type NonceConfig struct {
@@ -48,7 +49,7 @@ func NewNonces(config NonceConfig, store NonceStore, clock Clock, random io.Read
 	return &Nonces{config: config, store: store, clock: clock, random: random}, nil
 }
 
-func (n *Nonces) Issue(binding Binding) (Nonce, error) {
+func (n *Nonces) Issue(ctx context.Context, binding Binding) (Nonce, error) {
 	if binding.Account == "" || !binding.Purpose.valid() {
 		return Nonce{}, ErrInvalidBinding
 	}
@@ -61,17 +62,17 @@ func (n *Nonces) Issue(binding Binding) (Nonce, error) {
 		Binding:   binding,
 		ExpiresAt: n.clock.Now().Add(n.config.TTL),
 	}
-	if err := n.store.Put(nonce); err != nil {
+	if err := n.store.Put(ctx, nonce); err != nil {
 		return Nonce{}, err
 	}
 	return nonce, nil
 }
 
-func (n *Nonces) redeem(value string, binding Binding) (Reason, error) {
+func (n *Nonces) redeem(ctx context.Context, value string, binding Binding) (Reason, error) {
 	if value == "" {
 		return ReasonNonceMissing, nil
 	}
-	nonce, found, err := n.store.Take(value)
+	nonce, found, err := n.store.Take(ctx, value)
 	if err != nil {
 		return 0, err
 	}
@@ -97,7 +98,7 @@ func NewMemoryNonceStore(clock Clock) *MemoryNonceStore {
 	return &MemoryNonceStore{clock: clock, nonces: map[string]Nonce{}}
 }
 
-func (s *MemoryNonceStore) Put(nonce Nonce) error {
+func (s *MemoryNonceStore) Put(_ context.Context, nonce Nonce) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.dropExpired(s.clock.Now())
@@ -109,7 +110,7 @@ func (s *MemoryNonceStore) Put(nonce Nonce) error {
 	return nil
 }
 
-func (s *MemoryNonceStore) Take(value string) (Nonce, bool, error) {
+func (s *MemoryNonceStore) Take(_ context.Context, value string) (Nonce, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	nonce, found := s.nonces[value]

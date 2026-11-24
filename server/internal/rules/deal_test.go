@@ -36,6 +36,47 @@ func TestNewDealShape(t *testing.T) {
 	}
 }
 
+func TestDoublesRedeal(t *testing.T) {
+	cases := []struct {
+		name  string
+		mode  Mode
+		hands map[Seat]Hand
+		want  bool
+	}{
+		{"2v2 six doubles in one hand", Mode2v2, map[Seat]Hand{SeatNorth: tiles("0-0", "1-1", "2-2", "3-3", "5-5", "6-6", "2-4")}, true},
+		{"2v2 partners hold four and three", Mode2v2, map[Seat]Hand{SeatNorth: tiles("0-0", "1-1", "2-2", "3-3", "0-1"), SeatSouth: tiles("4-4", "5-5", "6-6")}, false},
+		{"2v2 five doubles", Mode2v2, map[Seat]Hand{SeatEast: tiles("0-0", "1-1", "2-2", "3-3", "4-4", "0-1", "0-2")}, false},
+		{"1v1 all seven doubles", Mode1v1, map[Seat]Hand{SeatY: tiles("0-0", "1-1", "2-2", "3-3", "4-4", "5-5", "6-6")}, true},
+		{"1v1 no doubles", Mode1v1, map[Seat]Hand{SeatX: tiles("0-1", "0-2")}, false},
+	}
+	for _, c := range cases {
+		if got := NeedsDoublesRedeal(c.mode, DefaultConfig(), c.hands); got != c.want {
+			t.Errorf("%s: redeal %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestDoublesRedealCanEnd(t *testing.T) {
+	cases := []struct {
+		mode      Mode
+		threshold int
+		want      bool
+	}{
+		{Mode2v2, 6, true},
+		{Mode2v2, 3, true},
+		{Mode2v2, 2, false},
+		{Mode1v1, 1, true},
+		{Mode1v1, 0, false},
+	}
+	for _, c := range cases {
+		config := DefaultConfig()
+		config.RedealDoublesThreshold = c.threshold
+		if got := DoublesRedealCanEnd(c.mode, config); got != c.want {
+			t.Errorf("%s threshold %d: can end %v, want %v", c.mode, c.threshold, got, c.want)
+		}
+	}
+}
+
 func TestNewDealIsDeterministicPerSeed(t *testing.T) {
 	first := NewDeal(Mode2v2, DefaultConfig(), seeded(7))
 	second := NewDeal(Mode2v2, DefaultConfig(), seeded(7))

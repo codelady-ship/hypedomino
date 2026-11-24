@@ -4,6 +4,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"unicode"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 func TestDisplayNormalisesAndStripsInvisibleCharacters(t *testing.T) {
@@ -62,7 +65,28 @@ func TestValidateAppliesTheFormatRules(t *testing.T) {
 		"Иван Smith":            nil,
 		"a.b":                   nil,
 		"a__b":                  nil,
-		"Café":                  nil,
+		"Ağşən":                 nil,
+		"İlkin Əliyev":          nil,
+		"ÇÖÜ_ışıq":              nil,
+		"Âşık":                  nil,
+		"Îsa.Ûmit":              nil,
+		"Ёлка":                  nil,
+		"ёжик_99":               nil,
+		"Café":                  ErrInvalidCharacters,
+		"Straße":                ErrInvalidCharacters,
+		"Іван":                  ErrInvalidCharacters,
+		"Їжак":                  ErrInvalidCharacters,
+		"Ўладзімір":             ErrInvalidCharacters,
+		"Әлия":                  ErrInvalidCharacters,
+		"Müñoz":                 ErrInvalidCharacters,
+		"Jürgenä":               ErrInvalidCharacters,
+		"Łukasz":                ErrInvalidCharacters,
+		"Ayla\u0301":            ErrInvalidCharacters,
+		"Ayla\u200d":            ErrInvalidCharacters,
+		"Ayla\u00a0Han":         ErrInvalidCharacters,
+		"Αλέξης":                ErrInvalidCharacters,
+		"Ayla🇦🇿":                ErrInvalidCharacters,
+		"Ayla\tHan":             ErrInvalidCharacters,
 		"ab":                    ErrInvalidLength,
 		"":                      ErrInvalidLength,
 		strings.Repeat("a", 17): ErrInvalidLength,
@@ -95,5 +119,31 @@ func TestValidateAppliesTheFormatRules(t *testing.T) {
 	config.NicknameMinLength, config.NicknameMaxLength = 2, 4
 	if config.Validate("ab") != nil || !errors.Is(config.Validate("abcde"), ErrInvalidLength) {
 		t.Fatal("configured lengths were not applied")
+	}
+}
+
+func TestNicknameCharactersAreSingleLatinOrCyrillicCodePoints(t *testing.T) {
+	for r := range letters {
+		if !unicode.IsLetter(r) || !(unicode.Is(unicode.Latin, r) || unicode.Is(unicode.Cyrillic, r)) {
+			t.Fatalf("%q is not a Latin or Cyrillic letter", r)
+		}
+	}
+	for _, r := range digits {
+		if !unicode.IsDigit(r) || letters[r] {
+			t.Fatalf("digit %q is not a digit or is also a letter", r)
+		}
+	}
+	for _, r := range separators {
+		if letters[r] || strings.ContainsRune(digits, r) {
+			t.Fatalf("separator %q is also a letter or digit", r)
+		}
+	}
+	for _, group := range allowed.Letters {
+		if !norm.NFKC.IsNormalString(group) {
+			t.Fatalf("%q changes under NFKC, so Display would never keep it", group)
+		}
+	}
+	if len(letters) != 52+14+6+66 || len(digits) != 10 || separators != "_.- " {
+		t.Fatalf("allowed set has %d letters, digits %q, separators %q", len(letters), digits, separators)
 	}
 }

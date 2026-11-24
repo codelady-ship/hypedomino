@@ -68,6 +68,26 @@ message LoadingIntent {
   bool ready = 2;
 }
 
+message EmojiIntent {
+  string item_id = 1;
+}
+
+message EmojiShown {
+  Seat seat = 1;
+  string item_id = 2;
+}
+
+message QuickMessageIntent {
+  string key = 1;
+  bool team_only = 2;
+}
+
+message QuickMessageShown {
+  Seat seat = 1;
+  string key = 2;
+  bool team_only = 3;
+}
+
 message OrientedTile {
   uint32 first = 1;
   uint32 second = 2;
@@ -84,6 +104,7 @@ message BoardView {
   repeated OrientedTile top = 3;
   repeated OrientedTile bottom = 4;
   repeated OpenEnd open_ends = 5;
+  uint32 opening_index = 6;
 }
 
 message SeatView {
@@ -92,6 +113,8 @@ message SeatView {
   Controller controller = 3;
   uint32 loading_progress = 4;
   bool ready = 5;
+  bool disconnected = 6;
+  uint32 consecutive_timeouts = 7;
 }
 
 message LegalMove {
@@ -109,6 +132,17 @@ message TeamPoints {
   uint32 team_b = 2;
 }
 
+enum HandEnding {
+  HAND_ENDING_UNSPECIFIED = 0;
+  HAND_ENDING_DOMINO = 1;
+  HAND_ENDING_BLOCK = 2;
+}
+
+message SeatTiles {
+  Seat seat = 1;
+  repeated Tile tiles = 2;
+}
+
 message HandResult {
   TeamPoints pips = 1;
   Team winner = 2;
@@ -116,18 +150,23 @@ message HandResult {
   uint32 carry_over = 4;
   TeamPoints scores = 5;
   Team next_opener = 6;
+  HandEnding ending = 7;
+  bool hand_points_locked = 8;
+  uint32 carried_in = 9;
+  repeated SeatTiles left = 10;
 }
 
 message RosterEntry {
   Seat seat = 1;
   Team team = 2;
   string nickname = 3;
-  string character = 4;
+  string character = 4 [deprecated = true];
   string frame = 5;
   string avatar = 6;
   string rank_label = 7;
   repeated string emblems = 8;
   bool bot = 9;
+  string tile = 10;
 }
 
 message MatchView {
@@ -152,4 +191,10 @@ message MatchView {
   repeated RosterEntry roster = 19;
   uint64 loading_deadline_unix_ms = 20;
   string table = 21;
+  uint32 afk_consecutive_timeouts = 22;
+  uint32 target_score = 23;
+  uint32 hand_points_lock_threshold = 24;
+  repeated Team locked_teams = 25;
+  uint32 turn_seconds = 26;
+  uint32 turn_warning_seconds = 27;
 }

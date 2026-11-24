@@ -5,7 +5,7 @@ Date: 2026-10-25
 Issue: #10
 
 ## Context
-Install must stay under 150 MB while the game ships many cosmetic assets, each with a rarity, a status colour and a manifest entry managed from the admin panel (CLAUDE.md). Animated assets (characters, avatars) are expensive in bytes and GPU time. Low-end devices must still render something correct.
+Install must stay under 150 MB while the game ships many cosmetic assets, each with a rarity, a status colour and a manifest entry managed from the admin panel (CLAUDE.md). Animated assets (avatars, frames, emoji) are expensive in bytes and GPU time. Low-end devices must still render something correct.
 
 ## Decision
 - The install package holds only the boot path, the match scene essentials and the default tile set. Everything else is an Addressables group fetched on demand from a CDN.
@@ -27,3 +27,4 @@ Install must stay under 150 MB while the game ships many cosmetic assets, each w
 - Easier: install size stays flat as content grows; art ships without a store release; rollback is a catalog switch.
 - Harder: first use of a new asset needs a download state and a fallback path; offline start must work with the install-time set only. Group design affects load time and memory, so it is reviewed per asset spec.
 - Download size per group and the cold-start effect are measured per ADR 0008.
+- The client side of this decision is `docs/content-delivery.md`.

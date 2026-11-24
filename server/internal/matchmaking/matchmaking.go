@@ -1,10 +1,15 @@
 package matchmaking
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"math/rand/v2"
 	"sort"
 	"time"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/bot"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
@@ -26,11 +31,14 @@ func (q Queue) String() string {
 }
 
 type Config struct {
-	MmrWindowStart       int
-	MmrWindowStep        int
-	MmrWindowStepSeconds int
-	MmrWindowMax         int
-	CasualBotFillSeconds int
+	MmrWindowStart       int       `json:"mmrWindowStart"`
+	MmrWindowStep        int       `json:"mmrWindowStep"`
+	MmrWindowStepSeconds int       `json:"mmrWindowStepSeconds"`
+	MmrWindowMax         int       `json:"mmrWindowMax"`
+	RankWindowDivisions  int       `json:"rankWindowDivisions"`
+	CasualBotFillSeconds int       `json:"casualBotFillSeconds"`
+	RankedBotLevel       bot.Level `json:"rankedBotLevel"`
+	CasualBotLevel       bot.Level `json:"casualBotLevel"`
 }
 
 func DefaultConfig() Config {
@@ -39,18 +47,25 @@ func DefaultConfig() Config {
 		MmrWindowStep:        50,
 		MmrWindowStepSeconds: 10,
 		MmrWindowMax:         400,
+		RankWindowDivisions:  8,
 		CasualBotFillSeconds: 30,
+		RankedBotLevel:       bot.Medium,
+		CasualBotLevel:       bot.Medium,
 	}
 }
 
 type Entry struct {
-	Account    string
-	Mode       rules.Mode
-	Queue      Queue
-	Region     string
-	Mmr        int
-	EnqueuedAt time.Time
-	SearchFrom time.Time
+	Account      string
+	Mode         rules.Mode
+	Queue        Queue
+	Region       string
+	Mmr          int
+	Rank         int
+	Placed       bool
+	Avoid        []string
+	Shadowbanned bool
+	EnqueuedAt   time.Time
+	SearchFrom   time.Time
 }
 
 type Seat struct {
@@ -64,6 +79,20 @@ type Match struct {
 	Queue  Queue
 	Region string
 	Seats  []Seat
+}
+
+func (m Match) Ranked() bool {
+	return m.Queue == QueueRanked
+}
+
+func (m Match) Teams() [2][]string {
+	var teams [2][]string
+	for _, seat := range m.Seats {
+		if !seat.Bot {
+			teams[seat.Seat.Team()] = append(teams[seat.Seat.Team()], seat.Account)
+		}
+	}
+	return teams
 }
 
 func Window(config Config, waited time.Duration) int {
@@ -82,16 +111,17 @@ func Window(config Config, waited time.Duration) int {
 }
 
 type bucket struct {
-	mode   rules.Mode
-	queue  Queue
-	region string
+	mode         rules.Mode
+	queue        Queue
+	region       string
+	shadowbanned bool
 }
 
 func Form(config Config, entries []Entry, now time.Time, random *rand.Rand) ([]Match, []Entry) {
 	buckets := map[bucket][]Entry{}
 	var order []bucket
 	for _, entry := range entries {
-		key := bucket{entry.Mode, entry.Queue, entry.Region}
+		key := bucket{entry.Mode, entry.Queue, entry.Region, entry.Shadowbanned}
 		if _, seen := buckets[key]; !seen {
 			order = append(order, key)
 		}
@@ -122,11 +152,11 @@ func formBucket(config Config, key bucket, entries []Entry, now time.Time, rando
 			if len(group) == players {
 				break
 			}
-			if other == index || taken[other] || entries[other].SearchFrom.After(now) {
+			if other == index || taken[other] || entries[other].SearchFrom.After(now) || avoids(anchor, entries[other]) {
 				continue
 			}
 			tolerance := min(window, Window(config, now.Sub(entries[other].EnqueuedAt)))
-			if abs(anchor.Mmr-entries[other].Mmr) <= tolerance {
+			if abs(anchor.Mmr-entries[other].Mmr) <= tolerance && rankClose(config, key.queue, anchor, entries[other]) {
 				group = append(group, other)
 			}
 		}
@@ -149,6 +179,27 @@ func formBucket(config Config, key bucket, entries []Entry, now time.Time, rando
 		}
 	}
 	return matches, remaining
+}
+
+func avoids(a, b Entry) bool {
+	for _, account := range a.Avoid {
+		if account == b.Account {
+			return true
+		}
+	}
+	for _, account := range b.Avoid {
+		if account == a.Account {
+			return true
+		}
+	}
+	return false
+}
+
+func rankClose(config Config, queue Queue, a, b Entry) bool {
+	if queue != QueueRanked || config.RankWindowDivisions <= 0 || !a.Placed || !b.Placed {
+		return true
+	}
+	return abs(a.Rank-b.Rank) <= config.RankWindowDivisions
 }
 
 func botFill(config Config, queue Queue, waited time.Duration) bool {
@@ -176,4 +227,37 @@ func abs(value int) int {
 		return -value
 	}
 	return value
+}
+
+const Domain = "matchmaking"
+
+var ErrInvalidConfig = errors.New("matchmaking: invalid config")
+
+func Parse(raw []byte) (Config, error) {
+	config := DefaultConfig()
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&config); err != nil {
+		return Config{}, fmt.Errorf("%w: %v", ErrInvalidConfig, err)
+	}
+	return config, config.Validate()
+}
+
+func (c Config) Validate() error {
+	switch {
+	case c.MmrWindowStart < 0 || c.MmrWindowStep < 0 || c.MmrWindowMax < c.MmrWindowStart:
+		return fmt.Errorf("%w: the MMR window needs 0 <= start <= max and a step of at least 0", ErrInvalidConfig)
+	case c.MmrWindowStepSeconds < 1:
+		return fmt.Errorf("%w: mmrWindowStepSeconds below 1", ErrInvalidConfig)
+	case c.RankWindowDivisions < 0 || c.CasualBotFillSeconds < 0:
+		return fmt.Errorf("%w: rankWindowDivisions and casualBotFillSeconds may not be negative", ErrInvalidConfig)
+	}
+	return nil
+}
+
+func (c Config) BotLevel(queue Queue) bot.Level {
+	if queue == QueueRanked {
+		return c.RankedBotLevel
+	}
+	return c.CasualBotLevel
 }

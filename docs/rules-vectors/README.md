@@ -22,6 +22,7 @@ Hand-computed input/output cases for the rules in [`docs/rules.md`](../rules.md)
 | `rule-300.json` | The 300 rule on hand points and board points (R-41, R-42) |
 | `match-end.json` | Match end checks (R-43 to R-48) |
 | `timer.json` | Turn timer, AFK and leavers (R-49 to R-52) |
+| `redeal.json` | Redeal when one player is dealt six or more doubles, in every hand (R-59) |
 
 ## Vector format
 
@@ -44,7 +45,7 @@ Conventions:
 - A board is `{ "line", "spinner", "top", "bottom" }`. `line` lists tiles from the left end to the right end, each oriented so its first half faces left. `spinner` is the spinner tile (it sits inside `line`) or `null`. `top` and `bottom` list arm tiles from the spinner outward, each oriented so its first half faces the spinner; both are empty while there is no spinner.
 - A placement `end` is `left`, `right`, `top` or `bottom`. `top` and `bottom` exist only once there is a spinner.
 - `openEnds` maps each open end to what it counts: the exposed half, or both halves when the outermost tile is a double (R-26). Empty arms are left out (R-27).
-- States are minimal: they hold only what the function reads. Tile counts need not add up to 28 except in `deal` and `first-opener` vectors. In 1v1 the boneyard is listed in draw order, first tile first.
+- States are minimal: they hold only what the function reads. Tile counts need not add up to 28 except in `deal`, `first-opener` and `doubles-redeal` vectors. In 1v1 the boneyard is listed in draw order, first tile first.
 
 ## Kinds
 
@@ -62,6 +63,7 @@ Conventions:
 | `hand-end` | `end` (`domino` or `block`), `lastPlacedBy`, remaining `hands`, `boneyard`, `scoresAtHandStart`, `scores` before hand points, incoming `carryOver` | `pips` per team, `winner` (`null` on an equal block), `awarded` (hand points plus any carry-over taken), outgoing `carryOver`, final `scores`, `nextOpeningTeam` |
 | `match-end` | `end` (`domino`, `block`, or `none` for a check in the middle of a hand), `scores` after the hand | `outcome`: `won` with `winner`, `next-hand`, or `continue` |
 | `turn-timer` | `turnSeconds` from admin config, `actedAtSeconds` (`null` if the player never acted) | `movedBy`: `player` or `bot` |
+| `doubles-redeal` | full deal of any hand: `hands`, `boneyard` | `redeal`: some single player holds `RedealDoublesThreshold` or more doubles |
 | `afk` | `afkTimeouts` from admin config, `events` per seat (`timeout`, `move`, `reconnect`, `leave`) | `controllers`: who plays each seat afterwards |
 
 ## Use by the engine

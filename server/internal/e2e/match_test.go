@@ -101,11 +101,24 @@ func startServer(t *testing.T, clock frozenClock, seed uint64) *server {
 }
 
 type seatLog struct {
-	seat  rules.Seat
-	final *pb.MatchView
-	hands map[uint32]map[rules.Tile]bool
-	sent  int
-	err   error
+	seat    rules.Seat
+	final   *pb.MatchView
+	hands   map[uint32]map[rules.Tile]bool
+	sent    int
+	traffic int
+	err     error
+}
+
+func fullRoster(mode rules.Mode) []room.Player {
+	var roster []room.Player
+	for _, seat := range mode.Seats() {
+		roster = append(roster, room.Player{
+			Seat: seat, Nickname: strings.Repeat("ş", 16), Frame: "frame.golden_dragon_mythic",
+			Avatar: "avatar.neon_tiger_legendary", Tile: "tile.storm_sapphire_legendary", RankLabel: "Grandmaster 1000 LP",
+			Emblems: []string{"emblem.season_1_challenger", "emblem.season_2_challenger", "emblem.season_3_challenger"},
+		})
+	}
+	return roster
 }
 
 func playFullMatch(t *testing.T, mode rules.Mode, seed uint64) {
@@ -113,7 +126,7 @@ func playFullMatch(t *testing.T, mode rules.Mode, seed uint64) {
 	clock := frozenClock{now: time.UnixMilli(1761480000000)}
 	config := rules.DefaultConfig()
 	srv := startServer(t, clock, seed)
-	r := room.New(room.Options{Kind: room.KindCasual, Mode: mode, Config: config, Bot: bot.DefaultConfig(), BotLevel: bot.Hard, Seed: seed, Clock: clock})
+	r := room.New(room.Options{Kind: room.KindCasual, Mode: mode, Config: config, Bot: bot.DefaultConfig(), BotLevel: bot.Hard, Seed: seed, Clock: clock, Table: "table.night_market_deluxe", Roster: fullRoster(mode)})
 	roomCtx, stopRoom := context.WithCancel(context.Background())
 	go r.Run(roomCtx)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -158,6 +171,7 @@ func playFullMatch(t *testing.T, mode rules.Mode, seed uint64) {
 	assertNoForeignTiles(t, seed, logs)
 	assertReplayMatches(t, seed, record, logs)
 	assertDominoFinish(t, seed, record, logs[0].final)
+	assertTrafficBudget(t, seed, mode, logs)
 	assertCleanShutdown(t, seed, srv.logs.String(), baseline)
 }
 
@@ -183,6 +197,7 @@ func playSeat(ctx context.Context, url, token string, brain *botclient.Brain, lo
 		if view.GetState() == pb.MatchState_MATCH_STATE_FINISHED {
 			log.final = view
 			log.sent = c.Sent
+			log.traffic = c.SentBytes + c.ReceivedBytes
 			return nil
 		}
 		if botclient.NeedsReady(view) {
@@ -276,6 +291,18 @@ func assertDominoFinish(t *testing.T, seed uint64, record replay.Record, final *
 		t.Errorf("seed %d E-3: the last hand did not end in a domino", seed)
 	}
 	t.Logf("seed %d: %s won %v after %d hands, %d intents", seed, winner, scores, m.HandsPlayed(), len(record.Intents))
+}
+
+const matchTrafficBudgetBytes = 200_000
+
+func assertTrafficBudget(t *testing.T, seed uint64, mode rules.Mode, logs []*seatLog) {
+	t.Helper()
+	for _, log := range logs {
+		if log.traffic > matchTrafficBudgetBytes {
+			t.Errorf("seed %d E-7: %s moved %d bytes in a %s match, budget %d", seed, log.seat, log.traffic, mode, matchTrafficBudgetBytes)
+		}
+		t.Logf("seed %d: %s %s match traffic %d bytes", seed, log.seat, mode, log.traffic)
+	}
 }
 
 func assertCleanShutdown(t *testing.T, seed uint64, logs string, baseline int) {

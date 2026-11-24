@@ -21,23 +21,6 @@
       "culturalReview": "approved"
     },
     {
-      "id": "character.starter",
-      "type": "character",
-      "revision": 1,
-      "nameKey": "cosmetic.character.starter.name",
-      "rarityId": "common",
-      "animated": false,
-      "staticAddress": "cosmetic/character/starter/static",
-      "availability": "live",
-      "sources": [
-        {
-          "type": "default"
-        }
-      ],
-      "artSource": "handmade",
-      "culturalReview": "approved"
-    },
-    {
       "id": "frame.starter",
       "type": "frame",
       "revision": 1,
@@ -57,11 +40,28 @@
     {
       "id": "table.starter",
       "type": "table",
-      "revision": 1,
+      "revision": 2,
       "nameKey": "cosmetic.table.starter.name",
       "rarityId": "common",
       "animated": false,
       "staticAddress": "cosmetic/table/starter/static",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "default"
+        }
+      ],
+      "artSource": "ai_assisted",
+      "culturalReview": "approved"
+    },
+    {
+      "id": "tile.starter",
+      "type": "tile",
+      "revision": 1,
+      "nameKey": "cosmetic.tile.starter.name",
+      "rarityId": "common",
+      "animated": false,
+      "staticAddress": "cosmetic/tile/starter/static",
       "availability": "live",
       "sources": [
         {
@@ -117,21 +117,50 @@
       "culturalReview": "approved"
     },
     {
-      "id": "character.tile_wizard",
-      "type": "character",
+      "id": "avatar.paper_kite",
+      "type": "avatar",
       "revision": 1,
-      "nameKey": "cosmetic.character.tile_wizard.name",
+      "nameKey": "cosmetic.avatar.paper_kite.name",
+      "rarityId": "common",
+      "animated": false,
+      "staticAddress": "cosmetic/avatar/paper_kite/static",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "chest",
+          "ref": "offer.chest_avatar"
+        }
+      ],
+      "artSource": "ai_assisted",
+      "culturalReview": "approved"
+    },
+    {
+      "id": "avatar.moon_owl",
+      "type": "avatar",
+      "revision": 1,
+      "nameKey": "cosmetic.avatar.moon_owl.name",
+      "rarityId": "rare",
+      "animated": false,
+      "staticAddress": "cosmetic/avatar/moon_owl/static",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "chest",
+          "ref": "offer.chest_avatar"
+        }
+      ],
+      "artSource": "ai_assisted",
+      "culturalReview": "approved"
+    },
+    {
+      "id": "avatar.tile_wizard",
+      "type": "avatar",
+      "revision": 1,
+      "nameKey": "cosmetic.avatar.tile_wizard.name",
       "rarityId": "legendary",
       "animated": true,
-      "staticAddress": "cosmetic/character/tile_wizard/static",
-      "clips": {
-        "idle": "cosmetic/character/tile_wizard/clip/idle",
-        "win": "cosmetic/character/tile_wizard/clip/win",
-        "lose": "cosmetic/character/tile_wizard/clip/lose",
-        "reaction": "cosmetic/character/tile_wizard/clip/reaction"
-      },
-      "modelAddress": "cosmetic/character/tile_wizard/model",
-      "modelHqAddress": "cosmetic/character/tile_wizard/model_hq",
+      "staticAddress": "cosmetic/avatar/tile_wizard/static",
+      "animationAddress": "cosmetic/avatar/tile_wizard/anim",
       "availability": "live",
       "sources": [
         {
@@ -155,7 +184,11 @@
       "sources": [
         {
           "type": "rank_reward",
-          "ref": "rank.season_1.top_tier"
+          "ref": "bundle.rank_season_1_gold"
+        },
+        {
+          "type": "first_purchase",
+          "ref": "bundle.first_purchase"
         }
       ],
       "artSource": "ai_assisted",
@@ -190,11 +223,30 @@
       "sources": [
         {
           "type": "promo",
-          "ref": "promo.launch_week"
+          "ref": "campaign.launch_week"
         },
         {
           "type": "shop",
           "ref": "offer.table_night_market"
+        }
+      ],
+      "artSource": "ai_assisted",
+      "culturalReview": "approved"
+    },
+    {
+      "id": "tile.storm_sapphire",
+      "type": "tile",
+      "revision": 1,
+      "nameKey": "cosmetic.tile.storm_sapphire.name",
+      "rarityId": "legendary",
+      "animated": true,
+      "staticAddress": "cosmetic/tile/storm_sapphire/static",
+      "animationAddress": "cosmetic/tile/storm_sapphire/anim",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "event",
+          "ref": "event.spring_cup"
         }
       ],
       "artSource": "ai_assisted",
@@ -257,13 +309,15 @@
       "culturalReview": "approved"
     },
     {
-      "id": "action.victory_dance",
-      "type": "action",
+      "id": "emoji.victory_dance",
+      "type": "emoji",
       "revision": 1,
-      "nameKey": "cosmetic.action.victory_dance.name",
+      "nameKey": "cosmetic.emoji.victory_dance.name",
       "rarityId": "rare",
       "animated": true,
-      "staticAddress": "cosmetic/action/victory_dance/static",
+      "staticAddress": "cosmetic/emoji/victory_dance/static",
+      "animationAddress": "cosmetic/emoji/victory_dance/anim",
+      "group": "basic",
       "availability": "live",
       "sources": [
         {
@@ -272,8 +326,7 @@
         }
       ],
       "artSource": "ai_assisted",
-      "culturalReview": "approved",
-      "animationAddress": "cosmetic/action/victory_dance/anim"
+      "culturalReview": "approved"
     }
   ]
 }

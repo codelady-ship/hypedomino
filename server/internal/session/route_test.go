@@ -150,3 +150,42 @@ func TestAFinishedMatchUnbindsTheSessionAndReleasesTheRoute(t *testing.T) {
 		t.Fatalf("seating again after the match: %v", err)
 	}
 }
+
+func TestRenewReclaimsTheRoutesOfRoutedSessionsOnly(t *testing.T) {
+	clock := &fakeClock{now: time.UnixMilli(1761480000000)}
+	manager := New(DefaultConfig(), clock, secrand.Source{})
+	if err := manager.Renew(context.Background()); err != nil {
+		t.Fatalf("renewing without a router: %v", err)
+	}
+	router := &fakeRouter{}
+	manager.Route(router)
+	r := room.New(room.Options{Mode: rules.Mode1v1, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), BotLevel: bot.Hard, Seed: 11, Clock: clock})
+	ctx, cancel := context.WithCancel(context.Background())
+	go r.Run(ctx)
+	t.Cleanup(func() { cancel(); <-r.Done() })
+	seated := manager.Create("x")
+	manager.Create("y")
+	if err := manager.Seat(seated, r, rules.SeatX); err != nil {
+		t.Fatal(err)
+	}
+	router.claimed = nil
+	if err := manager.Renew(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if claimed, released := router.counts(); claimed != 1 || released != 0 || router.claimed[0] != seated {
+		t.Fatalf("renewed %v released %v, want only %s", router.claimed, router.released, seated)
+	}
+	router.fail = errors.New("redis down")
+	if err := manager.Renew(context.Background()); !errors.Is(err, router.fail) {
+		t.Fatalf("a failed renewal returned %v", err)
+	}
+	router.fail = nil
+	manager.Revoke(seated)
+	router.claimed = nil
+	if err := manager.Renew(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if claimed, _ := router.counts(); claimed != 0 {
+		t.Fatalf("renewed a revoked session: %v", router.claimed)
+	}
+}

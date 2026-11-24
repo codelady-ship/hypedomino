@@ -1,16 +1,6 @@
-# Default gitleaks rules plus one narrow allowlist. The store purchase tests use
-# made-up UUIDs as App Store / Play account tokens; generic-api-key flags them.
-# Only a UUID assigned to an AccountToken field inside a purchase test file is
-# skipped, so real keys anywhere else still fail the scan.
-title = "hypedomino gitleaks config"
-
 [extend]
 useDefault = true
 
 [[allowlists]]
-description = "Fake store account token UUIDs in purchase test fixtures"
-targetRules = ["generic-api-key"]
-condition = "AND"
-paths = ['''^server/internal/purchase/[^/]+_test\.go$''']
-regexTarget = "match"
-regexes = ['''(?i)accounttoken"?\s*[:=]\s*"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"''']
+description = "Fixed UUID namespace of shop.AccountToken, used as the expected account token in store receipt tests; not a credential"
+regexes = ['''(?i)5f0d6a2e-3c7b-4e1a-9d8f-2b6c4a1e7f30''']

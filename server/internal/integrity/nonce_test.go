@@ -2,6 +2,7 @@ package integrity
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"errors"
 	"sync"
@@ -71,7 +72,7 @@ func TestIssueRejectsInvalidBinding(t *testing.T) {
 		"no purpose":      {Account: "a", Session: "s"},
 		"unknown purpose": {Account: "a", Session: "s", Purpose: PurposeCasualMatch + 1},
 	} {
-		if _, err := nonces.Issue(binding); !errors.Is(err, ErrInvalidBinding) {
+		if _, err := nonces.Issue(context.Background(), binding); !errors.Is(err, ErrInvalidBinding) {
 			t.Errorf("%s: err = %v, want ErrInvalidBinding", name, err)
 		}
 	}
@@ -83,7 +84,7 @@ func TestIssueFailsWhenRandomSourceFails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := nonces.Issue(sessionBinding()); err == nil {
+	if _, err := nonces.Issue(context.Background(), sessionBinding()); err == nil {
 		t.Fatal("short random source produced a nonce")
 	}
 }
@@ -93,7 +94,7 @@ func TestIssuedNoncesAreUniqueAndExpireAfterTheTTL(t *testing.T) {
 	nonces, _ := newTestNonces(t, clock)
 	seen := map[string]bool{}
 	for range 100 {
-		nonce, err := nonces.Issue(sessionBinding())
+		nonce, err := nonces.Issue(context.Background(), sessionBinding())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -142,20 +143,20 @@ func TestRedeemIsSingleUseAndBound(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			clock := newTestClock()
 			nonces, _ := newTestNonces(t, clock)
-			issued, err := nonces.Issue(sessionBinding())
+			issued, err := nonces.Issue(context.Background(), sessionBinding())
 			if err != nil {
 				t.Fatal(err)
 			}
 			clock.Advance(tc.advance)
 			value, binding := tc.redeem(issued)
-			got, err := nonces.redeem(value, binding)
+			got, err := nonces.redeem(context.Background(), value, binding)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if got != tc.want {
 				t.Fatalf("redeem = %v, want %v", got, tc.want)
 			}
-			again, err := nonces.redeem(issued.Value, issued.Binding)
+			again, err := nonces.redeem(context.Background(), issued.Value, issued.Binding)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -170,12 +171,12 @@ func TestMemoryStoreDropsExpiredNonces(t *testing.T) {
 	clock := newTestClock()
 	nonces, store := newTestNonces(t, clock)
 	for range 10 {
-		if _, err := nonces.Issue(sessionBinding()); err != nil {
+		if _, err := nonces.Issue(context.Background(), sessionBinding()); err != nil {
 			t.Fatal(err)
 		}
 	}
 	clock.Advance(5 * time.Minute)
-	if _, err := nonces.Issue(sessionBinding()); err != nil {
+	if _, err := nonces.Issue(context.Background(), sessionBinding()); err != nil {
 		t.Fatal(err)
 	}
 	if len(store.nonces) != 1 || len(store.queue) != 1 {
@@ -186,10 +187,10 @@ func TestMemoryStoreDropsExpiredNonces(t *testing.T) {
 func TestMemoryStoreRejectsDuplicateValues(t *testing.T) {
 	store := NewMemoryNonceStore(newTestClock())
 	nonce := Nonce{Value: "v", Binding: sessionBinding(), ExpiresAt: testStart.Add(time.Minute)}
-	if err := store.Put(nonce); err != nil {
+	if err := store.Put(context.Background(), nonce); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.Put(nonce); !errors.Is(err, ErrNonceExists) {
+	if err := store.Put(context.Background(), nonce); !errors.Is(err, ErrNonceExists) {
 		t.Fatalf("err = %v, want ErrNonceExists", err)
 	}
 }
@@ -197,7 +198,7 @@ func TestMemoryStoreRejectsDuplicateValues(t *testing.T) {
 func TestMemoryStoreIsSafeForConcurrentRedeem(t *testing.T) {
 	clock := newTestClock()
 	nonces, _ := newTestNonces(t, clock)
-	issued, err := nonces.Issue(sessionBinding())
+	issued, err := nonces.Issue(context.Background(), sessionBinding())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +209,7 @@ func TestMemoryStoreIsSafeForConcurrentRedeem(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			reason, err := nonces.redeem(issued.Value, issued.Binding)
+			reason, err := nonces.redeem(context.Background(), issued.Value, issued.Binding)
 			if err == nil && reason == 0 {
 				mu.Lock()
 				accepted++

@@ -1,9 +1,11 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 const textMinimumContrast = 4.5;
 const nonTextMinimumContrast = 3;
 const levels = ["low", "medium", "high"];
+const graphicsLevels = ["low", "medium", "high", "ultra"];
+const deviceTiers = ["low", "mid", "high"];
 const effectNames = ["tilePlace", "scorePopup", "scoreCascade", "spinnerFormation", "domino", "block", "matchWin", "rankUp", "emoji"];
 const budgetFields = ["particles", "drawCalls", "overdrawLayers", "pooled", "cpuMs", "gpuMs"];
 const summedFields = [
@@ -16,6 +18,7 @@ const scalingFields = ["particles", "drawCalls"];
 const requiredGroups = [
   "color", "opacity", "rarity", "typography", "radius", "spacing", "size", "elevation", "glow",
   "motion.duration", "motion.easing", "motion.shake", "effects.levels", "effects.budgets", "effects.concurrentSets", "scoreCascade",
+  "effects.graphics.levels", "effects.graphics.tiers", "effects.graphics.deviceClass", "effects.graphics.probe", "effects.graphics.thermal", "effects.graphics.frameRate",
 ];
 const requiredGlyphs = "ƏəĞğIıİiŞşÇçÖöÜü";
 const hexPattern = /^#[0-9A-F]{6}$/;
@@ -205,6 +208,7 @@ function levelErrors(name, level) {
   const errors = [];
   if (level.baseSceneCpuMs + level.effectCpuMs > level.workTimeP95Ms + epsilon) errors.push(`effects.levels.${name}: CPU base plus effects exceeds ${level.workTimeP95Ms} ms`);
   if (level.baseSceneGpuMs + level.effectGpuMs > level.workTimeP95Ms + epsilon) errors.push(`effects.levels.${name}: GPU base plus effects exceeds ${level.workTimeP95Ms} ms`);
+  if (level.animatedCosmetics !== level.maxAnimatedCosmetics > 0) errors.push(`effects.levels.${name}: animatedCosmetics and maxAnimatedCosmetics disagree`);
   if (level.baseSceneBatches + level.effectDrawCalls > level.maxBatches) errors.push(`effects.levels.${name}: batches exceed ${level.maxBatches}`);
   return errors;
 }
@@ -244,6 +248,79 @@ function effectErrors(effects) {
         if (total > level[limitField] + epsilon) errors.push(`effects.concurrentSets.${setName}.${levelName}: ${field} ${round2(total)} over ${limitField} ${level[limitField]}`);
       }
     }
+  }
+  return errors;
+}
+
+function patternErrors(path, patterns) {
+  if (!Array.isArray(patterns)) return [`${path}: must be a list`];
+  const errors = [];
+  for (const pattern of patterns) {
+    try {
+      new RegExp(pattern);
+    } catch {
+      errors.push(`${path}: ${pattern} is not a regular expression`);
+    }
+  }
+  return errors;
+}
+
+function graphicsErrors(graphics, effectLevels) {
+  const errors = [];
+  const rank = (name) => graphicsLevels.indexOf(name);
+  graphicsLevels.forEach((name, index) => {
+    const level = graphics.levels[name];
+    if (!level) {
+      errors.push(`effects.graphics.levels.${name}: missing`);
+      return;
+    }
+    if (!levels.includes(level.effectLevel)) errors.push(`effects.graphics.levels.${name}: unknown effect level ${level.effectLevel}`);
+    if (!isPositiveInteger(level.maxRenderShortSide)) errors.push(`effects.graphics.levels.${name}.maxRenderShortSide: must be a positive integer`);
+    const previous = graphics.levels[graphicsLevels[index - 1]];
+    if (!previous) return;
+    if (levels.indexOf(level.effectLevel) < levels.indexOf(previous.effectLevel)) errors.push(`effects.graphics.levels.${name}: effect level must not fall below ${graphicsLevels[index - 1]}`);
+    if (level.maxRenderShortSide < previous.maxRenderShortSide) errors.push(`effects.graphics.levels.${name}: maxRenderShortSide must not fall below ${graphicsLevels[index - 1]}`);
+  });
+  deviceTiers.forEach((name, index) => {
+    const tier = graphics.tiers[name];
+    if (!tier) {
+      errors.push(`effects.graphics.tiers.${name}: missing`);
+      return;
+    }
+    if (rank(tier.auto) < 0 || rank(tier.highest) < 0) errors.push(`effects.graphics.tiers.${name}: unknown graphics level`);
+    else if (rank(tier.auto) > rank(tier.highest)) errors.push(`effects.graphics.tiers.${name}: auto is above highest`);
+    const previous = graphics.tiers[deviceTiers[index - 1]];
+    if (previous && rank(tier.highest) < rank(previous.highest)) errors.push(`effects.graphics.tiers.${name}: highest must not fall below ${deviceTiers[index - 1]}`);
+  });
+  const { deviceClass, probe, thermal } = graphics;
+  for (const [path, value] of [
+    ["deviceClass.lowBelowMemoryMb", deviceClass.lowBelowMemoryMb],
+    ["deviceClass.highFromMemoryMb", deviceClass.highFromMemoryMb],
+    ["deviceClass.highFromRefreshHz", deviceClass.highFromRefreshHz],
+    ["probe.warmupFrames", probe.warmupFrames],
+    ["probe.frames", probe.frames],
+    ["thermal.recoverAfterSeconds", thermal.recoverAfterSeconds],
+  ]) {
+    if (!isPositiveInteger(value)) errors.push(`effects.graphics.${path}: must be a positive integer`);
+  }
+  if (deviceClass.lowBelowMemoryMb >= deviceClass.highFromMemoryMb) errors.push("effects.graphics.deviceClass: lowBelowMemoryMb must be under highFromMemoryMb");
+  errors.push(...patternErrors("effects.graphics.deviceClass.lowGpuPatterns", deviceClass.lowGpuPatterns));
+  errors.push(...patternErrors("effects.graphics.deviceClass.highGpuPatterns", deviceClass.highGpuPatterns));
+  return [...errors, ...frameRateErrors(graphics.frameRate, effectLevels)];
+}
+
+function frameRateErrors(frameRate, effectLevels) {
+  const { options } = frameRate;
+  if (!Array.isArray(options) || options.length === 0 || !options.every(isPositiveInteger)) return ["effects.graphics.frameRate.options: must be a list of positive integers"];
+  const errors = [];
+  if (options.some((rate, index) => index > 0 && rate <= options[index - 1])) errors.push("effects.graphics.frameRate.options: must rise");
+  for (const field of ["autoMax", "menuMax", "batterySaver"]) {
+    if (!options.includes(frameRate[field])) errors.push(`effects.graphics.frameRate.${field}: ${frameRate[field]} is not an offered rate`);
+  }
+  if (frameRate.batterySaver > frameRate.menuMax) errors.push("effects.graphics.frameRate.batterySaver: must not exceed menuMax");
+  if (frameRate.batterySaver !== options[0]) errors.push("effects.graphics.frameRate.batterySaver: must be the lowest offered rate");
+  for (const name of levels) {
+    if (!options.includes(effectLevels[name].targetFps)) errors.push(`effects.levels.${name}.targetFps: ${effectLevels[name].targetFps} is not an offered rate`);
   }
   return errors;
 }
@@ -301,11 +378,198 @@ export function checkTokens(tokens, specText, raritySpecText) {
     ...levels.flatMap((name) => (tokens.effects.levels[name] ? levelErrors(name, tokens.effects.levels[name]) : [`effects.levels.${name}: missing`])),
   ];
   if (errors.length > 0) return errors;
-  errors.push(...effectErrors(tokens.effects), ...cascadeErrors(tokens));
+  errors.push(...effectErrors(tokens.effects), ...cascadeErrors(tokens), ...graphicsErrors(tokens.effects.graphics, tokens.effects.levels));
   for (const row of contrastTable(tokens)) if (!specText.includes(row)) errors.push(`spec contrast table is missing or stale: ${row}`);
   if (!specText.includes(requiredGlyphs)) errors.push("spec does not list the required Azerbaijani and Turkish glyphs");
   for (const hex of colorValues(tokens.color)) if (!specText.includes(`\`${hex}\``)) errors.push(`spec does not list colour ${hex}`);
   return errors;
+}
+
+export const csharpPath = "client/Assets/HypeDomino/UI/Tokens/DesignTokens.cs";
+
+const pascal = (key) => key[0].toUpperCase() + key.slice(1);
+const flatten = (node, prefix = []) =>
+  Object.entries(node).flatMap(([key, value]) => (isObject(value) ? flatten(value, [...prefix, key]) : [[[...prefix, key], value]]));
+const memberName = (path) => path.map(pascal).join("");
+const hexByte = (hex, start) => `0x${hex.slice(start, start + 2)}`;
+const color32 = (hex) => `new Color32(${[1, 3, 5].map((start) => hexByte(hex, start)).join(", ")}, 0xFF)`;
+const floatLiteral = (value) => `${value}f`;
+
+function intLiteral(path, value) {
+  if (!Number.isInteger(value)) throw new Error(`${path.join(".")}: ${value} is not an integer`);
+  return `${value}`;
+}
+
+function csharpClass(name, members) {
+  return [`    public static class ${name}`, "    {", ...members.map((member) => `        ${member}`), "    }"].join("\n");
+}
+
+const constants = (node, type, literal) =>
+  flatten(node).map(([path, value]) => `public const ${type} ${memberName(path)} = ${literal(path, value)};`);
+
+const intArray = (name, values) => `public static readonly int[] ${name} = { ${values.join(", ")} };`;
+const floatArray = (name, values) => `public static readonly float[] ${name} = { ${values.map(floatLiteral).join(", ")} };`;
+const verbatimString = (value) => `@"${value.replaceAll('"', '""')}"`;
+const stringArray = (name, values) => `public static readonly string[] ${name} = { ${values.map(verbatimString).join(", ")} };`;
+
+function graphicsMembers(graphics, effectLevels) {
+  const { deviceClass, probe, thermal, frameRate } = graphics;
+  const level = (name) => graphics.levels[name];
+  const tier = (name) => graphics.tiers[name];
+  return [
+    intArray("EffectLevelOfLevel", graphicsLevels.map((name) => levels.indexOf(level(name).effectLevel))),
+    intArray("MaxRenderShortSideOfLevel", graphicsLevels.map((name) => intLiteral(["effects", "graphics", "levels", name, "maxRenderShortSide"], level(name).maxRenderShortSide))),
+    intArray("AutoLevelOfTier", deviceTiers.map((name) => graphicsLevels.indexOf(tier(name).auto))),
+    intArray("HighestLevelOfTier", deviceTiers.map((name) => graphicsLevels.indexOf(tier(name).highest))),
+    `public const int LowBelowMemoryMb = ${intLiteral(["deviceClass", "lowBelowMemoryMb"], deviceClass.lowBelowMemoryMb)};`,
+    `public const int HighFromMemoryMb = ${intLiteral(["deviceClass", "highFromMemoryMb"], deviceClass.highFromMemoryMb)};`,
+    `public const int HighFromRefreshHz = ${intLiteral(["deviceClass", "highFromRefreshHz"], deviceClass.highFromRefreshHz)};`,
+    stringArray("LowGpuPatterns", deviceClass.lowGpuPatterns),
+    stringArray("HighGpuPatterns", deviceClass.highGpuPatterns),
+    `public const int ProbeWarmupFrames = ${intLiteral(["probe", "warmupFrames"], probe.warmupFrames)};`,
+    `public const int ProbeFrames = ${intLiteral(["probe", "frames"], probe.frames)};`,
+    `public const int ThermalRecoverAfterSeconds = ${intLiteral(["thermal", "recoverAfterSeconds"], thermal.recoverAfterSeconds)};`,
+    intArray("FrameRateOptions", frameRate.options.map((rate) => intLiteral(["frameRate", "options"], rate))),
+    intArray("TargetFpsOfEffectLevel", levels.map((name) => intLiteral(["effects", "levels", name, "targetFps"], effectLevels[name].targetFps))),
+    `public const int AutoMaxFrameRate = ${intLiteral(["frameRate", "autoMax"], frameRate.autoMax)};`,
+    `public const int MenuMaxFrameRate = ${intLiteral(["frameRate", "menuMax"], frameRate.menuMax)};`,
+    `public const int BatterySaverFrameRate = ${intLiteral(["frameRate", "batterySaver"], frameRate.batterySaver)};`,
+  ];
+}
+
+function scoreCascadeMembers(tokens) {
+  const { steps, chainBoost, chainStepGapMs, handPoints } = tokens.scoreCascade;
+  const shake = (step) => tokens.motion.shake[step.shake];
+  const stepInts = (field, value) => steps.map((step, index) => intLiteral(["scoreCascade", "steps", index, field], value(step)));
+  return [
+    intArray("StepMinPoints", stepInts("minPoints", (step) => step.minPoints)),
+    floatArray("StepTextScale", steps.map((step) => step.textScale)),
+    intArray("StepParticlePercent", steps.map((step) => Math.round(step.particleShare * 100))),
+    intArray("StepHoldMs", stepInts("holdMs", (step) => step.holdMs)),
+    intArray("StepShakeAmplitude", stepInts("shake", (step) => shake(step).amplitude)),
+    intArray("StepShakeDurationMs", stepInts("shake", (step) => shake(step).durationMs)),
+    intArray("ChainBoostSteps", chainBoost.map((boost, index) => intLiteral(["scoreCascade", "chainBoost", index, "addSteps"], boost.addSteps))),
+    intArray("ParticlesOfEffectLevel", levels.map((name) => intLiteral(["effects", "budgets", "scoreCascade", name, "particles"], tokens.effects.budgets.scoreCascade[name].particles))),
+    intArray("StepGlowLevel", steps.map((step) => Object.keys(tokens.glow).indexOf(step.glow))),
+    `public const int ChainStepGapMs = ${intLiteral(["scoreCascade", "chainStepGapMs"], chainStepGapMs)};`,
+    `public const int RollMsPer5Points = ${intLiteral(["scoreCascade", "handPoints", "rollMsPer5Points"], handPoints.rollMsPer5Points)};`,
+    `public const int RollMaxMs = ${intLiteral(["scoreCascade", "handPoints", "rollMaxMs"], handPoints.rollMaxMs)};`,
+    `public const int CarryOverGapMs = ${intLiteral(["scoreCascade", "handPoints", "carryOverGapMs"], handPoints.carryOverGapMs)};`,
+  ];
+}
+
+function effectMembers(budgets) {
+  const effects = Object.entries(budgets);
+  const pooled = (effect) => Math.max(...levels.map((level) => effect[level].pooled));
+  return [
+    ...effects.flatMap(([name, effect]) => [
+      `public const int ${pascal(name)}DurationMs = ${intLiteral([name, "durationMs"], effect.durationMs)};`,
+      `public const int ${pascal(name)}Pooled = ${pooled(effect)};`,
+    ]),
+    stringArray("NameOfKind", effects.map(([name]) => name)),
+    intArray("DurationMsOfKind", effects.map(([name, effect]) => intLiteral([name, "durationMs"], effect.durationMs))),
+    intArray("PooledOfKind", effects.map(([, effect]) => pooled(effect))),
+    ...levels.map((level) => intArray(`${pascal(level)}ParticlesOfKind`, effects.map(([name, effect]) => intLiteral([name, level, "particles"], effect[level].particles)))),
+  ];
+}
+
+function colorMembers(color) {
+  const entries = flatten(color);
+  return [
+    ...entries.map(([path, hex]) => `public static readonly Color32 ${memberName(path)} = ${color32(hex)};`),
+    stringArray("Paths", entries.map(([path]) => ["color", ...path].join("."))),
+    `public static readonly Color32[] OfPath = { ${entries.map(([path]) => memberName(path)).join(", ")} };`,
+  ];
+}
+
+function glowMembers(glow) {
+  const entries = Object.entries(glow);
+  return [
+    stringArray("NameOfLevel", entries.map(([name]) => name)),
+    floatArray("AlphaOfLevel", entries.map(([, level]) => level.alpha)),
+    floatArray("ScaleOfLevel", entries.map(([, level]) => level.scale)),
+  ];
+}
+
+function elevationMembers(elevation) {
+  return Object.entries(elevation).flatMap(([name, level]) => [
+    `public const int ${pascal(name)}OffsetY = ${intLiteral(["elevation", name, "offsetY"], level.offsetY)};`,
+    `public const float ${pascal(name)}Alpha = ${floatLiteral(level.alpha)};`,
+  ]);
+}
+
+function csharpEnum(name, keys) {
+  return [`    public enum ${name}`, "    {", ...keys.map((key) => `        ${pascal(key)},`), "    }"].join("\n");
+}
+
+function typographyMembers(typography) {
+  const styles = Object.entries(typography.scale);
+  return [
+    `public static readonly TokenFontFamily[] FamilyOfStyle = { ${styles.map(([, style]) => `TokenFontFamily.${pascal(style.family)}`).join(", ")} };`,
+    intArray("WeightOfStyle", styles.map(([name, style]) => intLiteral(["typography", "scale", name, "weight"], style.weight))),
+    intArray("SizeOfStyle", styles.map(([name, style]) => intLiteral(["typography", "scale", name, "size"], style.size))),
+    floatArray("LineHeightOfStyle", styles.map(([, style]) => style.lineHeight)),
+  ];
+}
+
+export function csharpTokens(tokens) {
+  const { motion } = tokens;
+  const classes = [
+    csharpClass("TokenColor", colorMembers(tokens.color)),
+    csharpClass("TokenOpacity", constants(tokens.opacity, "float", (_, value) => floatLiteral(value))),
+    csharpClass("TokenSpacing", constants(tokens.spacing, "int", intLiteral)),
+    csharpClass("TokenRadius", constants(tokens.radius, "int", intLiteral)),
+    csharpClass("TokenSize", constants(tokens.size, "int", intLiteral)),
+    csharpClass("TokenTextSize", Object.entries(tokens.typography.scale).map(([name, style]) => `public const int ${pascal(name)} = ${intLiteral(["typography", "scale", name, "size"], style.size)};`)),
+    csharpEnum("TokenFontFamily", Object.keys(tokens.typography.family)),
+    csharpEnum("TokenTextStyle", Object.keys(tokens.typography.scale)),
+    csharpClass("TokenTypography", typographyMembers(tokens.typography)),
+    csharpClass("TokenDurationMs", constants(motion.duration, "int", intLiteral)),
+    csharpClass("TokenEasing", Object.entries(motion.easing).map(([name, points]) => `public static readonly Vector4 ${pascal(name)} = new Vector4(${points.map(floatLiteral).join(", ")});`)),
+    csharpClass("TokenElevation", elevationMembers(tokens.elevation)),
+    csharpClass("TokenGlow", glowMembers(tokens.glow)),
+    csharpClass("TokenMotion", [`public const float PressScale = ${floatLiteral(motion.pressScale)};`, `public const float PanelEnterScale = ${floatLiteral(motion.panelEnterScale)};`, `public const int MaxPresentationLagMs = ${intLiteral(["motion", "maxPresentationLagMs"], motion.maxPresentationLagMs)};`]),
+    csharpClass("TokenEffectLevel", levels.flatMap((name) => [
+      `public const int ${pascal(name)}MaxAnimatedCosmetics = ${intLiteral(["effects", "levels", name, "maxAnimatedCosmetics"], tokens.effects.levels[name].maxAnimatedCosmetics)};`,
+      `public const float ${pascal(name)}WorkTimeP95Ms = ${floatLiteral(tokens.effects.levels[name].workTimeP95Ms)};`,
+      `public const int ${pascal(name)}MaxTweens = ${intLiteral(["effects", "levels", name, "maxTweens"], tokens.effects.levels[name].maxTweens)};`,
+      `public const int ${pascal(name)}MaxParticles = ${intLiteral(["effects", "levels", name, "maxParticles"], tokens.effects.levels[name].maxParticles)};`,
+      `public const int ${pascal(name)}MaxOverdrawLayers = ${intLiteral(["effects", "levels", name, "maxOverdrawLayers"], tokens.effects.levels[name].maxOverdrawLayers)};`,
+    ])),
+    csharpEnum("TokenEffectKind", Object.keys(tokens.effects.budgets)),
+    csharpClass("TokenEffect", effectMembers(tokens.effects.budgets)),
+    csharpClass("TokenGraphics", graphicsMembers(tokens.effects.graphics, tokens.effects.levels)),
+    csharpClass("TokenScoreCascade", scoreCascadeMembers(tokens)),
+  ];
+  return [
+    "// Code generated by tools/design-tokens/design-tokens.mjs --csharp from docs/design-tokens.json. DO NOT EDIT.",
+    "using UnityEngine;",
+    "",
+    "namespace HypeDomino.UI.Tokens",
+    "{",
+    classes.join("\n\n"),
+    "}",
+    "",
+  ].join("\n");
+}
+
+export const rarityDefaultsPath = "client/Assets/HypeDomino/UI/Rarity/rarity-defaults.json";
+
+export function rarityDefaults(tokens) {
+  const { rarity, glow } = tokens;
+  const tiers = tiersByOrdinal(rarity).map(([id, tier]) => ({
+    id,
+    ordinal: tier.ordinal,
+    nameKey: tier.nameKey,
+    fill: tier.fill,
+    on: tier.on,
+    text: tier.text,
+    pips: tier.pips,
+    glowAlpha: glow[tier.glow].alpha,
+    glowScale: glow[tier.glow].scale,
+    flow: tier.flow,
+  }));
+  return `${JSON.stringify({ diamondMinSize: rarity.diamondMinSize, flowPeriodMs: rarity.flowPeriodMs, tiers }, null, 2)}\n`;
 }
 
 export const loadTokens = (path) => JSON.parse(readFileSync(path, "utf8"));
@@ -315,6 +579,13 @@ function main(args) {
   const tokens = loadTokens("docs/design-tokens.json");
   if (args.includes("--table")) {
     console.log(contrastTable(tokens).join("\n"));
+    return;
+  }
+  if (args.includes("--csharp")) {
+    writeFileSync(csharpPath, csharpTokens(tokens));
+    console.log(`wrote ${csharpPath}`);
+    writeFileSync(rarityDefaultsPath, rarityDefaults(tokens));
+    console.log(`wrote ${rarityDefaultsPath}`);
     return;
   }
   if (args.includes("--rarity-table")) {

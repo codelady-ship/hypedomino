@@ -6,11 +6,13 @@ import (
 	"errors"
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/coder/websocket"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/panics"
 	pb "github.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1"
 	"github.com/Alievs-corp/hypedomino/server/internal/replay"
 )
@@ -24,13 +26,16 @@ type Conn struct {
 	status  websocket.StatusCode
 	reason  string
 	session Session
+	nonce   uint64
 	bucket  bucket
 	stop    context.CancelFunc
 	served  chan struct{}
+	build   atomic.Pointer[clientBuild]
+	stalled *time.Timer
 }
 
 func newConn(socket *websocket.Conn, options Options) *Conn {
-	socket.SetReadLimit(int64(options.Config.MaxFrameBytes))
+	socket.SetReadLimit(int64(max(options.Config.MaxHelloBytes, options.Config.MaxFrameBytes)))
 	return &Conn{
 		socket:  socket,
 		options: options,
@@ -76,11 +81,15 @@ func (c *Conn) serve(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	c.stop = cancel
+	c.stalled = time.AfterFunc(time.Hour, c.abortWrite)
+	c.stalled.Stop()
+	stopAbort := context.AfterFunc(ctx, c.abortWrite)
+	defer stopAbort()
 	var writer sync.WaitGroup
 	writer.Add(1)
 	go func() {
 		defer writer.Done()
-		c.writeLoop(ctx)
+		c.writeLoop()
 	}()
 	socketClosed := make(chan struct{})
 	go func() {
@@ -111,15 +120,16 @@ func (c *Conn) closeSocket() {
 	}
 }
 
-func (c *Conn) writeLoop(ctx context.Context) {
+func (c *Conn) writeLoop() {
+	defer c.recovered("gateway write")
 	var buffer []byte
 	for {
 		select {
 		case <-c.closed:
-			c.flush(ctx, buffer)
+			c.flush(buffer)
 			return
 		case frame := <-c.queue:
-			data, ok := c.writeFrame(ctx, buffer, frame)
+			data, ok := c.writeFrame(buffer, frame)
 			if !ok {
 				return
 			}
@@ -128,11 +138,11 @@ func (c *Conn) writeLoop(ctx context.Context) {
 	}
 }
 
-func (c *Conn) flush(ctx context.Context, buffer []byte) {
+func (c *Conn) flush(buffer []byte) {
 	for {
 		select {
 		case frame := <-c.queue:
-			data, ok := c.writeFrame(ctx, buffer, frame)
+			data, ok := c.writeFrame(buffer, frame)
 			if !ok {
 				return
 			}
@@ -143,26 +153,38 @@ func (c *Conn) flush(ctx context.Context, buffer []byte) {
 	}
 }
 
-func (c *Conn) writeFrame(ctx context.Context, buffer []byte, frame *pb.Envelope) ([]byte, bool) {
+func (c *Conn) writeFrame(buffer []byte, frame *pb.Envelope) ([]byte, bool) {
 	data, err := proto.MarshalOptions{}.MarshalAppend(buffer[:0], frame)
 	if err != nil {
 		c.Close(websocket.StatusInternalError, "encode")
 		return buffer, false
 	}
-	if err := c.write(ctx, data); err != nil {
+	if err := c.write(data); err != nil {
 		c.Close(websocket.StatusAbnormalClosure, "write")
 		return data, false
 	}
 	return data, true
 }
 
-func (c *Conn) write(ctx context.Context, data []byte) error {
-	ctx, cancel := context.WithTimeout(ctx, c.options.Config.WriteTimeout)
-	defer cancel()
-	return c.socket.Write(ctx, websocket.MessageBinary, data)
+func (c *Conn) write(data []byte) error {
+	c.stalled.Reset(c.options.Config.WriteTimeout)
+	err := c.socket.Write(context.Background(), websocket.MessageBinary, data)
+	c.stalled.Stop()
+	return err
+}
+
+func (c *Conn) abortWrite() {
+	c.socket.CloseNow()
+}
+
+func (c *Conn) recovered(where string) {
+	if panics.Caught(where, recover()) {
+		c.Close(websocket.StatusInternalError, "internal error")
+	}
 }
 
 func (c *Conn) readLoop(ctx context.Context) {
+	defer c.recovered("gateway read")
 	var buffer bytes.Buffer
 	frame := &pb.Envelope{}
 	if !c.handshake(ctx, &buffer, frame) {
@@ -193,7 +215,7 @@ func (c *Conn) handshake(ctx context.Context, buffer *bytes.Buffer, frame *pb.En
 		c.Send(ErrorFrame(pb.ErrorCode_ERROR_CODE_UNSUPPORTED_PROTOCOL, frame.GetSequence(), 0))
 		c.Close(websocket.StatusProtocolError, "unsupported protocol")
 		return false
-	case !VersionAtLeast(hello.GetAppVersion(), c.options.Config.MinimumAppVersion):
+	case !c.admission().Admits(hello.GetAppVersion(), hello.GetBuildHash()):
 		c.Send(c.serverHello(pb.HelloStatus_HELLO_STATUS_UPDATE_REQUIRED, 0, false))
 		c.Close(websocket.StatusNormalClosure, "update required")
 		return false
@@ -204,11 +226,22 @@ func (c *Conn) handshake(ctx context.Context, buffer *bytes.Buffer, frame *pb.En
 		c.Send(ErrorFrame(pb.ErrorCode_ERROR_CODE_UNAUTHENTICATED, frame.GetSequence(), 0))
 		c.Close(websocket.StatusPolicyViolation, "unauthenticated")
 		return false
+	case errors.Is(err, ErrIntegrityFailed):
+		c.Send(ErrorFrame(pb.ErrorCode_ERROR_CODE_INTEGRITY_FAILED, frame.GetSequence(), 0))
+		c.Close(websocket.StatusPolicyViolation, "integrity failed")
+		return false
 	case err != nil:
 		c.Close(websocket.StatusInternalError, "connect")
 		return false
 	}
+	if c.admission().Maintenance() && !session.InMatch() {
+		session.Close()
+		c.refuseForMaintenance()
+		return false
+	}
 	c.session = session
+	c.nonce = sessionNonce()
+	c.build.Store(&clientBuild{version: hello.GetAppVersion(), hash: hello.GetBuildHash()})
 	if c.Send(c.serverHello(pb.HelloStatus_HELLO_STATUS_ACCEPTED, session.Acked(), session.InMatch())) != nil {
 		return false
 	}
@@ -218,6 +251,7 @@ func (c *Conn) handshake(ctx context.Context, buffer *bytes.Buffer, frame *pb.En
 }
 
 func (c *Conn) pingLoop(ctx context.Context) {
+	defer c.recovered("gateway ping")
 	ticker := time.NewTicker(c.options.Config.PingInterval)
 	defer ticker.Stop()
 	for {
@@ -254,26 +288,63 @@ func (c *Conn) readFrame(ctx context.Context, buffer *bytes.Buffer, frame *pb.En
 		c.Close(websocket.StatusMessageTooBig, "frame too big")
 		return false
 	}
-	if err := (proto.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(buffer.Bytes(), frame); err != nil {
+	err = (proto.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(buffer.Bytes(), frame)
+	switch {
+	case buffer.Len() > c.frameLimit(frame, err):
+		c.Close(websocket.StatusMessageTooBig, "frame too big")
+		return false
+	case err != nil:
 		c.Close(websocket.StatusPolicyViolation, "malformed frame")
 		return false
 	}
 	return true
 }
 
+func (c *Conn) frameLimit(frame *pb.Envelope, decodeErr error) int {
+	if c.session == nil || (decodeErr == nil && frame.GetJoinQueueIntent() != nil) {
+		return max(c.options.Config.MaxHelloBytes, c.options.Config.MaxFrameBytes)
+	}
+	return c.options.Config.MaxFrameBytes
+}
+
 func (c *Conn) dispatch(frame *pb.Envelope) bool {
 	sequence := frame.GetSequence()
 	loading := frame.GetLoadingIntent()
+	emoji := frame.GetEmojiIntent()
+	quick := frame.GetQuickMessageIntent()
+	join := frame.GetJoinQueueIntent()
+	leave := frame.GetLeaveQueueIntent()
+	lobby := frame.GetLobbyIntent()
 	intent, ok := DecodeIntent(frame)
-	if !ok && loading == nil {
+	if !ok && loading == nil && emoji == nil && quick == nil && join == nil && leave == nil && lobby == nil {
 		return c.Send(ErrorFrame(pb.ErrorCode_ERROR_CODE_ILLEGAL_INTENT, sequence, c.session.Acked())) == nil
 	}
 	if !c.bucket.take(c.options.Clock.Now()) {
 		return c.Send(ErrorFrame(pb.ErrorCode_ERROR_CODE_RATE_LIMITED, sequence, c.session.Acked())) == nil
 	}
+	if frame.GetSessionNonce() != c.nonce {
+		if counter, ok := c.session.(ReplayCounter); ok {
+			counter.Replayed()
+		}
+		return c.Send(ErrorFrame(pb.ErrorCode_ERROR_CODE_REPLAY_REJECTED, sequence, c.session.Acked())) == nil
+	}
 	if loading != nil {
 		c.session.Loading(int(loading.GetProgress()), loading.GetReady())
 		return true
+	}
+	if emoji != nil {
+		c.session.Emoji(emoji.GetItemId())
+		return true
+	}
+	if quick != nil {
+		c.session.QuickMessage(quick.GetKey(), quick.GetTeamOnly())
+		return true
+	}
+	if join != nil || leave != nil {
+		return c.matchmaking(join)
+	}
+	if lobby != nil {
+		return c.lobby(lobby)
 	}
 	c.session.Intent(sequence, intent)
 	return true
@@ -346,4 +417,26 @@ func EncodeIntent(intent replay.Intent) (*pb.Envelope, bool) {
 		return &pb.Envelope{Payload: &pb.Envelope_PassIntent{PassIntent: &pb.PassIntent{}}}, true
 	}
 	return nil, false
+}
+
+func (c *Conn) lobby(intent *pb.LobbyIntent) bool {
+	lobbyist, ok := c.session.(Lobbyist)
+	if !ok {
+		return c.Send(LobbyStateFrame(&pb.LobbyState{Refusal: pb.LobbyRefusal_LOBBY_REFUSAL_UNAVAILABLE}, c.session.Acked())) == nil
+	}
+	lobbyist.Lobby(intent)
+	return true
+}
+
+func (c *Conn) matchmaking(join *pb.JoinQueueIntent) bool {
+	queuer, ok := c.session.(Queuer)
+	switch {
+	case !ok:
+		return c.Send(QueueStateFrame(&pb.QueueState{Status: pb.QueueStatus_QUEUE_STATUS_REFUSED, Refusal: pb.QueueRefusal_QUEUE_REFUSAL_UNAVAILABLE}, c.session.Acked())) == nil
+	case join != nil:
+		queuer.JoinQueue(join)
+	default:
+		queuer.LeaveQueue()
+	}
+	return true
 }

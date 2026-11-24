@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package hypedomino.v1;
+
+import "hypedomino/v1/match.proto";
+import "hypedomino/v1/queue.proto";
+
+enum LobbyCommand {
+  LOBBY_COMMAND_UNSPECIFIED = 0;
+  LOBBY_COMMAND_CREATE = 1;
+  LOBBY_COMMAND_JOIN = 2;
+  LOBBY_COMMAND_LEAVE = 3;
+  LOBBY_COMMAND_TEAMS = 4;
+  LOBBY_COMMAND_BACK = 5;
+  LOBBY_COMMAND_PLACE = 6;
+  LOBBY_COMMAND_REMOVE = 7;
+  LOBBY_COMMAND_START = 8;
+  LOBBY_COMMAND_ACT = 9 [deprecated = true];
+  LOBBY_COMMAND_INVITE = 10;
+  LOBBY_COMMAND_REQUEST_SEAT = 11;
+  LOBBY_COMMAND_ADD = 12;
+}
+
+enum LobbyPhase {
+  LOBBY_PHASE_UNSPECIFIED = 0;
+  LOBBY_PHASE_LOBBY = 1;
+  LOBBY_PHASE_TEAMS = 2;
+  LOBBY_PHASE_MATCH = 3;
+}
+
+enum LobbyRefusal {
+  LOBBY_REFUSAL_UNSPECIFIED = 0;
+  LOBBY_REFUSAL_UNAVAILABLE = 1;
+  LOBBY_REFUSAL_UNKNOWN_CODE = 2;
+  LOBBY_REFUSAL_NOT_LEADER = 3;
+  LOBBY_REFUSAL_SEAT_TAKEN = 4;
+  LOBBY_REFUSAL_NOT_IN_LOBBY = 5;
+  LOBBY_REFUSAL_ALREADY_IN_LOBBY = 6;
+  LOBBY_REFUSAL_FULL = 7;
+  LOBBY_REFUSAL_SEATS_OPEN = 8;
+  LOBBY_REFUSAL_STARTED = 9;
+  LOBBY_REFUSAL_INVALID_SEAT = 10;
+  LOBBY_REFUSAL_INVALID_MODE = 11;
+  LOBBY_REFUSAL_IN_MATCH = 12;
+  LOBBY_REFUSAL_WRONG_PHASE = 13;
+  LOBBY_REFUSAL_BLOCKED = 14;
+  LOBBY_REFUSAL_UNKNOWN_ACTION = 15 [deprecated = true];
+  LOBBY_REFUSAL_NOT_FRIEND = 16;
+  LOBBY_REFUSAL_RANKED_BAN = 17;
+}
+
+message LobbyIntent {
+  LobbyCommand command = 1;
+  string code = 2;
+  Mode mode = 3;
+  string account_id = 4;
+  Seat seat = 5;
+  string action = 6 [deprecated = true];
+}
+
+message LobbySeat {
+  Seat seat = 1;
+  string account_id = 2;
+}
+
+message LobbyState {
+  string code = 1;
+  string leader_account_id = 2;
+  repeated string member_account_ids = 3;
+  LobbyPhase phase = 4;
+  Mode mode = 5;
+  repeated LobbySeat seats = 6;
+  LobbyRefusal refusal = 7;
+  uint64 refused_until_unix_ms = 8;
+  BanReason ban_reason = 9;
+  AppealGrant appeal = 10;
+}
+
+message LobbyRelay {
+  string account_id = 1;
+  string action = 2 [deprecated = true];
+  string item_id = 3;
+  Seat requested_seat = 4;
+}
+
+message LobbyInvite {
+  string code = 1;
+  string from_account_id = 2;
+}

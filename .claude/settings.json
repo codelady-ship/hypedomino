@@ -1,0 +1,16 @@
+{
+  "extraKnownMarketplaces": {
+    "hypedomino-agents": {
+      "source": {
+        "source": "github",
+        "repo": "Alievs-corp/hypedomino"
+      },
+      "autoUpdate": false
+    }
+  },
+  "enabledPlugins": {
+    "caveman@hypedomino-agents": true,
+    "ponytail@hypedomino-agents": true,
+    "andrej-karpathy-skills@hypedomino-agents": true
+  }
+}

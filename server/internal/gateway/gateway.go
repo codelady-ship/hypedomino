@@ -17,14 +17,29 @@ const ProtocolVersion = 1
 
 var (
 	ErrUnauthenticated = errors.New("gateway: session token rejected")
+	ErrIntegrityFailed = errors.New("gateway: device integrity check failed")
 	ErrSlowConsumer    = errors.New("gateway: write queue full")
 	ErrClosed          = errors.New("gateway: connection closed")
 )
 
+type RoutedElsewhere struct {
+	Key string
+}
+
+func (e *RoutedElsewhere) Error() string {
+	return "gateway: session hosted on another node"
+}
+
+func (e *RoutedElsewhere) Unwrap() error {
+	return ErrUnauthenticated
+}
+
 type Config struct {
 	MinimumAppVersion    string
 	CatalogVersion       string
+	ContentBaseURL       string
 	MaxFrameBytes        int
+	MaxHelloBytes        int
 	WriteQueue           int
 	HelloTimeout         time.Duration
 	WriteTimeout         time.Duration
@@ -40,6 +55,7 @@ func DefaultConfig() Config {
 	return Config{
 		MinimumAppVersion:    "1.0.0",
 		MaxFrameBytes:        1024,
+		MaxHelloBytes:        8 * 1024,
 		WriteQueue:           32,
 		HelloTimeout:         5 * time.Second,
 		WriteTimeout:         5 * time.Second,
@@ -65,6 +81,8 @@ type Session interface {
 	InMatch() bool
 	Attach()
 	Loading(progress int, ready bool)
+	Emoji(item string)
+	QuickMessage(key string, teamOnly bool)
 	Intent(sequence uint64, intent replay.Intent)
 	Close()
 }
@@ -79,11 +97,20 @@ func (f HandlerFunc) Connect(ctx context.Context, conn *Conn, hello *pb.ClientHe
 	return f(ctx, conn, hello)
 }
 
+type Strings struct {
+	Bundles []*pb.StringBundle
+	Chains  []*pb.FallbackChain
+}
+
 type Options struct {
-	Config  Config
-	Handler Handler
-	Clock   Clock
-	Origins []string
+	Config    Config
+	Handler   Handler
+	Clock     Clock
+	Origins   []string
+	Strings   func() Strings
+	Cosmetics func() *pb.CosmeticsManifest
+	Analytics func() *pb.AnalyticsConfig
+	Admission func() Admission
 }
 
 type Gateway struct {
@@ -115,6 +142,18 @@ func (g *Gateway) Connections() int {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return len(g.conns)
+}
+
+func (g *Gateway) Enforce() {
+	g.mu.Lock()
+	conns := make([]*Conn, 0, len(g.conns))
+	for conn := range g.conns {
+		conns = append(conns, conn)
+	}
+	g.mu.Unlock()
+	for _, conn := range conns {
+		conn.enforce()
+	}
 }
 
 func (g *Gateway) Shutdown(ctx context.Context) error {

@@ -61,7 +61,7 @@ func has(names []string, want string) bool {
 	return false
 }
 
-const head = 7
+const head = 60
 
 func TestUpFromEmptyToHeadDownToZeroAndUpAgain(t *testing.T) {
 	url := dbtest.Empty(t)
@@ -84,7 +84,7 @@ func TestUpFromEmptyToHeadDownToZeroAndUpAgain(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pool.Close()
-	for _, want := range []string{"accounts", "auth_identities", "profiles", "inventory_items", "wallets", "ledger_entries", "matches", "match_participants", "matches_default", "match_participants_default", "match_events", "match_events_default", "outbox", "reward_grants", "config_snapshots", "goose_db_version"} {
+	for _, want := range []string{"accounts", "auth_identities", "profiles", "inventory_items", "wallets", "ledger_entries", "matches", "match_participants", "matches_default", "match_participants_default", "match_events", "match_events_default", "outbox", "reward_grants", "config_snapshots", "admin_audit_entries", "purchases", "purchase_notices", "admin_accounts", "game_strings", "game_string_values", "game_string_bundles", "admin_approvals", "admin_sessions", "promo_codes", "promo_targets", "promo_redemptions", "promo_attempts", "ratings", "rating_results", "rating_changes", "ranked_seasons", "season_results", "pass_progress", "pass_season_ends", "pass_xp_events", "medal_ownership", "medal_showcases", "mission_assignments", "mission_matches", "daily_logins", "app_attest_keys", "deletion_log_pending", "analytics_sources", "leaderboard_removals", "account_sanctions", "appeals", "goose_db_version"} {
 		if !has(tables(t, pool), want) {
 			t.Fatalf("table %s missing after up: %v", want, tables(t, pool))
 		}
@@ -173,9 +173,6 @@ func TestAccountIdentityProfileAndInventoryConstraints(t *testing.T) {
 	if _, err := pool.Exec(ctx, "insert into profiles (account_id, nickname, nickname_key) values ($1, 'DOMINO', 'domino')", b); !unique(err) {
 		t.Fatalf("nickname key unique: %v", err)
 	}
-	if _, err := pool.Exec(ctx, "insert into profiles (account_id, nickname, nickname_key, level) values ($1, 'other', 'other', 0)", b); !check(err) {
-		t.Fatalf("level zero accepted: %v", err)
-	}
 	if _, err := pool.Exec(ctx, "insert into inventory_items (account_id, item_id, source_type, source_ref) values ($1, 'frame.gold', 'pass_reward', 'pass:1:free:3')", a); err != nil {
 		t.Fatal(err)
 	}
@@ -191,30 +188,42 @@ func TestWalletAndLedgerConstraints(t *testing.T) {
 	_, pool := dbtest.Fresh(t)
 	ctx := context.Background()
 	a, b := account(t, pool), account(t, pool)
-	if _, err := pool.Exec(ctx, "insert into wallets (account_id, balance) values ($1, -1)", a); !check(err) {
-		t.Fatalf("negative balance accepted: %v", err)
+	if _, err := pool.Exec(ctx, "insert into wallets (account_id, currency, balance) values ($1, 'crystal', -1)", a); err != nil {
+		t.Fatalf("a refund may leave a negative balance (migration 00009): %v", err)
 	}
-	if _, err := pool.Exec(ctx, "insert into wallets (account_id) values ($1), ($2)", a, b); err != nil {
+	if _, err := pool.Exec(ctx, "insert into wallets (account_id, currency) values ($1, 'coin')", b); err != nil {
 		t.Fatal(err)
 	}
-	entry := "insert into ledger_entries (account_id, amount, reason, source_type, source_ref, idempotency_key, config_version, balance_after) values ($1, $2, $3, 'match', 'm1', $4, 1, $5)"
-	if _, err := pool.Exec(ctx, entry, a, 50, "match_reward", "match:m1", 50); err != nil {
+	if _, err := pool.Exec(ctx, "insert into wallets (account_id, currency) values ($1, 'crystal')", b); err != nil {
+		t.Fatalf("a second currency is a second wallet row: %v", err)
+	}
+	if _, err := pool.Exec(ctx, "insert into wallets (account_id, currency) values ($1, 'gem')", b); !check(err) {
+		t.Fatalf("an unknown currency accepted: %v", err)
+	}
+	entry := "insert into ledger_entries (account_id, currency, amount, reason, source_type, source_ref, idempotency_key, config_version, balance_after) values ($1, $6, $2, $3, 'match', 'm1', $4, 1, $5)"
+	if _, err := pool.Exec(ctx, entry, a, 50, "match_reward", "match:m1", 50, "coin"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, entry, a, 50, "match_reward", "match:m1", 100); !unique(err) {
+	if _, err := pool.Exec(ctx, entry, a, 50, "match_reward", "match:m1", 100, "coin"); !unique(err) {
 		t.Fatalf("a repeated idempotency key wrote twice: %v", err)
 	}
-	if _, err := pool.Exec(ctx, entry, b, 50, "match_reward", "match:m1", 50); err != nil {
+	if _, err := pool.Exec(ctx, entry, a, 50, "admin_adjust", "match:m1", 50, "crystal"); err != nil {
+		t.Fatalf("the same key in the other currency is another entry: %v", err)
+	}
+	if _, err := pool.Exec(ctx, entry, a, 50, "admin_adjust", "admin:x", 50, "gem"); !check(err) {
+		t.Fatalf("an unknown ledger currency accepted: %v", err)
+	}
+	if _, err := pool.Exec(ctx, entry, b, 50, "match_reward", "match:m1", 50, "coin"); err != nil {
 		t.Fatalf("the same key on another account is another grant: %v", err)
 	}
-	if _, err := pool.Exec(ctx, entry, a, 500, "purchase", "purchase:play:tx-1", 550); err != nil {
+	if _, err := pool.Exec(ctx, entry, a, 500, "purchase", "purchase:play:tx-1", 550, "coin"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, entry, b, 500, "purchase", "purchase:play:tx-1", 550); !unique(err) {
+	if _, err := pool.Exec(ctx, entry, b, 500, "purchase", "purchase:play:tx-1", 550, "coin"); !unique(err) {
 		t.Fatalf("a purchase transaction credited to two accounts: %v", err)
 	}
-	if _, err := pool.Exec(ctx, entry, a, -600, "shop_purchase", "spend:r1", -50); !check(err) {
-		t.Fatalf("negative balance after accepted: %v", err)
+	if _, err := pool.Exec(ctx, entry, a, -2000, "refund_revoke", "refund:play:n1", -1450, "coin"); err != nil {
+		t.Fatalf("a refund revoke below zero refused (migration 00009): %v", err)
 	}
 }
 

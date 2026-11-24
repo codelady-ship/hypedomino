@@ -11,6 +11,7 @@ const scoringMultiple = 5;
 const handPointsLockThreshold = 300;
 const targetScore = 365;
 const handSize = 7;
+const redealDoublesThreshold = 6;
 const setSize = 28;
 const minimumVectorsPerRule = 3;
 const ends = ["left", "right", "top", "bottom"];
@@ -156,6 +157,11 @@ function firstOpener(mode, { hands }) {
   return { redeal: false, opener: holder(tile), tile, next: nextSeat(mode, holder(tile)) };
 }
 
+function doublesRedeal(mode, { hands }) {
+  const doublesOf = (seat) => hands[seat].filter(isDouble).length;
+  return { redeal: seatsByMode[mode].some((seat) => doublesOf(seat) >= redealDoublesThreshold) };
+}
+
 function turn(board, placements) {
   const steps = [];
   let current = board;
@@ -247,6 +253,7 @@ const derive = {
     return { movedBy: inTime ? "player" : "bot" };
   },
   afk: ({ mode, given }) => afk(mode, given),
+  "doubles-redeal": ({ mode, given }) => doublesRedeal(mode, given),
 };
 
 function boardErrors({ line, spinner, top, bottom }) {
@@ -294,8 +301,9 @@ function stateErrors({ kind, mode, given, expect }) {
   if (new Set(keys).size !== keys.length) errors.push("a tile appears more than once");
   if (given.board) errors.push(...boardErrors(given.board));
   if (given.boneyard && mode === "2v2" && given.boneyard.length > 0) errors.push("2v2 has no boneyard");
-  if (given.boneyard && mode === "1v1" && kind !== "first-opener" && given.boneyard.length === 0) errors.push("1v1 boneyard always keeps its last tile");
-  if (kind === "first-opener" && !isValidDeal(mode, given)) errors.push("first-opener needs a valid full deal");
+  const fullDeal = kind === "first-opener" || kind === "doubles-redeal";
+  if (given.boneyard && mode === "1v1" && !fullDeal && given.boneyard.length === 0) errors.push("1v1 boneyard always keeps its last tile");
+  if (fullDeal && !isValidDeal(mode, given)) errors.push(`${kind} needs a valid full deal`);
   if (kind === "turn" && expect.steps.length !== given.placements.length) errors.push("placements continue after the turn ended");
   if (kind === "hand-end") {
     const emptyHands = Object.keys(given.hands).filter((seat) => given.hands[seat].length === 0);

@@ -6,6 +6,16 @@ func (h Hand) Contains(tile Tile) bool {
 	return h.indexOf(tile) >= 0
 }
 
+func (h Hand) Doubles() int {
+	count := 0
+	for _, tile := range h {
+		if tile.IsDouble() {
+			count++
+		}
+	}
+	return count
+}
+
 func (h Hand) Pips() int {
 	total := 0
 	for _, tile := range h {

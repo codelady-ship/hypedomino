@@ -71,6 +71,7 @@ type Handler struct {
 	mu     sync.Mutex
 	tables map[uint64]*table
 	opened uint64
+	stores *Stores
 }
 
 func NewHandler(config rules.Config, bots bot.Config) *Handler {
@@ -81,6 +82,12 @@ func (h *Handler) Bind(rooms *app.Rooms) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.rooms = rooms
+}
+
+func (h *Handler) Store(stores *Stores) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.stores = stores
 }
 
 func (h *Handler) Opened() uint64 {
@@ -121,15 +128,18 @@ func (h *Handler) open(c claim) (*table, error) {
 	t := &table{room: r}
 	h.tables[c.room] = t
 	h.opened++
-	go h.forget(c.room, r)
+	go h.forget(c, r, h.stores)
 	return t, nil
 }
 
-func (h *Handler) forget(id uint64, r *room.Room) {
+func (h *Handler) forget(c claim, r *room.Room, stores *Stores) {
+	if stores != nil {
+		stores.track(c, r)
+	}
 	<-r.Done()
 	h.mu.Lock()
-	if t, ok := h.tables[id]; ok && t.room == r {
-		delete(h.tables, id)
+	if t, ok := h.tables[c.room]; ok && t.room == r {
+		delete(h.tables, c.room)
 	}
 	h.mu.Unlock()
 }

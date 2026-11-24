@@ -29,9 +29,12 @@ func (fakeVerifier) Verify(access string) (token.Claims, error) {
 
 type fakeWallet struct{ limit int }
 
-func (f *fakeWallet) Balance(_ context.Context, account string) (int64, error) {
+func (f *fakeWallet) Balance(_ context.Context, account string, currency wallet.Currency) (int64, error) {
 	if account == "broken" {
 		return 0, errors.New("database down")
+	}
+	if currency == wallet.Crystal {
+		return 75, nil
 	}
 	return 320, nil
 }
@@ -39,8 +42,8 @@ func (f *fakeWallet) Balance(_ context.Context, account string) (int64, error) {
 func (f *fakeWallet) History(_ context.Context, account string, limit int) ([]wallet.Applied, error) {
 	f.limit = limit
 	return []wallet.Applied{
-		{ID: 2, Account: account, Amount: -180, Reason: wallet.ShopPurchase, Source: wallet.Source{Type: "offer", Ref: "offer.comet_fox"}, Key: "spend:r1", BalanceAfter: 320, At: start},
-		{ID: 1, Account: account, Amount: 500, Reason: wallet.Purchase, Source: wallet.Source{Type: "store", Ref: "t1"}, Key: "purchase:google:t1", BalanceAfter: 500, At: start},
+		{ID: 2, Account: account, Currency: wallet.Coin, Amount: -180, Reason: wallet.ShopPurchase, Source: wallet.Source{Type: "offer", Ref: "offer.comet_fox"}, Key: "spend:r1", BalanceAfter: 320, At: start},
+		{ID: 1, Account: account, Currency: wallet.Crystal, Amount: 500, Reason: wallet.Purchase, Source: wallet.Source{Type: "store", Ref: "t1"}, Key: "purchase:google:t1", BalanceAfter: 500, At: start},
 	}, nil
 }
 
@@ -64,7 +67,7 @@ func call(t *testing.T, handler http.Handler, method, bearer string) (int, map[s
 	return resp.StatusCode, decoded
 }
 
-func TestTheWalletRouteShowsBalanceAndRecentEntries(t *testing.T) {
+func TestTheWalletRouteShowsBothBalancesAndRecentEntries(t *testing.T) {
 	fake := &fakeWallet{}
 	handler := wallet.NewHandler(fakeVerifier{}, fake, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if status, body := call(t, handler, "GET", ""); status != http.StatusUnauthorized || body["error"] != "access_rejected" {
@@ -80,12 +83,12 @@ func TestTheWalletRouteShowsBalanceAndRecentEntries(t *testing.T) {
 		t.Fatalf("failing store %d %v", status, body)
 	}
 	status, body := call(t, handler, "GET", "access:ayla")
-	if status != http.StatusOK || body["balance"] != float64(320) || fake.limit != wallet.HistoryPage {
+	if status != http.StatusOK || body["coins"] != float64(320) || body["crystals"] != float64(75) || fake.limit != wallet.HistoryPage {
 		t.Fatalf("wallet %d %v limit %d", status, body, fake.limit)
 	}
 	entries := body["entries"].([]any)
 	latest := entries[0].(map[string]any)
-	if len(entries) != 2 || latest["id"] != float64(2) || latest["amount"] != float64(-180) || latest["reason"] != "shop_purchase" || latest["source_ref"] != "offer.comet_fox" || latest["balance_after"] != float64(320) || latest["at"] != "2026-10-30T12:00:00Z" {
+	if len(entries) != 2 || latest["id"] != float64(2) || latest["currency"] != "coin" || entries[1].(map[string]any)["currency"] != "crystal" || latest["amount"] != float64(-180) || latest["reason"] != "shop_purchase" || latest["source_ref"] != "offer.comet_fox" || latest["balance_after"] != float64(320) || latest["at"] != "2026-10-30T12:00:00Z" {
 		t.Fatalf("entries %v", entries)
 	}
 }

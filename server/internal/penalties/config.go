@@ -1,35 +1,39 @@
 package penalties
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 )
 
+const Domain = "penalties"
+
 var ErrInvalidConfig = errors.New("penalties: invalid config")
 
 type Config struct {
-	AfkReturnedWeight           int
-	AfkWeight                   int
-	LeaveReturnedWeight         int
-	LeaveWeight                 int
-	OffenseWindowDays           int
-	CleanMatchesToForgive       int
-	WarningLevel                int
-	QueueDelayLevel             int
-	BanLevel                    int
-	ReviewLevel                 int
-	QueueDelaySeconds           int
-	QueueDelayMatches           int
-	BanHours                    int
-	BanEscalationFactor         float64
-	OffenseRatingPenalty        int
-	PartnerLossReductionPercent int
-	CasualOffenseWindowDays     int
-	CasualCleanMatchesToForgive int
-	CasualWarningLevel          int
-	CasualQueueDelayLevels      []int
-	CasualQueueDelaySeconds     []int
-	CasualQueueDelayMatches     int
+	AfkReturnedWeight           int     `json:"afkReturnedWeight"`
+	AfkWeight                   int     `json:"afkWeight"`
+	LeaveReturnedWeight         int     `json:"leaveReturnedWeight"`
+	LeaveWeight                 int     `json:"leaveWeight"`
+	OffenseWindowDays           int     `json:"offenseWindowDays"`
+	CleanMatchesToForgive       int     `json:"cleanMatchesToForgive"`
+	WarningLevel                int     `json:"warningLevel"`
+	QueueDelayLevel             int     `json:"queueDelayLevel"`
+	BanLevel                    int     `json:"banLevel"`
+	ReviewLevel                 int     `json:"reviewLevel"`
+	QueueDelaySeconds           int     `json:"queueDelaySeconds"`
+	QueueDelayMatches           int     `json:"queueDelayMatches"`
+	BanHours                    int     `json:"banHours"`
+	BanEscalationFactor         float64 `json:"banEscalationFactor"`
+	OffenseRatingPenalty        int     `json:"offenseRatingPenalty"`
+	PartnerLossReductionPercent int     `json:"partnerLossReductionPercent"`
+	CasualOffenseWindowDays     int     `json:"casualOffenseWindowDays"`
+	CasualCleanMatchesToForgive int     `json:"casualCleanMatchesToForgive"`
+	CasualWarningLevel          int     `json:"casualWarningLevel"`
+	CasualQueueDelayLevels      []int   `json:"casualQueueDelayLevels"`
+	CasualQueueDelaySeconds     []int   `json:"casualQueueDelaySeconds"`
+	CasualQueueDelayMatches     int     `json:"casualQueueDelayMatches"`
 }
 
 func DefaultConfig() Config {
@@ -104,4 +108,14 @@ func Validate(c Config) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func Parse(raw []byte) (Config, error) {
+	config := DefaultConfig()
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&config); err != nil {
+		return Config{}, fmt.Errorf("%w: %v", ErrInvalidConfig, err)
+	}
+	return config, Validate(config)
 }

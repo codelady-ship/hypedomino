@@ -23,6 +23,10 @@ spec:
       labels:
         app.kubernetes.io/name: server
         app.kubernetes.io/part-of: hypedomino
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "6060"
+        prometheus.io/path: /metrics
     spec:
       terminationGracePeriodSeconds: 980
       automountServiceAccountToken: false
@@ -45,9 +49,15 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            - name: debug
+              containerPort: 6060
           env:
             - name: HD_LISTEN_ADDR
               value: ":8080"
+            - name: HD_DEBUG_ADDR
+              value: ":6060"
+            - name: HD_PPROF_ADDR
+              value: "127.0.0.1:6061"
             - name: HD_DRAIN_TIMEOUT
               value: 15m
             - name: HD_SHUTDOWN_TIMEOUT

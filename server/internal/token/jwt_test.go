@@ -38,7 +38,9 @@ func TestSignedTokensVerifyUntilTheyExpire(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := s.Verify(token, start.Add(14*time.Minute))
-	if err != nil || got != claimsAt(start) {
+	want := claimsAt(start)
+	want.KeyID = "k1"
+	if err != nil || got != want {
 		t.Fatalf("verify: %+v %v", got, err)
 	}
 	if _, err := s.Verify(token, start.Add(15*time.Minute+30*time.Second)); err != nil {

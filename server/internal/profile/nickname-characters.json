@@ -1,0 +1,10 @@
+{
+  "letters": {
+    "Basic Latin": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+    "Azerbaijani and Turkish": "ƏəĞğİıŞşÇçÖöÜü",
+    "Turkish circumflex": "ÂâÎîÛû",
+    "Russian Cyrillic": "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+  },
+  "digits": "0123456789",
+  "separators": "_.- "
+}

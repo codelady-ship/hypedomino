@@ -1,0 +1,21 @@
+{
+  "astcBlock": "6x6",
+  "astcBlockSource": "SpriteFormat in client/Assets/HypeDomino/Editor/ProjectSetup.cs, the format of the project sprite preset; a block size per asset class is open (docs/asset-workflow.md O-5)",
+  "types": {
+    "avatar": {
+      "animated": { "maxBytes": 300000, "source": "#171, animated avatars under 300 KB each" }
+    },
+    "emoji": {
+      "static": { "maxBytes": 100000, "source": "#175, emoji under 100 KB each" },
+      "animated": { "maxBytes": 100000, "source": "#175, emoji under 100 KB each" }
+    },
+    "frame": {
+      "static": { "maxBytes": 125000, "source": "owner decision 2026-11-16, static frames under 100 KB each, raised to fit the 512 px static of 118,336 bytes" },
+      "animated": { "maxBytes": 600000, "source": "owner decision 2026-11-16, animated frames on the 256 px canvas (17 sprites, 502,928 bytes) with margin" }
+    },
+    "table": {
+      "static": { "maxBytes": 1000000, "source": "owner decision 2026-11-16, static tables under 1 MB each" },
+      "animated": { "maxBytes": 5000000, "maxLayers": 2, "maxAnimatedLayers": 1, "source": "owner decision 2026-11-16, animated tables under 5 MB each, at most 2 layers of which 1 animated" }
+    }
+  }
+}

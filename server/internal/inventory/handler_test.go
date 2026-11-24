@@ -79,20 +79,35 @@ func (f *fakeInventory) Freeze(_ context.Context, account string) (profile.Loado
 	return l, nil
 }
 
+func (f *fakeInventory) EmojiSlots() int {
+	return 6
+}
+
+type observedAccounts struct {
+	accounts []string
+}
+
+func (o *observedAccounts) Observe(_ context.Context, account string) {
+	o.accounts = append(o.accounts, account)
+}
+
 type fixture struct {
 	t         *testing.T
 	server    *httptest.Server
 	inventory *fakeInventory
+	unowned   *observedAccounts
 }
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	inv := &fakeInventory{loadouts: map[string]profile.Loadout{}}
 	handler := inventory.NewHandler(fakeVerifier{}, inv, slog.New(slog.NewTextHandler(io.Discard, nil)), func() time.Time { return start })
+	unowned := &observedAccounts{}
+	handler.FlagUnowned(unowned)
 	mux := http.NewServeMux()
 	mux.Handle("/inventory", handler)
 	mux.Handle("/inventory/", handler)
-	f := &fixture{t: t, server: httptest.NewServer(mux), inventory: inv}
+	f := &fixture{t: t, server: httptest.NewServer(mux), inventory: inv, unowned: unowned}
 	t.Cleanup(f.server.Close)
 	return f
 }
@@ -150,6 +165,9 @@ func TestTheInventoryListsOwnedItemsAndTheEffectiveLoadout(t *testing.T) {
 	if body["loadout"].(map[string]any)["avatar"] != "avatar.starter" {
 		t.Fatalf("loadout %v", body["loadout"])
 	}
+	if body["emoji_slots"] != float64(6) {
+		t.Fatalf("emoji slots %v", body["emoji_slots"])
+	}
 	if status, body := f.call("GET", "/inventory", "access:broken", ""); status != http.StatusInternalServerError || body["error"] != "internal" {
 		t.Fatalf("failing store answered %d %v", status, body)
 	}
@@ -177,6 +195,9 @@ func TestEquipRefusalsCarryTheirReason(t *testing.T) {
 		if status, body := f.call("PUT", "/inventory/equip", "access:"+c.account, c.body); status != c.status || body["error"] != c.reason {
 			t.Fatalf("%s %s answered %d %v, want %d %s", c.account, c.body, status, body, c.status, c.reason)
 		}
+	}
+	if len(f.unowned.accounts) != 1 || f.unowned.accounts[0] != "ayla" {
+		t.Fatalf("unowned attempts observed %v, want only the not_owned refusal", f.unowned.accounts)
 	}
 	status, body := f.call("PUT", "/inventory/equip", "access:ayla", `{"slot":"avatar","items":["avatar.comet_fox"]}`)
 	if status != http.StatusOK || body["loadout"].(map[string]any)["avatar"] != "avatar.comet_fox" {

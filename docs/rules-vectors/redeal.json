@@ -1,0 +1,265 @@
+{
+  "$schema": "./schema.json",
+  "vectors": [
+    {
+      "id": "redeal-2v2-north-six-doubles",
+      "kind": "doubles-redeal",
+      "rules": [
+        "R-59"
+      ],
+      "description": "Example 14: North is dealt six doubles, so all tiles are dealt again",
+      "mode": "2v2",
+      "given": {
+        "hands": {
+          "N": [
+            "0-0",
+            "1-1",
+            "2-2",
+            "3-3",
+            "5-5",
+            "6-6",
+            "2-4"
+          ],
+          "E": [
+            "0-1",
+            "0-2",
+            "0-3",
+            "0-4",
+            "0-5",
+            "0-6",
+            "1-2"
+          ],
+          "S": [
+            "1-3",
+            "1-4",
+            "1-5",
+            "1-6",
+            "2-3",
+            "2-5",
+            "2-6"
+          ],
+          "W": [
+            "3-4",
+            "3-5",
+            "3-6",
+            "4-4",
+            "4-5",
+            "4-6",
+            "5-6"
+          ]
+        },
+        "boneyard": []
+      },
+      "expect": {
+        "redeal": true
+      }
+    },
+    {
+      "id": "redeal-2v2-partners-not-summed",
+      "kind": "doubles-redeal",
+      "rules": [
+        "R-59"
+      ],
+      "description": "Example 14: North holds four doubles and South three; doubles are never summed across partners",
+      "mode": "2v2",
+      "given": {
+        "hands": {
+          "N": [
+            "0-0",
+            "1-1",
+            "2-2",
+            "3-3",
+            "0-1",
+            "0-2",
+            "0-3"
+          ],
+          "E": [
+            "0-4",
+            "0-5",
+            "0-6",
+            "1-2",
+            "1-3",
+            "1-4",
+            "1-5"
+          ],
+          "S": [
+            "4-4",
+            "5-5",
+            "6-6",
+            "1-6",
+            "2-3",
+            "2-4",
+            "2-5"
+          ],
+          "W": [
+            "2-6",
+            "3-4",
+            "3-5",
+            "3-6",
+            "4-5",
+            "4-6",
+            "5-6"
+          ]
+        },
+        "boneyard": []
+      },
+      "expect": {
+        "redeal": false
+      }
+    },
+    {
+      "id": "redeal-2v2-five-doubles",
+      "kind": "doubles-redeal",
+      "rules": [
+        "R-59"
+      ],
+      "description": "East holds five doubles, below the threshold of six",
+      "mode": "2v2",
+      "given": {
+        "hands": {
+          "N": [
+            "0-1",
+            "0-2",
+            "0-3",
+            "0-4",
+            "0-5",
+            "0-6",
+            "1-2"
+          ],
+          "E": [
+            "0-0",
+            "1-1",
+            "2-2",
+            "3-3",
+            "4-4",
+            "1-3",
+            "1-4"
+          ],
+          "S": [
+            "1-5",
+            "1-6",
+            "2-3",
+            "2-4",
+            "2-5",
+            "2-6",
+            "3-4"
+          ],
+          "W": [
+            "3-5",
+            "3-6",
+            "4-5",
+            "4-6",
+            "5-5",
+            "5-6",
+            "6-6"
+          ]
+        },
+        "boneyard": []
+      },
+      "expect": {
+        "redeal": false
+      }
+    },
+    {
+      "id": "redeal-1v1-all-seven-doubles",
+      "kind": "doubles-redeal",
+      "rules": [
+        "R-59",
+        "R-11"
+      ],
+      "description": "Example 14: X is dealt all seven doubles in the first hand; the tiles are dealt again before R-9 to R-11 apply",
+      "mode": "1v1",
+      "given": {
+        "hands": {
+          "X": [
+            "0-0",
+            "1-1",
+            "2-2",
+            "3-3",
+            "4-4",
+            "5-5",
+            "6-6"
+          ],
+          "Y": [
+            "0-1",
+            "0-2",
+            "0-3",
+            "0-4",
+            "0-5",
+            "0-6",
+            "1-2"
+          ]
+        },
+        "boneyard": [
+          "1-3",
+          "1-4",
+          "1-5",
+          "1-6",
+          "2-3",
+          "2-4",
+          "2-5",
+          "2-6",
+          "3-4",
+          "3-5",
+          "3-6",
+          "4-5",
+          "4-6",
+          "5-6"
+        ]
+      },
+      "expect": {
+        "redeal": true
+      }
+    },
+    {
+      "id": "redeal-1v1-six-doubles-in-boneyard",
+      "kind": "doubles-redeal",
+      "rules": [
+        "R-59"
+      ],
+      "description": "Six doubles lie in the boneyard and each player holds at most one: no redeal",
+      "mode": "1v1",
+      "given": {
+        "hands": {
+          "X": [
+            "0-0",
+            "0-1",
+            "0-2",
+            "0-3",
+            "0-4",
+            "0-5",
+            "0-6"
+          ],
+          "Y": [
+            "1-2",
+            "1-3",
+            "1-4",
+            "1-5",
+            "1-6",
+            "2-3",
+            "2-4"
+          ]
+        },
+        "boneyard": [
+          "1-1",
+          "2-2",
+          "3-3",
+          "4-4",
+          "5-5",
+          "6-6",
+          "2-5",
+          "2-6",
+          "3-4",
+          "3-5",
+          "3-6",
+          "4-5",
+          "4-6",
+          "5-6"
+        ]
+      },
+      "expect": {
+        "redeal": false
+      }
+    }
+  ]
+}

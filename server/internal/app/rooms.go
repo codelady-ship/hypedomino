@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/room"
+	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
 var ErrDraining = errors.New("app: not accepting new rooms")
@@ -16,10 +17,20 @@ type Rooms struct {
 	closed  bool
 	wg      sync.WaitGroup
 	changed chan struct{}
+	tune    func(rules.Config) rules.Config
+	moves   room.MoveObserver
+	emoji   room.EmojiLimit
+	quick   func(key string) bool
 }
 
 func NewRooms() *Rooms {
 	return &Rooms{live: map[*room.Room]context.CancelFunc{}, changed: make(chan struct{}, 1)}
+}
+
+func (rs *Rooms) Tune(tune func(rules.Config) rules.Config) {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	rs.tune = tune
 }
 
 func (rs *Rooms) Open(options room.Options) (*room.Room, error) {
@@ -27,6 +38,18 @@ func (rs *Rooms) Open(options room.Options) (*room.Room, error) {
 	defer rs.mu.Unlock()
 	if rs.closed {
 		return nil, ErrDraining
+	}
+	if rs.tune != nil {
+		options.Config = rs.tune(options.Config)
+	}
+	if options.Moves == nil {
+		options.Moves = rs.moves
+	}
+	if options.Emoji == (room.EmojiLimit{}) {
+		options.Emoji = rs.emoji
+	}
+	if options.QuickMessages == nil {
+		options.QuickMessages = rs.quick
 	}
 	r := room.New(options)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -84,4 +107,22 @@ func (rs *Rooms) Stop() {
 	}
 	rs.mu.Unlock()
 	rs.wg.Wait()
+}
+
+func (rs *Rooms) LimitEmoji(limit room.EmojiLimit) {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	rs.emoji = limit
+}
+
+func (rs *Rooms) AllowQuickMessages(allowed func(key string) bool) {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	rs.quick = allowed
+}
+
+func (rs *Rooms) ObserveMoves(moves room.MoveObserver) {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	rs.moves = moves
 }

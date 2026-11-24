@@ -12,7 +12,11 @@ secretGenerator:
   - name: server-env
     literals:
       - HD_LOG_LEVEL=info
+  - name: migrate-env
+    literals:
+      - HD_DATABASE_URL=postgres://postgres@postgres:5432/hypedomino?sslmode=disable
 generatorOptions:
   disableNameSuffixHash: true
 patches:
   - path: server.yaml
+  - path: migrate.yaml

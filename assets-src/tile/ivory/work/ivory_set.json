@@ -1,0 +1,13 @@
+{
+  "materials": {
+    "face": {"color": [0.86, 0.82, 0.72], "roughness": 0.3, "coat": 0.45, "subsurface": 0.15, "grainScale": 900.0, "grainStrength": 0.04},
+    "pip": {"color": [0.004, 0.004, 0.005], "roughness": 1.0, "specular": 0.0},
+    "divider": {"color": [0.004, 0.004, 0.005], "roughness": 1.0, "specular": 0.0},
+    "pin": {"color": [0.8, 0.58, 0.28], "roughness": 0.22, "metallic": 1.0}
+  },
+  "light": {
+    "key": {"energy": 0.72, "size": 0.12, "location": [-0.12, 0.12, 0.09], "rotation": [-50, -45, 0]},
+    "fill": {"energy": 0.1, "size": 0.2, "location": [0.1, -0.08, 0.14], "rotation": [30, 35, 0]},
+    "world": {"color": [0.35, 0.28, 0.24], "strength": 0.2}
+  }
+}

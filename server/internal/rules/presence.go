@@ -81,6 +81,10 @@ func (p *Presence) Controller(seat Seat) Controller {
 	return ControllerPlayer
 }
 
+func (p *Presence) ConsecutiveTimeouts(seat Seat) int {
+	return p.seats[seat].consecutiveTimeouts
+}
+
 func (p *Presence) Timeout(seat Seat) Controller {
 	s := &p.seats[seat]
 	s.consecutiveTimeouts++

@@ -1,0 +1,65 @@
+{
+  "slug": "plum_trellis",
+  "canvas": [
+    1280,
+    720
+  ],
+  "seed": 17414,
+  "edges": {"depth": 234},
+  "back": {
+    "concept": "concept/20261115-01.png",
+    "tone": {
+      "radius": [
+        0.44,
+        0.4
+      ],
+      "edge": 0.25,
+      "soften": 0.6,
+      "gain": 0.9,
+      "sigma": 12
+    }
+  },
+  "motion": {
+    "frames": 10,
+    "key": 5,
+    "parts": [
+      {
+        "kind": "tassels",
+        "places": "corners",
+        "inset": [
+          170,
+          156
+        ],
+        "silk": [
+          [
+            246,
+            206,
+            136
+          ],
+          [
+            226,
+            160,
+            128
+          ],
+          [
+            250,
+            220,
+            160
+          ],
+          [
+            214,
+            170,
+            110
+          ]
+        ],
+        "strands": 15,
+        "spread": 24,
+        "length": 66,
+        "cap": 8,
+        "thread": 2.6,
+        "sway": 11,
+        "bend": 6
+      }
+    ]
+  }
+}

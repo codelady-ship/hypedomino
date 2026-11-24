@@ -12,6 +12,7 @@ import (
 
 	"github.com/Alievs-corp/hypedomino/server/internal/db/dbtest"
 	"github.com/Alievs-corp/hypedomino/server/internal/matchstore"
+	"github.com/Alievs-corp/hypedomino/server/internal/partnerfit"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
@@ -154,7 +155,7 @@ func TestFinishIsAtomicAndAppliedOnce(t *testing.T) {
 	if n := count(t, pool, "select count(*) from match_events where match_id = $1 and seq = 2 and at = $2", id, start.Add(9*time.Minute)); n != 1 {
 		t.Fatal("an event without a time does not take the end time")
 	}
-	if n := count(t, pool, "select count(*) from outbox where key = $1", "match:"+id); n != 4 {
+	if n := count(t, pool, "select count(*) from outbox where key = $1", "match:"+id); n != 5 {
 		t.Fatalf("%d outbox rows for a ranked match", n)
 	}
 	if n := count(t, pool, "select count(*) from outbox where key = $1 and topic = 'rating'", "match:"+id); n != 1 {
@@ -171,9 +172,9 @@ func TestMatchMessagesFollowTheKind(t *testing.T) {
 		return out
 	}
 	cases := map[string][]string{
-		matchstore.KindRanked: {"rating", "xp", "missions", "economy"},
-		matchstore.KindCasual: {"xp", "missions", "economy"},
-		matchstore.KindCustom: {"missions"},
+		matchstore.KindRanked: {"rating", "xp", "missions", "economy", "analytics"},
+		matchstore.KindCasual: {"xp", "missions", "economy", "analytics"},
+		matchstore.KindCustom: {"missions", "analytics"},
 	}
 	for kind, want := range cases {
 		got := topics(kind)
@@ -233,11 +234,11 @@ func TestRelayPublishesPendingMessagesAtLeastOnce(t *testing.T) {
 		t.Fatalf("%d xp rows published", n)
 	}
 	pending, err := store.Pending(ctx, "", 100)
-	if err != nil || len(pending) != 4 {
+	if err != nil || len(pending) != 6 {
 		t.Fatalf("other topics pending %d, %v", len(pending), err)
 	}
 	all := matchstore.NewRelay(store, publisher, "", 0, nil)
-	if n, err := all.Once(ctx); err != nil || n != 4 {
+	if n, err := all.Once(ctx); err != nil || n != 6 {
 		t.Fatalf("all topics published %d, %v", n, err)
 	}
 	runCtx, cancel := context.WithCancel(ctx)
@@ -276,5 +277,71 @@ func TestEventsArePartitionedWithTheMatch(t *testing.T) {
 	}
 	if partition != "match_events_"+m.StartedAt.Format("200601") {
 		t.Fatalf("events landed in %s", partition)
+	}
+}
+
+func TestFinishKeepsThePartnerFitOfEverySeat(t *testing.T) {
+	_, pool := dbtest.Fresh(t)
+	store := matchstore.New(pool)
+	ctx := context.Background()
+	players := accounts(t, pool, 4)
+	id := uuid.NewString()
+	if err := store.Begin(ctx, started(id, matchstore.KindRanked, players)); err != nil {
+		t.Fatal(err)
+	}
+	impossible := finished(id, matchstore.KindRanked)
+	impossible.PartnerFit = map[rules.Seat]partnerfit.Count{rules.SeatNorth: {Decisions: 3, Fits: 4}}
+	if err := store.Finish(ctx, impossible); err == nil {
+		t.Fatal("more fits than decisions were stored")
+	}
+	outside := finished(id, matchstore.KindRanked)
+	outside.PartnerFit = map[rules.Seat]partnerfit.Count{rules.SeatX: {Decisions: 1}}
+	if err := store.Finish(ctx, outside); !errors.Is(err, matchstore.ErrInvalid) {
+		t.Fatalf("a fit for a seat outside the match: %v", err)
+	}
+	done := finished(id, matchstore.KindRanked)
+	done.PartnerFit = map[rules.Seat]partnerfit.Count{rules.SeatNorth: {Decisions: 12, Fits: 11}, rules.SeatEast: {Decisions: 9, Fits: 4}}
+	if err := store.Finish(ctx, done); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, "select count(*) from match_participants where match_id = $1 and seat = $2 and partner_decisions = 12 and partner_fits = 11", id, int16(rules.SeatNorth)); n != 1 {
+		t.Fatal("north fit not stored")
+	}
+	if n := count(t, pool, "select count(*) from match_participants where match_id = $1 and partner_decisions is null", id); n != 2 {
+		t.Fatalf("%d seats without a measurement, want 2", n)
+	}
+}
+
+func TestRunningSeesAnUnfinishedMatchUntilItEndsOrGoesStale(t *testing.T) {
+	_, pool := dbtest.Fresh(t)
+	ctx := context.Background()
+	store := matchstore.New(pool)
+	players := accounts(t, pool, 3)
+	id := uuid.NewString()
+	if err := store.Begin(ctx, started(id, matchstore.KindRanked, players[:2])); err != nil {
+		t.Fatal(err)
+	}
+	running := func(account string, startedAfter time.Time) bool {
+		t.Helper()
+		got, err := store.Running(ctx, account, startedAfter)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got
+	}
+	if !running(players[0], start.Add(-2*time.Hour)) {
+		t.Fatal("a seated player of an unfinished match is not running")
+	}
+	if running(players[2], start.Add(-2*time.Hour)) {
+		t.Fatal("a player outside the match is running")
+	}
+	if running(players[0], start.Add(time.Minute)) {
+		t.Fatal("a match started before the stale bound still counts")
+	}
+	if err := store.Finish(ctx, finished(id, matchstore.KindRanked)); err != nil {
+		t.Fatal(err)
+	}
+	if running(players[0], start.Add(-2*time.Hour)) {
+		t.Fatal("a finished match still counts")
 	}
 }

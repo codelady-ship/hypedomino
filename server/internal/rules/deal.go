@@ -37,6 +37,21 @@ func NewDeal(mode Mode, config Config, random Random) Deal {
 	return deal
 }
 
+func NeedsDoublesRedeal(mode Mode, config Config, hands map[Seat]Hand) bool {
+	for _, seat := range mode.Seats() {
+		if hands[seat].Doubles() >= config.RedealDoublesThreshold {
+			return true
+		}
+	}
+	return false
+}
+
+func DoublesRedealCanEnd(mode Mode, config Config) bool {
+	doublesInSet := MaxPip + 1
+	boneyardSize := SetSize - mode.Players()*config.HandSize
+	return config.RedealDoublesThreshold >= 1 && (config.RedealDoublesThreshold-1)*mode.Players()+boneyardSize >= doublesInSet
+}
+
 func ValidateDeal(mode Mode, config Config, deal Deal) error {
 	seats := mode.Seats()
 	if len(seats) == 0 {

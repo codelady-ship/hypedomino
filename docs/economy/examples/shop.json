@@ -27,8 +27,20 @@
       },
       "window": { "start": "2026-01-01T00:00:00Z", "end": "2027-01-01T00:00:00Z" },
       "limitPerAccount": 1,
-      "nameKey": "shop.offer.table_night_market",
-      "referencePriceCoins": 3500
+      "nameKey": "shop.offer.table_night_market"
+    },
+    {
+      "id": "offer.chest_avatar",
+      "kind": "chest",
+      "section": "chests",
+      "priceCoins": 500,
+      "bundle": {
+        "id": "bundle.chest_avatar",
+        "revision": 1,
+        "cosmetics": ["avatar.paper_kite", "avatar.moon_owl"]
+      },
+      "window": { "start": "2026-01-01T00:00:00Z" },
+      "nameKey": "shop.offer.chest_avatar"
     },
     {
       "id": "offer.starter",
@@ -38,7 +50,7 @@
       "bundle": {
         "id": "bundle.starter",
         "revision": 1,
-        "coins": 1500,
+        "crystals": 300,
         "cosmetics": ["avatar.comet_fox"]
       },
       "window": { "start": "2026-01-01T00:00:00Z" },
@@ -48,22 +60,49 @@
       "regionalOverrideNote": "none"
     },
     {
-      "id": "offer.coins_tier1",
-      "kind": "coins",
-      "section": "coins",
-      "productId": "coins_tier1",
-      "bundle": { "id": "bundle.coins_tier1", "revision": 1, "coins": 500 },
+      "id": "offer.crystals_tier1",
+      "kind": "crystals",
+      "section": "crystals",
+      "productId": "crystals_tier1",
+      "bundle": { "id": "bundle.crystals_tier1", "revision": 1, "crystals": 100 },
       "window": { "start": "2026-01-01T00:00:00Z" },
-      "nameKey": "shop.offer.coins_tier1"
+      "nameKey": "shop.offer.crystals_tier1"
     },
     {
-      "id": "offer.coins_tier2",
-      "kind": "coins",
-      "section": "coins",
-      "productId": "coins_tier2",
-      "bundle": { "id": "bundle.coins_tier2", "revision": 1, "coins": 2750 },
+      "id": "offer.crystals_tier2",
+      "kind": "crystals",
+      "section": "crystals",
+      "productId": "crystals_tier2",
+      "bundle": { "id": "bundle.crystals_tier2", "revision": 1, "crystals": 550 },
       "window": { "start": "2026-01-01T00:00:00Z" },
-      "nameKey": "shop.offer.coins_tier2"
+      "nameKey": "shop.offer.crystals_tier2"
+    },
+    {
+      "id": "offer.crystals_tier3",
+      "kind": "crystals",
+      "section": "crystals",
+      "productId": "crystals_tier3",
+      "bundle": { "id": "bundle.crystals_tier3", "revision": 1, "crystals": 1200 },
+      "window": { "start": "2026-01-01T00:00:00Z" },
+      "nameKey": "shop.offer.crystals_tier3"
+    },
+    {
+      "id": "offer.crystals_tier4",
+      "kind": "crystals",
+      "section": "crystals",
+      "productId": "crystals_tier4",
+      "bundle": { "id": "bundle.crystals_tier4", "revision": 1, "crystals": 2600 },
+      "window": { "start": "2026-01-01T00:00:00Z" },
+      "nameKey": "shop.offer.crystals_tier4"
+    },
+    {
+      "id": "offer.crystals_tier5",
+      "kind": "crystals",
+      "section": "crystals",
+      "productId": "crystals_tier5",
+      "bundle": { "id": "bundle.crystals_tier5", "revision": 1, "crystals": 7000 },
+      "window": { "start": "2026-01-01T00:00:00Z" },
+      "nameKey": "shop.offer.crystals_tier5"
     },
     {
       "id": "offer.pass_premium",
@@ -75,6 +114,13 @@
       "nameKey": "shop.offer.pass_premium"
     }
   ],
+  "firstPurchase": {
+    "id": "bundle.first_purchase",
+    "revision": 1,
+    "crystals": 100,
+    "cosmetics": ["frame.season_1_top"]
+  },
+  "chests": { "rarityPercent": { "common": 85, "rare": 15 }, "rarePityCount": 10 },
   "rotations": [
     { "period": "daily", "start": "2026-01-01T00:00:00Z", "offers": ["offer.avatar_comet_fox"] },
     { "period": "weekly", "start": "2025-12-29T00:00:00Z", "offers": ["offer.table_night_market"] }

@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/cosmetics"
+	"github.com/Alievs-corp/hypedomino/server/internal/wallet"
 )
 
 var ErrInvalidBundle = errors.New("reward: invalid bundle")
@@ -21,6 +22,7 @@ type Bundle struct {
 	ID        string   `json:"id"`
 	Revision  int      `json:"revision"`
 	Coins     int64    `json:"coins"`
+	Crystals  int64    `json:"crystals,omitempty"`
 	Cosmetics []string `json:"cosmetics"`
 	Medals    []string `json:"medals"`
 	PassXP    int      `json:"passXp"`
@@ -40,9 +42,9 @@ func (b Bundle) Validate() error {
 		return fmt.Errorf("%w: id %q", ErrInvalidBundle, b.ID)
 	case b.Revision < 1:
 		return fmt.Errorf("%w: %s revision %d", ErrInvalidBundle, b.ID, b.Revision)
-	case b.Coins < 0 || b.PassXP < 0:
-		return fmt.Errorf("%w: %s negative coins or pass xp", ErrInvalidBundle, b.ID)
-	case b.Coins == 0 && len(b.Cosmetics) == 0 && len(b.Medals) == 0 && b.PassXP == 0:
+	case b.Coins < 0 || b.Crystals < 0 || b.PassXP < 0:
+		return fmt.Errorf("%w: %s negative coins, crystals or pass xp", ErrInvalidBundle, b.ID)
+	case b.Coins == 0 && b.Crystals == 0 && len(b.Cosmetics) == 0 && len(b.Medals) == 0 && b.PassXP == 0:
 		return fmt.Errorf("%w: %s grants nothing", ErrInvalidBundle, b.ID)
 	}
 	if err := unique(b.ID, "cosmetic", b.Cosmetics, func(id string) bool {
@@ -63,6 +65,19 @@ func unique(bundle, kind string, ids []string, valid func(string) bool) error {
 			return fmt.Errorf("%w: %s lists %s %s twice", ErrInvalidBundle, bundle, kind, id)
 		}
 		seen[id] = true
+	}
+	return nil
+}
+
+func (b Bundle) ValidateFor(reason wallet.Reason) error {
+	if err := b.Validate(); err != nil {
+		return err
+	}
+	if b.Coins > 0 && !wallet.Moves(reason, wallet.Coin) {
+		return fmt.Errorf("%w: %s grants coins from a %s source", ErrInvalidBundle, b.ID, reason)
+	}
+	if b.Crystals > 0 && !wallet.Moves(reason, wallet.Crystal) {
+		return fmt.Errorf("%w: %s grants crystals from a %s source", ErrInvalidBundle, b.ID, reason)
 	}
 	return nil
 }

@@ -26,7 +26,12 @@ func (realClock) After(d time.Duration) <-chan time.Time { return time.After(d) 
 
 func roomServer(t *testing.T, mode rules.Mode, seed uint64) (*httptest.Server, *room.Room) {
 	t.Helper()
-	r := room.New(room.Options{Mode: mode, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), BotLevel: bot.Hard, Seed: seed, Clock: realClock{}})
+	return serveRoom(t, room.Options{Mode: mode, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), BotLevel: bot.Hard, Seed: seed, Clock: realClock{}})
+}
+
+func serveRoom(t *testing.T, options room.Options) (*httptest.Server, *room.Room) {
+	t.Helper()
+	r := room.New(options)
 	ctx, cancel := context.WithCancel(context.Background())
 	go r.Run(ctx)
 	t.Cleanup(func() { cancel(); <-r.Done() })
@@ -60,6 +65,7 @@ type player struct {
 	bytes    int
 	buffer   []byte
 	last     *pb.MatchView
+	nonce    uint64
 }
 
 func join(t *testing.T, server *httptest.Server, seat rules.Seat, resume bool) *player {
@@ -82,6 +88,7 @@ func join(t *testing.T, server *httptest.Server, seat rules.Seat, resume bool) *
 	if reply.GetServerHello().GetStatus() != pb.HelloStatus_HELLO_STATUS_ACCEPTED {
 		t.Fatalf("%s: hello answered %v", seat, reply)
 	}
+	p.nonce = reply.GetServerHello().GetSessionNonce()
 	if !resume {
 		p.write(&pb.Envelope{ProtocolVersion: ProtocolVersion, Payload: &pb.Envelope_LoadingIntent{LoadingIntent: &pb.LoadingIntent{Progress: 100, Ready: true}}})
 	}
@@ -90,6 +97,9 @@ func join(t *testing.T, server *httptest.Server, seat rules.Seat, resume bool) *
 
 func (p *player) write(frame *pb.Envelope) {
 	p.t.Helper()
+	if frame.GetClientHello() == nil {
+		frame.SessionNonce = p.nonce
+	}
 	data, err := proto.MarshalOptions{}.MarshalAppend(p.buffer[:0], frame)
 	if err != nil {
 		p.t.Fatal(err)
@@ -205,6 +215,26 @@ func TestPlayersFinishAMatchOverWebSocket(t *testing.T) {
 	}
 }
 
+func joinOnceTheSeatIsFree(t *testing.T, server *httptest.Server, seat rules.Seat) *player {
+	t.Helper()
+	for {
+		p := join(t, server, seat, false)
+		_, data, err := p.socket.Read(p.ctx)
+		if err == nil {
+			frame := &pb.Envelope{}
+			if err := proto.Unmarshal(data, frame); err != nil {
+				t.Fatal(err)
+			}
+			p.last = frame.GetMatchView()
+			return p
+		}
+		if websocket.CloseStatus(err) != websocket.StatusPolicyViolation || p.ctx.Err() != nil {
+			t.Fatalf("%s: joining again: %v", seat, err)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
 func TestSeatTakenAndResume(t *testing.T) {
 	server, _ := roomServer(t, rules.Mode1v1, 3)
 	first := join(t, server, rules.SeatX, false)
@@ -217,8 +247,8 @@ func TestSeatTakenAndResume(t *testing.T) {
 		t.Fatalf("second connection for the same seat: %v", err)
 	}
 	first.socket.Close(websocket.StatusNormalClosure, "")
-	resumed := join(t, server, rules.SeatX, false)
-	if view := resumed.read().GetMatchView(); view.GetState() != pb.MatchState_MATCH_STATE_LOADING {
+	resumed := joinOnceTheSeatIsFree(t, server, rules.SeatX)
+	if view := resumed.last; view.GetState() != pb.MatchState_MATCH_STATE_LOADING {
 		t.Fatalf("after leaving, joining again: %v", view)
 	}
 	other := join(t, server, rules.SeatY, false)
@@ -261,7 +291,11 @@ func TestViewMessageMirrorsTheRoomView(t *testing.T) {
 		Controllers:   [6]rules.Controller{5: rules.ControllerBot},
 		LegalMoves:    []rules.Move{{Tile: rules.MustTile(0, 4), End: rules.EndLeft}},
 		LastResult:    rules.HandResult{Pips: rules.TeamPoints{0, 23}, Winner: rules.TeamA, HasWinner: true, Awarded: rules.TeamPoints{25, 0}, CarryOver: 3, Scores: rules.TeamPoints{45, 20}, NextOpener: rules.TeamA},
+		LastEnd:       rules.HandEnd{Status: rules.HandDomino, Left: map[rules.Seat]rules.Hand{rules.SeatX: {}, rules.SeatY: {rules.MustTile(6, 6), rules.MustTile(5, 6)}}},
 		HasLastResult: true,
+		TargetScore:   365,
+		LockThreshold: 300,
+		Locked:        [2]bool{rules.TeamB: true},
 	}
 	board := rules.NewBoard(rules.MustTile(6, 6))
 	for _, move := range []rules.Move{{Tile: rules.MustTile(4, 6), End: rules.EndLeft}, {Tile: rules.MustTile(1, 6), End: rules.EndRight}, {Tile: rules.MustTile(3, 6), End: rules.EndTop}} {
@@ -269,9 +303,9 @@ func TestViewMessageMirrorsTheRoomView(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	view.Board = room.BoardView{Line: board.Line(), Top: board.Top(), Bottom: board.Bottom(), OpenEnds: board.OpenEnds()}
+	view.Board = room.BoardView{Line: board.Line(), Opening: board.OpeningIndex(), Top: board.Top(), Bottom: board.Bottom(), OpenEnds: board.OpenEnds()}
 	view.Board.Spinner, view.Board.HasSpinner = board.Spinner()
-	got := ViewMessage(view)
+	got := ViewMessage(view, true, true)
 	want := &pb.Envelope{}
 	if err := proto.Unmarshal(mustRead(t, "../../../proto/testdata/frames/match_view.bin"), want); err != nil {
 		t.Fatal(err)
@@ -279,12 +313,50 @@ func TestViewMessageMirrorsTheRoomView(t *testing.T) {
 	if !proto.Equal(got, want.GetMatchView()) {
 		t.Fatalf("view message differs\n got %v\nwant %v", got, want.GetMatchView())
 	}
-	waiting := ViewMessage(room.View{State: room.StateWaiting, Seat: rules.SeatNorth, Mode: rules.Mode2v2})
+	view.Roster = []room.Player{{Seat: rules.SeatX, Nickname: "Ayla"}}
+	later := ViewMessage(view, false, false)
+	if later.GetTable() != "" || later.GetRoster() != nil || later.GetLastResult().GetLeft() != nil || !proto.Equal(later.GetBoard(), got.GetBoard()) || len(later.GetHand()) != 3 {
+		t.Fatalf("a later view repeats the table, roster or tiles left, or drops play state: %v", later)
+	}
+	if later.GetLastResult().GetEnding() != pb.HandEnding_HAND_ENDING_DOMINO || later.GetTargetScore() != 365 {
+		t.Fatalf("a later view drops the hand ending or target score: %v", later)
+	}
+	waiting := ViewMessage(room.View{State: room.StateWaiting, Seat: rules.SeatNorth, Mode: rules.Mode2v2}, true, true)
 	if err := proto.Unmarshal(mustRead(t, "../../../proto/testdata/frames/match_view_waiting.bin"), want); err != nil {
 		t.Fatal(err)
 	}
 	if !proto.Equal(waiting, want.GetMatchView()) {
 		t.Fatalf("waiting view differs\n got %v\nwant %v", waiting, want.GetMatchView())
+	}
+}
+
+func TestViewMessageShowsDisconnectsAndTimeouts(t *testing.T) {
+	view := room.View{
+		State:        room.StatePlaying,
+		Seat:         rules.SeatNorth,
+		Mode:         rules.Mode2v2,
+		Disconnected: [6]bool{rules.SeatEast: true},
+		Timeouts:     [6]int{rules.SeatEast: 2},
+		AfkTimeouts:  3,
+	}
+	got := ViewMessage(view, false, false)
+	if got.GetAfkConsecutiveTimeouts() != 3 {
+		t.Fatalf("afk mark %d", got.GetAfkConsecutiveTimeouts())
+	}
+	for _, seat := range got.GetSeats() {
+		east := seat.GetSeat() == pb.Seat_SEAT_EAST
+		if seat.GetDisconnected() != east || (seat.GetConsecutiveTimeouts() == 2) != east {
+			t.Fatalf("seat %v: disconnected %v, timeouts %d", seat.GetSeat(), seat.GetDisconnected(), seat.GetConsecutiveTimeouts())
+		}
+	}
+}
+
+func TestViewMessageCarriesTheTurnLengthAndWarningInEveryState(t *testing.T) {
+	for _, state := range []room.State{room.StateWaiting, room.StateLoading, room.StatePlaying} {
+		got := ViewMessage(room.View{State: state, Seat: rules.SeatX, Mode: rules.Mode1v1, TurnSeconds: 20, TurnWarning: 5}, false, false)
+		if got.GetTurnSeconds() != 20 || got.GetTurnWarningSeconds() != 5 {
+			t.Fatalf("state %v: turn length %d, warning %d", state, got.GetTurnSeconds(), got.GetTurnWarningSeconds())
+		}
 	}
 }
 
@@ -323,6 +395,33 @@ func TestRoomSessionDeliversRejectionsAsErrors(t *testing.T) {
 	}
 }
 
+func TestRoomSessionSendsTheTilesLeftOncePerHandEnd(t *testing.T) {
+	_, r := roomServer(t, rules.Mode1v1, 1)
+	conn := &Conn{queue: make(chan *pb.Envelope, 8), closed: make(chan struct{})}
+	session := JoinRoom(r, rules.SeatX, conn)
+	ended := func(hands int) room.View {
+		return room.View{
+			State:         room.StateOpening,
+			Mode:          rules.Mode1v1,
+			HandsPlayed:   hands,
+			HasLastResult: true,
+			LastEnd:       rules.HandEnd{Status: rules.HandBlocked, Left: map[rules.Seat]rules.Hand{rules.SeatX: {rules.MustTile(1, 2)}, rules.SeatY: {rules.MustTile(3, 4)}}},
+		}
+	}
+	left := func() int { return len((<-conn.queue).GetMatchView().GetLastResult().GetLeft()) }
+	session.Deliver(room.Message{View: ended(1)})
+	session.Deliver(room.Message{View: ended(1)})
+	session.Deliver(room.Message{View: ended(2)})
+	if first, again, next := left(), left(), left(); first != 2 || again != 0 || next != 2 {
+		t.Fatalf("tiles left sent for %d, %d and %d seats; want 2, 0 and 2", first, again, next)
+	}
+	fresh := JoinRoom(r, rules.SeatX, conn)
+	fresh.Deliver(room.Message{View: ended(2)})
+	if got := left(); got != 2 {
+		t.Fatalf("a new connection got the tiles left of %d seats, want 2", got)
+	}
+}
+
 func mustRead(t *testing.T, path string) []byte {
 	t.Helper()
 	data, err := os.ReadFile(path)
@@ -330,4 +429,60 @@ func mustRead(t *testing.T, path string) []byte {
 		t.Fatal(err)
 	}
 	return data
+}
+
+func TestAnEmojiReachesTheOtherSeatOverWebSocket(t *testing.T) {
+	server, _ := serveRoom(t, room.Options{
+		Mode: rules.Mode1v1, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), BotLevel: bot.Hard, Seed: 7, Clock: realClock{},
+		Roster: []room.Player{{Seat: rules.SeatX, Emoji: []string{"emoji.laugh"}}, {Seat: rules.SeatY}},
+		Emoji:  room.DefaultEmojiLimit(),
+	})
+	x := join(t, server, rules.SeatX, false)
+	y := join(t, server, rules.SeatY, false)
+	for _, seat := range []*player{x, y} {
+		for seat.read().GetMatchView() == nil {
+		}
+	}
+	sent := time.Now()
+	x.write(&pb.Envelope{ProtocolVersion: ProtocolVersion, Payload: &pb.Envelope_EmojiIntent{EmojiIntent: &pb.EmojiIntent{ItemId: "emoji.laugh"}}})
+	for {
+		frame := y.read()
+		if shown := frame.GetEmojiShown(); shown != nil {
+			if shown.GetSeat() != pb.Seat_SEAT_X || shown.GetItemId() != "emoji.laugh" {
+				t.Fatalf("shown %v", shown)
+			}
+			t.Logf("emoji relayed in %v", time.Since(sent))
+			return
+		}
+	}
+}
+
+func TestAQuickMessageReachesTheOtherSeatOverWebSocket(t *testing.T) {
+	server, _ := serveRoom(t, room.Options{
+		Mode: rules.Mode1v1, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), BotLevel: bot.Hard, Seed: 7, Clock: realClock{},
+		Roster: []room.Player{{Seat: rules.SeatX}, {Seat: rules.SeatY}},
+		Emoji:  room.DefaultEmojiLimit(), QuickMessages: func(key string) bool { return key == "quick.hello" },
+	})
+	x := join(t, server, rules.SeatX, false)
+	y := join(t, server, rules.SeatY, false)
+	for _, seat := range []*player{x, y} {
+		for seat.read().GetMatchView() == nil {
+		}
+	}
+	x.write(&pb.Envelope{ProtocolVersion: ProtocolVersion, Payload: &pb.Envelope_QuickMessageIntent{QuickMessageIntent: &pb.QuickMessageIntent{Key: "quick.hello"}}})
+	for {
+		if shown := y.read().GetQuickMessageShown(); shown != nil {
+			if shown.GetSeat() != pb.Seat_SEAT_X || shown.GetKey() != "quick.hello" || shown.GetTeamOnly() {
+				t.Fatalf("shown %v", shown)
+			}
+			return
+		}
+	}
+}
+
+func TestTheRosterCarriesEachSeatsTileSkin(t *testing.T) {
+	roster := rosterMessage([]room.Player{{Seat: rules.SeatX, Nickname: "Ayla", Tile: "tile.storm_sapphire"}, {Seat: rules.SeatY, Bot: true}})
+	if len(roster) != 2 || roster[0].GetTile() != "tile.storm_sapphire" || roster[1].GetTile() != "" || !roster[1].GetBot() {
+		t.Fatalf("roster %v", roster)
+	}
 }

@@ -2,6 +2,7 @@ package shop
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -32,7 +33,7 @@ func example(t *testing.T) *Catalog {
 
 func TestTheExampleCatalogParses(t *testing.T) {
 	catalog := example(t)
-	if len(catalog.Offers) != 6 || len(catalog.Rotations) != 2 {
+	if len(catalog.Offers) != 10 || len(catalog.Rotations) != 2 {
 		t.Fatalf("parsed %d offers and %d rotations", len(catalog.Offers), len(catalog.Rotations))
 	}
 	fox, ok := catalog.Offer("offer.avatar_comet_fox")
@@ -40,8 +41,17 @@ func TestTheExampleCatalogParses(t *testing.T) {
 		t.Fatalf("fox offer %+v", fox)
 	}
 	starter, _ := catalog.Offer("offer.starter")
-	if starter.ProductID != "offer_starter" || !starter.Eligibility.FirstPurchaseOnly || starter.Eligibility.MaxAccountAgeHours != 168 || starter.Bundle.Coins != 1500 {
+	if starter.ProductID != "offer_starter" || !starter.Eligibility.FirstPurchaseOnly || starter.Eligibility.MaxAccountAgeHours != 168 || starter.Bundle.Coins != 0 || starter.Bundle.Crystals != 300 {
 		t.Fatalf("starter offer %+v", starter)
+	}
+	for i, crystals := range []int64{100, 550, 1200, 2600, 7000} {
+		pack, ok := catalog.Offer(fmt.Sprintf("offer.crystals_tier%d", i+1))
+		if !ok || pack.Kind != KindCrystals || pack.Section != SectionCrystals || pack.ProductID != fmt.Sprintf("crystals_tier%d", i+1) || pack.Bundle.Crystals != crystals || pack.Bundle.Coins != 0 {
+			t.Fatalf("crystal pack %d %+v", i+1, pack)
+		}
+	}
+	if catalog.FirstPurchase.Crystals != 100 || catalog.FirstPurchase.Coins != 0 {
+		t.Fatalf("first purchase %+v", catalog.FirstPurchase)
 	}
 	if _, ok := catalog.Offer("offer.missing"); ok {
 		t.Fatal("unknown offer found")
@@ -76,7 +86,7 @@ func TestPeriodsStartAtTheResetHour(t *testing.T) {
 const twoDaily = `{"schema":1,"offers":[
 {"id":"offer.a","kind":"cosmetic","section":"daily_rotation","priceCoins":100,"bundle":{"id":"bundle.a","revision":1,"cosmetics":["avatar.a"]},"window":{"start":"2026-01-01T00:00:00Z"},"limitPerAccount":1,"nameKey":"a"},
 {"id":"offer.b","kind":"cosmetic","section":"daily_rotation","priceCoins":100,"bundle":{"id":"bundle.b","revision":1,"cosmetics":["avatar.b"]},"window":{"start":"2026-01-01T00:00:00Z","end":"2026-11-03T00:00:00Z"},"limitPerAccount":1,"nameKey":"b"},
-{"id":"offer.c","kind":"cosmetic","section":"featured","priceCoins":100,"bundle":{"id":"bundle.c","revision":1,"cosmetics":["avatar.c"]},"window":{"start":"2026-11-01T00:00:00Z","end":"2026-11-02T00:00:00Z"},"limitPerAccount":1,"nameKey":"c"}],
+{"id":"offer.c","kind":"cosmetic","section":"featured","priceCrystals":100,"bundle":{"id":"bundle.c","revision":1,"cosmetics":["avatar.c"]},"window":{"start":"2026-11-01T00:00:00Z","end":"2026-11-02T00:00:00Z"},"limitPerAccount":1,"nameKey":"c"}],
 "rotations":[
 {"period":"daily","start":"2026-11-01T00:00:00Z","offers":["offer.b"]},
 {"period":"daily","start":"2026-10-01T00:00:00Z","offers":["offer.a"]}]}`
@@ -156,37 +166,45 @@ func TestInvalidCatalogsAreRefused(t *testing.T) {
 		config Config
 		reason string
 	}{
-		"not json":        {`{`, DefaultConfig(), "invalid catalog"},
-		"schema":          {`{"schema":2,"offers":[]}`, DefaultConfig(), "schema 2"},
-		"id":              {offerJSON(`"id":"avatar_x","kind":"cosmetic","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "offer id"},
-		"kind":            {offerJSON(`"id":"offer.x","kind":"hat","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "kind"},
-		"section":         {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"hidden","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "section"},
-		"name key":        {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1`), DefaultConfig(), "nameKey"},
-		"both prices":     {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","priceCoins":1,"productId":"p","bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "never both"},
-		"no price":        {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "never both"},
-		"product id":      {offerJSON(`"id":"offer.x","kind":"coins","section":"coins","productId":"Coins-1","bundle":{"id":"bundle.x","revision":1,"coins":5},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "product id"},
-		"no window":       {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "window start"},
-		"window order":    {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},"window":{"start":"2026-01-02T00:00:00Z","end":"2026-01-01T00:00:00Z"},"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "ends before"},
-		"reference":       {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","priceCoins":100,"referencePriceCoins":100,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "reference price"},
-		"bundle":          {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":0,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "revision"},
-		"medal":           {offerJSON(`"id":"offer.x","kind":"bundle","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"],"medals":["medal.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "medal"},
-		"coins for coins": {offerJSON(`"id":"offer.x","kind":"bundle","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"coins":5,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "grants no coins"},
-		"two cosmetics":   {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x","avatar.y"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "exactly one"},
-		"cosmetic limit":  {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "one per account"},
-		"empty bundle":    {offerJSON(`"id":"offer.x","kind":"bundle","section":"featured","productId":"p","bundle":{"id":"bundle.x","revision":1,"coins":5},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "at least one"},
-		"coins kind":      {offerJSON(`"id":"offer.x","kind":"coins","section":"coins","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "coin pack"},
-		"rotation price":  {offerJSON(`"id":"offer.x","kind":"bundle","section":"daily_rotation","productId":"p","bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "paid with coins"},
-		"coins section":   {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"coins","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "coin packs"},
-		"pass section":    {offerJSON(`"id":"offer.x","kind":"coins","section":"pass","productId":"p","bundle":{"id":"bundle.x","revision":1,"coins":5},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "pass products"},
-		"duplicate":       {strings.Replace(twoDaily, `"id":"offer.b"`, `"id":"offer.a"`, 1), DefaultConfig(), "listed twice"},
-		"rotation period": {strings.Replace(twoDaily, `"period":"daily","start":"2026-11-01`, `"period":"hourly","start":"2026-11-01`, 1), DefaultConfig(), "rotation period"},
-		"rotation start":  {strings.Replace(twoDaily, `"start":"2026-11-01T00:00:00Z","offers"`, `"start":"2026-11-01T00:30:00Z","offers"`, 1), DefaultConfig(), "not a period start"},
-		"rotation slots":  {strings.Replace(twoDaily, `"offers":["offer.b"]`, `"offers":["offer.b","offer.a"]`, 1), Config{DailySlots: 1, WeeklySlots: 1}, "slots 1 to 1"},
-		"rotation twice":  {strings.Replace(twoDaily, `"start":"2026-10-01T00:00:00Z","offers":["offer.a"]`, `"start":"2026-11-01T00:00:00Z","offers":["offer.a"]`, 1), DefaultConfig(), "listed twice"},
-		"rotation offer":  {strings.Replace(twoDaily, `"offers":["offer.b"]`, `"offers":["offer.z"]`, 1), DefaultConfig(), "unknown offer"},
-		"rotation sect":   {strings.Replace(twoDaily, `"offers":["offer.b"]`, `"offers":["offer.c"]`, 1), DefaultConfig(), "of section featured"},
-		"rotation dup":    {strings.Replace(twoDaily, `"offers":["offer.b"]`, `"offers":["offer.b","offer.b"]`, 1), DefaultConfig(), "twice"},
-		"config":          {twoDaily, Config{DailySlots: 0, WeeklySlots: 2}, "slots"},
+		"not json":              {`{`, DefaultConfig(), "invalid catalog"},
+		"schema":                {`{"schema":2,"offers":[]}`, DefaultConfig(), "schema 2"},
+		"id":                    {offerJSON(`"id":"avatar_x","kind":"cosmetic","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "offer id"},
+		"kind":                  {offerJSON(`"id":"offer.x","kind":"hat","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "kind"},
+		"section":               {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"hidden","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "section"},
+		"name key":              {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1`), DefaultConfig(), "nameKey"},
+		"both prices":           {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCoins":1,"productId":"p","bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "exactly one of"},
+		"no price":              {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "exactly one of"},
+		"product id":            {offerJSON(`"id":"offer.x","kind":"crystals","section":"crystals","productId":"Crystals-1","bundle":{"id":"bundle.x","revision":1,"crystals":5},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "product id"},
+		"no window":             {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "window start"},
+		"window order":          {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},"window":{"start":"2026-01-02T00:00:00Z","end":"2026-01-01T00:00:00Z"},"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "ends before"},
+		"reference":             {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCoins":100,"referencePriceCoins":100,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "reference price"},
+		"bundle":                {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":0,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "revision"},
+		"medal":                 {offerJSON(`"id":"offer.x","kind":"bundle","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"],"medals":["medal.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "medal"},
+		"coins for coins":       {offerJSON(`"id":"offer.x","kind":"bundle","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"coins":5,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "grants no currency"},
+		"crystals for coins":    {offerJSON(`"id":"offer.x","kind":"bundle","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"crystals":5,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "grants no currency"},
+		"two cosmetics":         {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x","avatar.y"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "exactly one"},
+		"cosmetic limit":        {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "one per account"},
+		"empty bundle":          {offerJSON(`"id":"offer.x","kind":"bundle","section":"featured","productId":"p","bundle":{"id":"bundle.x","revision":1,"crystals":5},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "at least one"},
+		"crystals kind":         {offerJSON(`"id":"offer.x","kind":"crystals","section":"crystals","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "crystal pack"},
+		"rotation price":        {offerJSON(`"id":"offer.x","kind":"bundle","section":"daily_rotation","productId":"p","bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "paid with coins"},
+		"crystals section":      {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"crystals","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "crystal packs"},
+		"pass section":          {offerJSON(`"id":"offer.x","kind":"crystals","section":"pass","productId":"p","bundle":{"id":"bundle.x","revision":1,"crystals":5},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "pass products"},
+		"two in-game prices":    {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCoins":1,"priceCrystals":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "exactly one of"},
+		"reference currency":    {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCrystals":10,"referencePriceCoins":500,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "currency of the price"},
+		"crystal reference":     {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"event","priceCrystals":10,"referencePriceCrystals":10,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "above the price"},
+		"crystals for crystals": {offerJSON(`"id":"offer.x","kind":"bundle","section":"event","priceCrystals":1,"bundle":{"id":"bundle.x","revision":1,"crystals":5,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "grants no currency"},
+		"coins for money":       {offerJSON(`"id":"offer.x","kind":"bundle","section":"featured","productId":"p","bundle":{"id":"bundle.x","revision":1,"coins":5,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "grants coins from a purchase source"},
+		"featured coins":        {offerJSON(`"id":"offer.x","kind":"cosmetic","section":"featured","priceCoins":1,"bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"limitPerAccount":1,"nameKey":"k"`), DefaultConfig(), "paid with crystals or a store product"},
+		"event store product":   {offerJSON(`"id":"offer.x","kind":"bundle","section":"event","productId":"p","bundle":{"id":"bundle.x","revision":1,"cosmetics":["avatar.x"]},` + okWindow + `,"nameKey":"k"`), DefaultConfig(), "paid with coins or crystals"},
+		"duplicate":             {strings.Replace(twoDaily, `"id":"offer.b"`, `"id":"offer.a"`, 1), DefaultConfig(), "listed twice"},
+		"rotation period":       {strings.Replace(twoDaily, `"period":"daily","start":"2026-11-01`, `"period":"hourly","start":"2026-11-01`, 1), DefaultConfig(), "rotation period"},
+		"rotation start":        {strings.Replace(twoDaily, `"start":"2026-11-01T00:00:00Z","offers"`, `"start":"2026-11-01T00:30:00Z","offers"`, 1), DefaultConfig(), "not a period start"},
+		"rotation slots":        {strings.Replace(twoDaily, `"offers":["offer.b"]`, `"offers":["offer.b","offer.a"]`, 1), Config{DailySlots: 1, WeeklySlots: 1, ReferencePriceDays: 1}, "slots 1 to 1"},
+		"rotation twice":        {strings.Replace(twoDaily, `"start":"2026-10-01T00:00:00Z","offers":["offer.a"]`, `"start":"2026-11-01T00:00:00Z","offers":["offer.a"]`, 1), DefaultConfig(), "listed twice"},
+		"rotation offer":        {strings.Replace(twoDaily, `"offers":["offer.b"]`, `"offers":["offer.z"]`, 1), DefaultConfig(), "unknown offer"},
+		"rotation sect":         {strings.Replace(twoDaily, `"offers":["offer.b"]`, `"offers":["offer.c"]`, 1), DefaultConfig(), "of section featured"},
+		"rotation dup":          {strings.Replace(twoDaily, `"offers":["offer.b"]`, `"offers":["offer.b","offer.b"]`, 1), DefaultConfig(), "twice"},
+		"config":                {twoDaily, Config{DailySlots: 0, WeeklySlots: 2}, "slots"},
 	}
 	for name, c := range cases {
 		_, err := Parse([]byte(c.raw), c.config)
@@ -199,6 +217,9 @@ func TestInvalidCatalogsAreRefused(t *testing.T) {
 	}
 	if err := (Config{DailySlots: 4, WeeklySlots: 2, ResetHourUTC: 24}).Validate(); !errors.Is(err, ErrInvalidConfig) {
 		t.Fatalf("reset hour 24: %v", err)
+	}
+	if err := (Config{DailySlots: 4, WeeklySlots: 2}).Validate(); !errors.Is(err, ErrInvalidConfig) {
+		t.Fatalf("no reference price window: %v", err)
 	}
 	if _, err := Parse([]byte(offerJSON(`"id":"offer.x","kind":"pass","section":"pass","productId":"pass_premium",`+okWindow+`,"nameKey":"k"`)), DefaultConfig()); err != nil {
 		t.Fatalf("pass offer without a bundle: %v", err)

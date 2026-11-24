@@ -32,7 +32,8 @@
         { "end": "BOARD_END_LEFT", "value": 4 },
         { "end": "BOARD_END_RIGHT", "value": 1 },
         { "end": "BOARD_END_TOP", "value": 3 }
-      ]
+      ],
+      "openingIndex": 1
     },
     "current": "SEAT_X",
     "openingTeam": "TEAM_B",
@@ -47,7 +48,15 @@
       "awarded": { "teamA": 25, "teamB": 0 },
       "carryOver": 3,
       "scores": { "teamA": 45, "teamB": 20 },
-      "nextOpener": "TEAM_A"
-    }
+      "nextOpener": "TEAM_A",
+      "ending": "HAND_ENDING_DOMINO",
+      "left": [
+        { "seat": "SEAT_X" },
+        { "seat": "SEAT_Y", "tiles": [{ "low": 6, "high": 6 }, { "low": 5, "high": 6 }] }
+      ]
+    },
+    "targetScore": 365,
+    "handPointsLockThreshold": 300,
+    "lockedTeams": ["TEAM_B"]
   }
 }

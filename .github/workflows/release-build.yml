@@ -1,0 +1,193 @@
+name: Release build
+
+on:
+  push:
+    tags:
+      - 'client-v*'
+  pull_request:
+    paths:
+      - 'client/**'
+      - 'tools/install-size/**'
+      - '.github/workflows/release-build.yml'
+  workflow_dispatch:
+    inputs:
+      catalog_version:
+        description: Catalog version this build carries, docs/content-delivery.md 2
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-build-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  BUNDLETOOL_VERSION: 1.18.3
+  BUNDLETOOL_SHA256: a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
+  INSTALL_SIZE_LIMIT_BYTES: 150000000
+  AAB: build/Android/Android.aab
+  REMOTE: client/ServerData/Android
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Resolve the release
+        id: release
+        env:
+          INPUT_CATALOG_VERSION: ${{ inputs.catalog_version || format('pr-{0}', github.event.pull_request.number) }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          APPLICATION_ID: ${{ vars.ANDROID_APPLICATION_ID }}
+          SERVER_URL: ${{ vars.CLIENT_SERVER_URL }}
+          HTTP_TIMEOUT_SECONDS: ${{ vars.CLIENT_HTTP_TIMEOUT_SECONDS }}
+          CRASH_REPORTING: ${{ secrets.CLIENT_SENTRY_DSN != '' }}
+        run: |
+          parameters="-buildNumber $BUILD_NUMBER"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            version="${GITHUB_REF_NAME#client-v}"
+            [[ "$version" =~ ^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$ ]] || { echo "the tag must be client-v<major>.<minor>.<patch>, got $GITHUB_REF_NAME"; exit 1; }
+            [[ "$APPLICATION_ID" =~ ^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$ ]] || { echo "set the repository variable ANDROID_APPLICATION_ID to the Play package name"; exit 1; }
+            [[ "$SERVER_URL" =~ ^https://[^[:space:]?#]+$ ]] || { echo "set the repository variable CLIENT_SERVER_URL to the https server URL"; exit 1; }
+            [[ "$HTTP_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]] || { echo "set the repository variable CLIENT_HTTP_TIMEOUT_SECONDS to the HTTP timeout in whole seconds"; exit 1; }
+            catalog="$version-$BUILD_NUMBER"
+            parameters="$parameters -appVersion $version -applicationId $APPLICATION_ID -androidSigning Signing/signing.json -serverUrl $SERVER_URL -httpTimeoutSeconds $HTTP_TIMEOUT_SECONDS"
+            if [ "$CRASH_REPORTING" = true ]; then
+              parameters="$parameters -crashReporting Signing/crash-reporting.json"
+              echo "crash_reporting=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "::warning::CLIENT_SENTRY_DSN is not set, so this build sends no crash reports (docs/environments.md 2.5)"
+            fi
+          else
+            catalog="$INPUT_CATALOG_VERSION"
+          fi
+          [[ "$catalog" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || { echo "catalog_version must be 1 to 64 letters, digits, '.', '_' or '-' starting with a letter or digit"; exit 1; }
+          echo "catalog=$catalog" >> "$GITHUB_OUTPUT"
+          echo "parameters=$parameters" >> "$GITHUB_OUTPUT"
+          echo "Release catalog=$catalog build=$BUILD_NUMBER ref=$GITHUB_REF_NAME" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+      - uses: actions/cache@v4
+        with:
+          path: client/Library
+          key: unity-library-android-release-${{ hashFiles('client/Packages/**', 'client/ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: unity-library-android-release-
+      - name: Write the Android signing file
+        if: github.ref_type == 'tag'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          ANDROID_KEYALIAS_NAME: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+          ANDROID_KEYALIAS_PASS: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+        run: |
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASS ANDROID_KEYALIAS_NAME ANDROID_KEYALIAS_PASS; do
+            [ -n "${!name}" ] || { echo "the secret $name is missing"; exit 1; }
+          done
+          mkdir -p client/Signing
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > client/Signing/release.keystore
+          jq -n --arg keystore Signing/release.keystore --arg keystorePass "$ANDROID_KEYSTORE_PASS" --arg keyAlias "$ANDROID_KEYALIAS_NAME" --arg keyAliasPass "$ANDROID_KEYALIAS_PASS" \
+            '{keystore: $keystore, keystorePass: $keystorePass, keyAlias: $keyAlias, keyAliasPass: $keyAliasPass}' > client/Signing/signing.json
+      - name: Write the crash reporting file
+        if: steps.release.outputs.crash_reporting == 'true'
+        env:
+          CLIENT_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
+          CLIENT_SENTRY_ENVIRONMENT: ${{ vars.CLIENT_SENTRY_ENVIRONMENT }}
+        run: |
+          mkdir -p client/Signing
+          jq -n --arg dsn "$CLIENT_SENTRY_DSN" --arg environment "$CLIENT_SENTRY_ENVIRONMENT" '{dsn: $dsn, environment: $environment}' > client/Signing/crash-reporting.json
+      - uses: game-ci/unity-builder@v6
+        continue-on-error: true
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: client
+          targetPlatform: Android
+          androidExportType: androidAppBundle
+          buildMethod: HypeDomino.Editor.ReleaseBuild.BuildAndroid
+          customParameters: -catalogVersion ${{ steps.release.outputs.catalog }} ${{ steps.release.outputs.parameters }}
+          versioning: None
+          allowDirtyBuild: true
+      - name: Remove the Android signing file
+        if: always()
+        run: sudo rm -rf client/Signing
+      - name: Fail when the build did not finish
+        env:
+          CATALOG_VERSION: ${{ steps.release.outputs.catalog }}
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" client build
+          [ -f client/Logs/editor-method-succeeded ] || { echo "the release build did not finish; read the Unity log above"; exit 1; }
+          [ -f "$AAB" ] || { echo "$AAB is missing"; exit 1; }
+          [ -f "$REMOTE/catalog_$CATALOG_VERSION.bin" ] || { echo "the remote catalog is missing"; exit 1; }
+          ls -l "$AAB" "$REMOTE"
+      - name: Install bundletool
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/bundletool.jar" "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          echo "${BUNDLETOOL_SHA256}  $RUNNER_TEMP/bundletool.jar" | sha256sum -c -
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Measure the install size
+        id: size
+        run: |
+          sizes=()
+          for tier in low mid high; do
+            java -jar "$RUNNER_TEMP/bundletool.jar" build-apks --bundle="$AAB" --output="$RUNNER_TEMP/$tier.apks" --device-spec="tools/install-size/specs/$tier.json" --overwrite
+            java -jar "$RUNNER_TEMP/bundletool.jar" get-size total --apks="$RUNNER_TEMP/$tier.apks" > "$RUNNER_TEMP/$tier.csv"
+            sizes+=("$tier=$RUNNER_TEMP/$tier.csv")
+          done
+          status=0
+          node tools/install-size/install-size.mjs --limit-bytes "$INSTALL_SIZE_LIMIT_BYTES" --remote "$REMOTE" "${sizes[@]}" > install-size.md || status=$?
+          cat install-size.md | tee -a "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+      - uses: actions/upload-artifact@v4
+        if: success() || steps.size.outcome == 'failure'
+        with:
+          name: android-release-${{ steps.release.outputs.catalog }}
+          path: |
+            ${{ env.AAB }}
+            install-size.md
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: success() || steps.size.outcome == 'failure'
+        with:
+          name: content-android-${{ steps.release.outputs.catalog }}
+          path: ${{ env.REMOTE }}
+          if-no-files-found: error
+          retention-days: 14
+      - name: Set up Go for the content upload
+        if: github.ref_type == 'tag' && vars.CONTENT_STORE_URL != ''
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: Upload the remote folder
+        if: github.ref_type == 'tag' && vars.CONTENT_STORE_URL != ''
+        working-directory: server
+        env:
+          HD_CONTENT_STORE_URL: ${{ vars.CONTENT_STORE_URL }}
+          HD_CONTENT_STORE_REGION: ${{ vars.CONTENT_STORE_REGION }}
+          HD_CONTENT_STORE_ACCESS_KEY: ${{ secrets.CONTENT_STORE_ACCESS_KEY }}
+          HD_CONTENT_STORE_SECRET_KEY: ${{ secrets.CONTENT_STORE_SECRET_KEY }}
+          CONTENT_ENVIRONMENT: ${{ vars.CONTENT_ENVIRONMENT }}
+          CATALOG_VERSION: ${{ steps.release.outputs.catalog }}
+        run: go run ./cmd/content-publish -dir "../$REMOTE" -environment "$CONTENT_ENVIRONMENT" -platform Android -catalog-version "$CATALOG_VERSION"
+      - name: Note that the CDN upload is not configured
+        if: github.ref_type == 'tag' && vars.CONTENT_STORE_URL == ''
+        run: echo "::warning::CONTENT_STORE_URL is not set, so the remote content was not uploaded to the CDN bucket (docs/content-delivery.md 9)"
+      - name: Upload to the Play internal testing track
+        if: github.ref_type == 'tag'
+        uses: r0adkll/upload-google-play@v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ vars.ANDROID_APPLICATION_ID }}
+          releaseFiles: ${{ env.AAB }}
+          track: internal
+          status: completed

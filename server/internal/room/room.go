@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/bot"
+	"github.com/Alievs-corp/hypedomino/server/internal/panics"
 	"github.com/Alievs-corp/hypedomino/server/internal/replay"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
@@ -59,21 +61,49 @@ type Message struct {
 	Rejected bool
 	Sequence uint64
 	Reason   error
+	Emoji    *Emoji
+	Quick    *QuickMessage
+}
+
+type QuickMessage struct {
+	Seat     rules.Seat
+	Key      string
+	TeamOnly bool
+}
+
+type Emoji struct {
+	Seat rules.Seat
+	Item string
+}
+
+type EmojiLimit struct {
+	Burst  int
+	Refill time.Duration
+}
+
+func DefaultEmojiLimit() EmojiLimit {
+	return EmojiLimit{Burst: 3, Refill: 2 * time.Second}
 }
 
 type Sink interface {
 	Deliver(Message)
 }
 
+type MoveObserver interface {
+	Observe(elapsed time.Duration)
+}
+
 type Player struct {
 	Seat      rules.Seat
 	Nickname  string
-	Character string
 	Frame     string
 	Avatar    string
+	Tile      string
 	RankLabel string
 	Emblems   []string
+	Emoji     []string
 	Bot       bool
+	Muted     bool
 }
 
 type Options struct {
@@ -88,6 +118,9 @@ type Options struct {
 	Clock          Clock
 	Roster         []Player
 	ReconnectGrace time.Duration
+	Moves          MoveObserver
+	Emoji          EmojiLimit
+	QuickMessages  func(key string) bool
 }
 
 type seatState struct {
@@ -96,6 +129,27 @@ type seatState struct {
 	loading     int
 	ready       bool
 	absentSince time.Time
+	emoji       EmojiBucket
+}
+
+type EmojiBucket struct {
+	tokens float64
+	at     time.Time
+}
+
+func (b *EmojiBucket) Spend(limit EmojiLimit, now time.Time) bool {
+	switch {
+	case b.at.IsZero():
+		b.tokens = float64(limit.Burst)
+	case limit.Refill > 0:
+		b.tokens = min(float64(limit.Burst), b.tokens+float64(now.Sub(b.at))/float64(limit.Refill))
+	}
+	b.at = now
+	if b.tokens < 1 {
+		return false
+	}
+	b.tokens--
+	return true
 }
 
 type turnKey struct {
@@ -125,6 +179,9 @@ type Room struct {
 }
 
 func New(options Options) *Room {
+	if options.Emoji == (EmojiLimit{}) {
+		options.Emoji = DefaultEmojiLimit()
+	}
 	r := &Room{
 		options:  options,
 		commands: make(chan command, 64),
@@ -143,6 +200,11 @@ func New(options Options) *Room {
 
 func (r *Room) Run(ctx context.Context) {
 	defer close(r.done)
+	defer func() {
+		if panics.Caught("room", recover(), "kind", r.options.Kind, "mode", r.options.Mode) {
+			r.close()
+		}
+	}()
 	r.open()
 	for {
 		select {
@@ -167,6 +229,12 @@ func (r *Room) Finished() <-chan struct{} {
 func (r *Room) end() {
 	if !r.ended {
 		r.settleAbsences()
+	}
+	r.close()
+}
+
+func (r *Room) close() {
+	if !r.ended {
 		r.ended = true
 		close(r.finished)
 	}
@@ -217,7 +285,18 @@ func (r *Room) Disconnect(seat rules.Seat, sink Sink) {
 }
 
 func (r *Room) Intent(seat rules.Seat, sequence uint64, intent replay.Intent) {
-	r.enqueue(func(r *Room) { r.intent(seat, sequence, intent) })
+	received := r.options.Clock.Now()
+	r.enqueue(func(r *Room) { r.intent(seat, sequence, intent, received) })
+}
+
+func (r *Room) Emoji(seat rules.Seat, item string) {
+	received := r.options.Clock.Now()
+	r.enqueue(func(r *Room) { r.emoji(seat, item, received) })
+}
+
+func (r *Room) QuickMessage(seat rules.Seat, key string, teamOnly bool) {
+	received := r.options.Clock.Now()
+	r.enqueue(func(r *Room) { r.quickMessage(seat, key, teamOnly, received) })
 }
 
 func (r *Room) Snapshot(seat rules.Seat, reply chan<- View) {
@@ -232,6 +311,19 @@ func (r *Room) Record(reply chan<- replay.Record) {
 		}
 		reply <- r.recorder.Record()
 	})
+}
+
+func (r *Room) FinalRecord() (replay.Record, bool) {
+	<-r.done
+	if r.recorder == nil {
+		return replay.Record{}, false
+	}
+	return r.recorder.Record(), true
+}
+
+func (r *Room) FinalPresence(seat rules.Seat) rules.PresenceReport {
+	<-r.done
+	return r.presence.Report(seat)
 }
 
 func (r *Room) join(seat rules.Seat, sink Sink) {
@@ -296,7 +388,7 @@ func (r *Room) leave(seat rules.Seat) {
 	r.settle()
 }
 
-func (r *Room) intent(seat rules.Seat, sequence uint64, intent replay.Intent) {
+func (r *Room) intent(seat rules.Seat, sequence uint64, intent replay.Intent, received time.Time) {
 	if err := r.admit(seat, sequence); err != nil {
 		if !errors.Is(err, ErrStaleSequence) {
 			r.reject(seat, sequence, err)
@@ -311,6 +403,50 @@ func (r *Room) intent(seat rules.Seat, sequence uint64, intent replay.Intent) {
 	r.seats[seat].acked = sequence
 	r.presence.Move(seat)
 	r.settle()
+	if r.options.Moves != nil {
+		r.options.Moves.Observe(r.options.Clock.Now().Sub(received))
+	}
+}
+
+func (r *Room) emoji(seat rules.Seat, item string, received time.Time) {
+	if !r.seated(seat) || r.seats[seat].sink == nil || !r.equipped(seat, item) || !r.seats[seat].emoji.Spend(r.options.Emoji, received) {
+		return
+	}
+	shown := &Emoji{Seat: seat, Item: item}
+	for _, other := range r.options.Mode.Seats() {
+		if sink := r.seats[other].sink; sink != nil {
+			sink.Deliver(Message{Emoji: shown})
+		}
+	}
+}
+
+func (r *Room) equipped(seat rules.Seat, item string) bool {
+	player, ok := r.speaker(seat)
+	return ok && slices.Contains(player.Emoji, item)
+}
+
+func (r *Room) speaker(seat rules.Seat) (Player, bool) {
+	for _, player := range r.options.Roster {
+		if player.Seat == seat {
+			return player, !player.Bot && !player.Muted
+		}
+	}
+	return Player{}, false
+}
+
+func (r *Room) quickMessage(seat rules.Seat, key string, teamOnly bool, received time.Time) {
+	if !r.seated(seat) || r.seats[seat].sink == nil || r.options.QuickMessages == nil || !r.options.QuickMessages(key) {
+		return
+	}
+	if _, ok := r.speaker(seat); !ok || !r.seats[seat].emoji.Spend(r.options.Emoji, received) {
+		return
+	}
+	shown := &QuickMessage{Seat: seat, Key: key, TeamOnly: teamOnly}
+	for _, other := range r.options.Mode.Seats() {
+		if sink := r.seats[other].sink; sink != nil && (!teamOnly || other.Team() == seat.Team()) {
+			sink.Deliver(Message{Quick: shown})
+		}
+	}
 }
 
 func (r *Room) admit(seat rules.Seat, sequence uint64) error {

@@ -26,32 +26,51 @@ namespace Hypedomino.V1 {
           string.Concat(
             "ChxoeXBlZG9taW5vL3YxL2VudmVsb3BlLnByb3RvEg1oeXBlZG9taW5vLnYx",
             "GhloeXBlZG9taW5vL3YxL2Vycm9yLnByb3RvGhloeXBlZG9taW5vL3YxL2hl",
-            "bGxvLnByb3RvGhloeXBlZG9taW5vL3YxL21hdGNoLnByb3RvIscFCghFbnZl",
-            "bG9wZRIpChBwcm90b2NvbF92ZXJzaW9uGAEgASgNUg9wcm90b2NvbFZlcnNp",
-            "b24SGgoIc2VxdWVuY2UYAiABKARSCHNlcXVlbmNlEiUKDmFja2VkX3NlcXVl",
-            "bmNlGAMgASgEUg1hY2tlZFNlcXVlbmNlEj8KDGNsaWVudF9oZWxsbxgKIAEo",
-            "CzIaLmh5cGVkb21pbm8udjEuQ2xpZW50SGVsbG9IAFILY2xpZW50SGVsbG8S",
-            "PwoMc2VydmVyX2hlbGxvGAsgASgLMhouaHlwZWRvbWluby52MS5TZXJ2ZXJI",
-            "ZWxsb0gAUgtzZXJ2ZXJIZWxsbxIsCgVlcnJvchgMIAEoCzIULmh5cGVkb21p",
-            "bm8udjEuRXJyb3JIAFIFZXJyb3ISOQoKbWF0Y2hfdmlldxgNIAEoCzIYLmh5",
-            "cGVkb21pbm8udjEuTWF0Y2hWaWV3SABSCW1hdGNoVmlldxJMChFwbGFjZV90",
-            "aWxlX2ludGVudBgUIAEoCzIeLmh5cGVkb21pbm8udjEuUGxhY2VUaWxlSW50",
-            "ZW50SABSD3BsYWNlVGlsZUludGVudBI8CgtwYXNzX2ludGVudBgVIAEoCzIZ",
-            "Lmh5cGVkb21pbm8udjEuUGFzc0ludGVudEgAUgpwYXNzSW50ZW50EjwKC2Ry",
-            "YXdfaW50ZW50GBYgASgLMhkuaHlwZWRvbWluby52MS5EcmF3SW50ZW50SABS",
-            "CmRyYXdJbnRlbnQSRgoPZW5kX3R1cm5faW50ZW50GBcgASgLMhwuaHlwZWRv",
-            "bWluby52MS5FbmRUdXJuSW50ZW50SABSDWVuZFR1cm5JbnRlbnQSRQoObG9h",
-            "ZGluZ19pbnRlbnQYGCABKAsyHC5oeXBlZG9taW5vLnYxLkxvYWRpbmdJbnRl",
-            "bnRIAFINbG9hZGluZ0ludGVudEIJCgdwYXlsb2FkQsgBChFjb20uaHlwZWRv",
-            "bWluby52MUINRW52ZWxvcGVQcm90b1ABWk9naXRodWIuY29tL0FsaWV2cy1j",
-            "b3JwL2h5cGVkb21pbm8vc2VydmVyL2ludGVybmFsL3BiL2h5cGVkb21pbm8v",
-            "djE7aHlwZWRvbWlub3YxogIDSFhYqgINSHlwZWRvbWluby5WMcoCDUh5cGVk",
-            "b21pbm9cVjHiAhlIeXBlZG9taW5vXFYxXEdQQk1ldGFkYXRh6gIOSHlwZWRv",
-            "bWlubzo6VjFiBnByb3RvMw=="));
+            "bGxvLnByb3RvGhloeXBlZG9taW5vL3YxL2xvYmJ5LnByb3RvGhloeXBlZG9t",
+            "aW5vL3YxL21hdGNoLnByb3RvGhloeXBlZG9taW5vL3YxL3F1ZXVlLnByb3Rv",
+            "IvELCghFbnZlbG9wZRIpChBwcm90b2NvbF92ZXJzaW9uGAEgASgNUg9wcm90",
+            "b2NvbFZlcnNpb24SGgoIc2VxdWVuY2UYAiABKARSCHNlcXVlbmNlEiUKDmFj",
+            "a2VkX3NlcXVlbmNlGAMgASgEUg1hY2tlZFNlcXVlbmNlEiMKDXNlc3Npb25f",
+            "bm9uY2UYBCABKAZSDHNlc3Npb25Ob25jZRI/CgxjbGllbnRfaGVsbG8YCiAB",
+            "KAsyGi5oeXBlZG9taW5vLnYxLkNsaWVudEhlbGxvSABSC2NsaWVudEhlbGxv",
+            "Ej8KDHNlcnZlcl9oZWxsbxgLIAEoCzIaLmh5cGVkb21pbm8udjEuU2VydmVy",
+            "SGVsbG9IAFILc2VydmVySGVsbG8SLAoFZXJyb3IYDCABKAsyFC5oeXBlZG9t",
+            "aW5vLnYxLkVycm9ySABSBWVycm9yEjkKCm1hdGNoX3ZpZXcYDSABKAsyGC5o",
+            "eXBlZG9taW5vLnYxLk1hdGNoVmlld0gAUgltYXRjaFZpZXcSPAoLZW1vamlf",
+            "c2hvd24YDiABKAsyGS5oeXBlZG9taW5vLnYxLkVtb2ppU2hvd25IAFIKZW1v",
+            "amlTaG93bhJSChNxdWlja19tZXNzYWdlX3Nob3duGA8gASgLMiAuaHlwZWRv",
+            "bWluby52MS5RdWlja01lc3NhZ2VTaG93bkgAUhFxdWlja01lc3NhZ2VTaG93",
+            "bhI8CgtxdWV1ZV9zdGF0ZRgQIAEoCzIZLmh5cGVkb21pbm8udjEuUXVldWVT",
+            "dGF0ZUgAUgpxdWV1ZVN0YXRlEjwKC2xvYmJ5X3N0YXRlGBEgASgLMhkuaHlw",
+            "ZWRvbWluby52MS5Mb2JieVN0YXRlSABSCmxvYmJ5U3RhdGUSPAoLbG9iYnlf",
+            "cmVsYXkYEiABKAsyGS5oeXBlZG9taW5vLnYxLkxvYmJ5UmVsYXlIAFIKbG9i",
+            "YnlSZWxheRI/Cgxsb2JieV9pbnZpdGUYEyABKAsyGi5oeXBlZG9taW5vLnYx",
+            "LkxvYmJ5SW52aXRlSABSC2xvYmJ5SW52aXRlEkwKEXBsYWNlX3RpbGVfaW50",
+            "ZW50GBQgASgLMh4uaHlwZWRvbWluby52MS5QbGFjZVRpbGVJbnRlbnRIAFIP",
+            "cGxhY2VUaWxlSW50ZW50EjwKC3Bhc3NfaW50ZW50GBUgASgLMhkuaHlwZWRv",
+            "bWluby52MS5QYXNzSW50ZW50SABSCnBhc3NJbnRlbnQSPAoLZHJhd19pbnRl",
+            "bnQYFiABKAsyGS5oeXBlZG9taW5vLnYxLkRyYXdJbnRlbnRIAFIKZHJhd0lu",
+            "dGVudBJGCg9lbmRfdHVybl9pbnRlbnQYFyABKAsyHC5oeXBlZG9taW5vLnYx",
+            "LkVuZFR1cm5JbnRlbnRIAFINZW5kVHVybkludGVudBJFCg5sb2FkaW5nX2lu",
+            "dGVudBgYIAEoCzIcLmh5cGVkb21pbm8udjEuTG9hZGluZ0ludGVudEgAUg1s",
+            "b2FkaW5nSW50ZW50Ej8KDGVtb2ppX2ludGVudBgZIAEoCzIaLmh5cGVkb21p",
+            "bm8udjEuRW1vamlJbnRlbnRIAFILZW1vamlJbnRlbnQSVQoUcXVpY2tfbWVz",
+            "c2FnZV9pbnRlbnQYGiABKAsyIS5oeXBlZG9taW5vLnYxLlF1aWNrTWVzc2Fn",
+            "ZUludGVudEgAUhJxdWlja01lc3NhZ2VJbnRlbnQSTAoRam9pbl9xdWV1ZV9p",
+            "bnRlbnQYGyABKAsyHi5oeXBlZG9taW5vLnYxLkpvaW5RdWV1ZUludGVudEgA",
+            "Ug9qb2luUXVldWVJbnRlbnQSTwoSbGVhdmVfcXVldWVfaW50ZW50GBwgASgL",
+            "Mh8uaHlwZWRvbWluby52MS5MZWF2ZVF1ZXVlSW50ZW50SABSEGxlYXZlUXVl",
+            "dWVJbnRlbnQSPwoMbG9iYnlfaW50ZW50GB0gASgLMhouaHlwZWRvbWluby52",
+            "MS5Mb2JieUludGVudEgAUgtsb2JieUludGVudEIJCgdwYXlsb2FkQsgBChFj",
+            "b20uaHlwZWRvbWluby52MUINRW52ZWxvcGVQcm90b1ABWk9naXRodWIuY29t",
+            "L0FsaWV2cy1jb3JwL2h5cGVkb21pbm8vc2VydmVyL2ludGVybmFsL3BiL2h5",
+            "cGVkb21pbm8vdjE7aHlwZWRvbWlub3YxogIDSFhYqgINSHlwZWRvbWluby5W",
+            "McoCDUh5cGVkb21pbm9cVjHiAhlIeXBlZG9taW5vXFYxXEdQQk1ldGFkYXRh",
+            "6gIOSHlwZWRvbWlubzo6VjFiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-          new pbr::FileDescriptor[] { global::Hypedomino.V1.ErrorReflection.Descriptor, global::Hypedomino.V1.HelloReflection.Descriptor, global::Hypedomino.V1.MatchReflection.Descriptor, },
+          new pbr::FileDescriptor[] { global::Hypedomino.V1.ErrorReflection.Descriptor, global::Hypedomino.V1.HelloReflection.Descriptor, global::Hypedomino.V1.LobbyReflection.Descriptor, global::Hypedomino.V1.MatchReflection.Descriptor, global::Hypedomino.V1.QueueReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.Envelope), global::Hypedomino.V1.Envelope.Parser, new[]{ "ProtocolVersion", "Sequence", "AckedSequence", "ClientHello", "ServerHello", "Error", "MatchView", "PlaceTileIntent", "PassIntent", "DrawIntent", "EndTurnIntent", "LoadingIntent" }, new[]{ "Payload" }, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.Envelope), global::Hypedomino.V1.Envelope.Parser, new[]{ "ProtocolVersion", "Sequence", "AckedSequence", "SessionNonce", "ClientHello", "ServerHello", "Error", "MatchView", "EmojiShown", "QuickMessageShown", "QueueState", "LobbyState", "LobbyRelay", "LobbyInvite", "PlaceTileIntent", "PassIntent", "DrawIntent", "EndTurnIntent", "LoadingIntent", "EmojiIntent", "QuickMessageIntent", "JoinQueueIntent", "LeaveQueueIntent", "LobbyIntent" }, new[]{ "Payload" }, null, null, null)
           }));
     }
     #endregion
@@ -96,6 +115,7 @@ namespace Hypedomino.V1 {
       protocolVersion_ = other.protocolVersion_;
       sequence_ = other.sequence_;
       ackedSequence_ = other.ackedSequence_;
+      sessionNonce_ = other.sessionNonce_;
       switch (other.PayloadCase) {
         case PayloadOneofCase.ClientHello:
           ClientHello = other.ClientHello.Clone();
@@ -108,6 +128,24 @@ namespace Hypedomino.V1 {
           break;
         case PayloadOneofCase.MatchView:
           MatchView = other.MatchView.Clone();
+          break;
+        case PayloadOneofCase.EmojiShown:
+          EmojiShown = other.EmojiShown.Clone();
+          break;
+        case PayloadOneofCase.QuickMessageShown:
+          QuickMessageShown = other.QuickMessageShown.Clone();
+          break;
+        case PayloadOneofCase.QueueState:
+          QueueState = other.QueueState.Clone();
+          break;
+        case PayloadOneofCase.LobbyState:
+          LobbyState = other.LobbyState.Clone();
+          break;
+        case PayloadOneofCase.LobbyRelay:
+          LobbyRelay = other.LobbyRelay.Clone();
+          break;
+        case PayloadOneofCase.LobbyInvite:
+          LobbyInvite = other.LobbyInvite.Clone();
           break;
         case PayloadOneofCase.PlaceTileIntent:
           PlaceTileIntent = other.PlaceTileIntent.Clone();
@@ -123,6 +161,21 @@ namespace Hypedomino.V1 {
           break;
         case PayloadOneofCase.LoadingIntent:
           LoadingIntent = other.LoadingIntent.Clone();
+          break;
+        case PayloadOneofCase.EmojiIntent:
+          EmojiIntent = other.EmojiIntent.Clone();
+          break;
+        case PayloadOneofCase.QuickMessageIntent:
+          QuickMessageIntent = other.QuickMessageIntent.Clone();
+          break;
+        case PayloadOneofCase.JoinQueueIntent:
+          JoinQueueIntent = other.JoinQueueIntent.Clone();
+          break;
+        case PayloadOneofCase.LeaveQueueIntent:
+          LeaveQueueIntent = other.LeaveQueueIntent.Clone();
+          break;
+        case PayloadOneofCase.LobbyIntent:
+          LobbyIntent = other.LobbyIntent.Clone();
           break;
       }
 
@@ -171,6 +224,18 @@ namespace Hypedomino.V1 {
       }
     }
 
+    /// <summary>Field number for the "session_nonce" field.</summary>
+    public const int SessionNonceFieldNumber = 4;
+    private ulong sessionNonce_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public ulong SessionNonce {
+      get { return sessionNonce_; }
+      set {
+        sessionNonce_ = value;
+      }
+    }
+
     /// <summary>Field number for the "client_hello" field.</summary>
     public const int ClientHelloFieldNumber = 10;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -216,6 +281,78 @@ namespace Hypedomino.V1 {
       set {
         payload_ = value;
         payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.MatchView;
+      }
+    }
+
+    /// <summary>Field number for the "emoji_shown" field.</summary>
+    public const int EmojiShownFieldNumber = 14;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.EmojiShown EmojiShown {
+      get { return payloadCase_ == PayloadOneofCase.EmojiShown ? (global::Hypedomino.V1.EmojiShown) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.EmojiShown;
+      }
+    }
+
+    /// <summary>Field number for the "quick_message_shown" field.</summary>
+    public const int QuickMessageShownFieldNumber = 15;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.QuickMessageShown QuickMessageShown {
+      get { return payloadCase_ == PayloadOneofCase.QuickMessageShown ? (global::Hypedomino.V1.QuickMessageShown) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.QuickMessageShown;
+      }
+    }
+
+    /// <summary>Field number for the "queue_state" field.</summary>
+    public const int QueueStateFieldNumber = 16;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.QueueState QueueState {
+      get { return payloadCase_ == PayloadOneofCase.QueueState ? (global::Hypedomino.V1.QueueState) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.QueueState;
+      }
+    }
+
+    /// <summary>Field number for the "lobby_state" field.</summary>
+    public const int LobbyStateFieldNumber = 17;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.LobbyState LobbyState {
+      get { return payloadCase_ == PayloadOneofCase.LobbyState ? (global::Hypedomino.V1.LobbyState) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.LobbyState;
+      }
+    }
+
+    /// <summary>Field number for the "lobby_relay" field.</summary>
+    public const int LobbyRelayFieldNumber = 18;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.LobbyRelay LobbyRelay {
+      get { return payloadCase_ == PayloadOneofCase.LobbyRelay ? (global::Hypedomino.V1.LobbyRelay) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.LobbyRelay;
+      }
+    }
+
+    /// <summary>Field number for the "lobby_invite" field.</summary>
+    public const int LobbyInviteFieldNumber = 19;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.LobbyInvite LobbyInvite {
+      get { return payloadCase_ == PayloadOneofCase.LobbyInvite ? (global::Hypedomino.V1.LobbyInvite) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.LobbyInvite;
       }
     }
 
@@ -279,6 +416,66 @@ namespace Hypedomino.V1 {
       }
     }
 
+    /// <summary>Field number for the "emoji_intent" field.</summary>
+    public const int EmojiIntentFieldNumber = 25;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.EmojiIntent EmojiIntent {
+      get { return payloadCase_ == PayloadOneofCase.EmojiIntent ? (global::Hypedomino.V1.EmojiIntent) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.EmojiIntent;
+      }
+    }
+
+    /// <summary>Field number for the "quick_message_intent" field.</summary>
+    public const int QuickMessageIntentFieldNumber = 26;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.QuickMessageIntent QuickMessageIntent {
+      get { return payloadCase_ == PayloadOneofCase.QuickMessageIntent ? (global::Hypedomino.V1.QuickMessageIntent) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.QuickMessageIntent;
+      }
+    }
+
+    /// <summary>Field number for the "join_queue_intent" field.</summary>
+    public const int JoinQueueIntentFieldNumber = 27;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.JoinQueueIntent JoinQueueIntent {
+      get { return payloadCase_ == PayloadOneofCase.JoinQueueIntent ? (global::Hypedomino.V1.JoinQueueIntent) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.JoinQueueIntent;
+      }
+    }
+
+    /// <summary>Field number for the "leave_queue_intent" field.</summary>
+    public const int LeaveQueueIntentFieldNumber = 28;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.LeaveQueueIntent LeaveQueueIntent {
+      get { return payloadCase_ == PayloadOneofCase.LeaveQueueIntent ? (global::Hypedomino.V1.LeaveQueueIntent) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.LeaveQueueIntent;
+      }
+    }
+
+    /// <summary>Field number for the "lobby_intent" field.</summary>
+    public const int LobbyIntentFieldNumber = 29;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.LobbyIntent LobbyIntent {
+      get { return payloadCase_ == PayloadOneofCase.LobbyIntent ? (global::Hypedomino.V1.LobbyIntent) payload_ : null; }
+      set {
+        payload_ = value;
+        payloadCase_ = value == null ? PayloadOneofCase.None : PayloadOneofCase.LobbyIntent;
+      }
+    }
+
     private object payload_;
     /// <summary>Enum of possible cases for the "payload" oneof.</summary>
     public enum PayloadOneofCase {
@@ -287,11 +484,22 @@ namespace Hypedomino.V1 {
       ServerHello = 11,
       Error = 12,
       MatchView = 13,
+      EmojiShown = 14,
+      QuickMessageShown = 15,
+      QueueState = 16,
+      LobbyState = 17,
+      LobbyRelay = 18,
+      LobbyInvite = 19,
       PlaceTileIntent = 20,
       PassIntent = 21,
       DrawIntent = 22,
       EndTurnIntent = 23,
       LoadingIntent = 24,
+      EmojiIntent = 25,
+      QuickMessageIntent = 26,
+      JoinQueueIntent = 27,
+      LeaveQueueIntent = 28,
+      LobbyIntent = 29,
     }
     private PayloadOneofCase payloadCase_ = PayloadOneofCase.None;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -325,15 +533,27 @@ namespace Hypedomino.V1 {
       if (ProtocolVersion != other.ProtocolVersion) return false;
       if (Sequence != other.Sequence) return false;
       if (AckedSequence != other.AckedSequence) return false;
+      if (SessionNonce != other.SessionNonce) return false;
       if (!object.Equals(ClientHello, other.ClientHello)) return false;
       if (!object.Equals(ServerHello, other.ServerHello)) return false;
       if (!object.Equals(Error, other.Error)) return false;
       if (!object.Equals(MatchView, other.MatchView)) return false;
+      if (!object.Equals(EmojiShown, other.EmojiShown)) return false;
+      if (!object.Equals(QuickMessageShown, other.QuickMessageShown)) return false;
+      if (!object.Equals(QueueState, other.QueueState)) return false;
+      if (!object.Equals(LobbyState, other.LobbyState)) return false;
+      if (!object.Equals(LobbyRelay, other.LobbyRelay)) return false;
+      if (!object.Equals(LobbyInvite, other.LobbyInvite)) return false;
       if (!object.Equals(PlaceTileIntent, other.PlaceTileIntent)) return false;
       if (!object.Equals(PassIntent, other.PassIntent)) return false;
       if (!object.Equals(DrawIntent, other.DrawIntent)) return false;
       if (!object.Equals(EndTurnIntent, other.EndTurnIntent)) return false;
       if (!object.Equals(LoadingIntent, other.LoadingIntent)) return false;
+      if (!object.Equals(EmojiIntent, other.EmojiIntent)) return false;
+      if (!object.Equals(QuickMessageIntent, other.QuickMessageIntent)) return false;
+      if (!object.Equals(JoinQueueIntent, other.JoinQueueIntent)) return false;
+      if (!object.Equals(LeaveQueueIntent, other.LeaveQueueIntent)) return false;
+      if (!object.Equals(LobbyIntent, other.LobbyIntent)) return false;
       if (PayloadCase != other.PayloadCase) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
@@ -345,15 +565,27 @@ namespace Hypedomino.V1 {
       if (ProtocolVersion != 0) hash ^= ProtocolVersion.GetHashCode();
       if (Sequence != 0UL) hash ^= Sequence.GetHashCode();
       if (AckedSequence != 0UL) hash ^= AckedSequence.GetHashCode();
+      if (SessionNonce != 0UL) hash ^= SessionNonce.GetHashCode();
       if (payloadCase_ == PayloadOneofCase.ClientHello) hash ^= ClientHello.GetHashCode();
       if (payloadCase_ == PayloadOneofCase.ServerHello) hash ^= ServerHello.GetHashCode();
       if (payloadCase_ == PayloadOneofCase.Error) hash ^= Error.GetHashCode();
       if (payloadCase_ == PayloadOneofCase.MatchView) hash ^= MatchView.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.EmojiShown) hash ^= EmojiShown.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.QuickMessageShown) hash ^= QuickMessageShown.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.QueueState) hash ^= QueueState.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.LobbyState) hash ^= LobbyState.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.LobbyRelay) hash ^= LobbyRelay.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.LobbyInvite) hash ^= LobbyInvite.GetHashCode();
       if (payloadCase_ == PayloadOneofCase.PlaceTileIntent) hash ^= PlaceTileIntent.GetHashCode();
       if (payloadCase_ == PayloadOneofCase.PassIntent) hash ^= PassIntent.GetHashCode();
       if (payloadCase_ == PayloadOneofCase.DrawIntent) hash ^= DrawIntent.GetHashCode();
       if (payloadCase_ == PayloadOneofCase.EndTurnIntent) hash ^= EndTurnIntent.GetHashCode();
       if (payloadCase_ == PayloadOneofCase.LoadingIntent) hash ^= LoadingIntent.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.EmojiIntent) hash ^= EmojiIntent.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.QuickMessageIntent) hash ^= QuickMessageIntent.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.JoinQueueIntent) hash ^= JoinQueueIntent.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.LeaveQueueIntent) hash ^= LeaveQueueIntent.GetHashCode();
+      if (payloadCase_ == PayloadOneofCase.LobbyIntent) hash ^= LobbyIntent.GetHashCode();
       hash ^= (int) payloadCase_;
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
@@ -385,6 +617,10 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(24);
         output.WriteUInt64(AckedSequence);
       }
+      if (SessionNonce != 0UL) {
+        output.WriteRawTag(33);
+        output.WriteFixed64(SessionNonce);
+      }
       if (payloadCase_ == PayloadOneofCase.ClientHello) {
         output.WriteRawTag(82);
         output.WriteMessage(ClientHello);
@@ -400,6 +636,30 @@ namespace Hypedomino.V1 {
       if (payloadCase_ == PayloadOneofCase.MatchView) {
         output.WriteRawTag(106);
         output.WriteMessage(MatchView);
+      }
+      if (payloadCase_ == PayloadOneofCase.EmojiShown) {
+        output.WriteRawTag(114);
+        output.WriteMessage(EmojiShown);
+      }
+      if (payloadCase_ == PayloadOneofCase.QuickMessageShown) {
+        output.WriteRawTag(122);
+        output.WriteMessage(QuickMessageShown);
+      }
+      if (payloadCase_ == PayloadOneofCase.QueueState) {
+        output.WriteRawTag(130, 1);
+        output.WriteMessage(QueueState);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyState) {
+        output.WriteRawTag(138, 1);
+        output.WriteMessage(LobbyState);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyRelay) {
+        output.WriteRawTag(146, 1);
+        output.WriteMessage(LobbyRelay);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyInvite) {
+        output.WriteRawTag(154, 1);
+        output.WriteMessage(LobbyInvite);
       }
       if (payloadCase_ == PayloadOneofCase.PlaceTileIntent) {
         output.WriteRawTag(162, 1);
@@ -420,6 +680,26 @@ namespace Hypedomino.V1 {
       if (payloadCase_ == PayloadOneofCase.LoadingIntent) {
         output.WriteRawTag(194, 1);
         output.WriteMessage(LoadingIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.EmojiIntent) {
+        output.WriteRawTag(202, 1);
+        output.WriteMessage(EmojiIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.QuickMessageIntent) {
+        output.WriteRawTag(210, 1);
+        output.WriteMessage(QuickMessageIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.JoinQueueIntent) {
+        output.WriteRawTag(218, 1);
+        output.WriteMessage(JoinQueueIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.LeaveQueueIntent) {
+        output.WriteRawTag(226, 1);
+        output.WriteMessage(LeaveQueueIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyIntent) {
+        output.WriteRawTag(234, 1);
+        output.WriteMessage(LobbyIntent);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -443,6 +723,10 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(24);
         output.WriteUInt64(AckedSequence);
       }
+      if (SessionNonce != 0UL) {
+        output.WriteRawTag(33);
+        output.WriteFixed64(SessionNonce);
+      }
       if (payloadCase_ == PayloadOneofCase.ClientHello) {
         output.WriteRawTag(82);
         output.WriteMessage(ClientHello);
@@ -458,6 +742,30 @@ namespace Hypedomino.V1 {
       if (payloadCase_ == PayloadOneofCase.MatchView) {
         output.WriteRawTag(106);
         output.WriteMessage(MatchView);
+      }
+      if (payloadCase_ == PayloadOneofCase.EmojiShown) {
+        output.WriteRawTag(114);
+        output.WriteMessage(EmojiShown);
+      }
+      if (payloadCase_ == PayloadOneofCase.QuickMessageShown) {
+        output.WriteRawTag(122);
+        output.WriteMessage(QuickMessageShown);
+      }
+      if (payloadCase_ == PayloadOneofCase.QueueState) {
+        output.WriteRawTag(130, 1);
+        output.WriteMessage(QueueState);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyState) {
+        output.WriteRawTag(138, 1);
+        output.WriteMessage(LobbyState);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyRelay) {
+        output.WriteRawTag(146, 1);
+        output.WriteMessage(LobbyRelay);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyInvite) {
+        output.WriteRawTag(154, 1);
+        output.WriteMessage(LobbyInvite);
       }
       if (payloadCase_ == PayloadOneofCase.PlaceTileIntent) {
         output.WriteRawTag(162, 1);
@@ -479,6 +787,26 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(194, 1);
         output.WriteMessage(LoadingIntent);
       }
+      if (payloadCase_ == PayloadOneofCase.EmojiIntent) {
+        output.WriteRawTag(202, 1);
+        output.WriteMessage(EmojiIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.QuickMessageIntent) {
+        output.WriteRawTag(210, 1);
+        output.WriteMessage(QuickMessageIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.JoinQueueIntent) {
+        output.WriteRawTag(218, 1);
+        output.WriteMessage(JoinQueueIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.LeaveQueueIntent) {
+        output.WriteRawTag(226, 1);
+        output.WriteMessage(LeaveQueueIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyIntent) {
+        output.WriteRawTag(234, 1);
+        output.WriteMessage(LobbyIntent);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -498,6 +826,9 @@ namespace Hypedomino.V1 {
       if (AckedSequence != 0UL) {
         size += 1 + pb::CodedOutputStream.ComputeUInt64Size(AckedSequence);
       }
+      if (SessionNonce != 0UL) {
+        size += 1 + 8;
+      }
       if (payloadCase_ == PayloadOneofCase.ClientHello) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(ClientHello);
       }
@@ -509,6 +840,24 @@ namespace Hypedomino.V1 {
       }
       if (payloadCase_ == PayloadOneofCase.MatchView) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(MatchView);
+      }
+      if (payloadCase_ == PayloadOneofCase.EmojiShown) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(EmojiShown);
+      }
+      if (payloadCase_ == PayloadOneofCase.QuickMessageShown) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(QuickMessageShown);
+      }
+      if (payloadCase_ == PayloadOneofCase.QueueState) {
+        size += 2 + pb::CodedOutputStream.ComputeMessageSize(QueueState);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyState) {
+        size += 2 + pb::CodedOutputStream.ComputeMessageSize(LobbyState);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyRelay) {
+        size += 2 + pb::CodedOutputStream.ComputeMessageSize(LobbyRelay);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyInvite) {
+        size += 2 + pb::CodedOutputStream.ComputeMessageSize(LobbyInvite);
       }
       if (payloadCase_ == PayloadOneofCase.PlaceTileIntent) {
         size += 2 + pb::CodedOutputStream.ComputeMessageSize(PlaceTileIntent);
@@ -524,6 +873,21 @@ namespace Hypedomino.V1 {
       }
       if (payloadCase_ == PayloadOneofCase.LoadingIntent) {
         size += 2 + pb::CodedOutputStream.ComputeMessageSize(LoadingIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.EmojiIntent) {
+        size += 2 + pb::CodedOutputStream.ComputeMessageSize(EmojiIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.QuickMessageIntent) {
+        size += 2 + pb::CodedOutputStream.ComputeMessageSize(QuickMessageIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.JoinQueueIntent) {
+        size += 2 + pb::CodedOutputStream.ComputeMessageSize(JoinQueueIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.LeaveQueueIntent) {
+        size += 2 + pb::CodedOutputStream.ComputeMessageSize(LeaveQueueIntent);
+      }
+      if (payloadCase_ == PayloadOneofCase.LobbyIntent) {
+        size += 2 + pb::CodedOutputStream.ComputeMessageSize(LobbyIntent);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -545,6 +909,9 @@ namespace Hypedomino.V1 {
       }
       if (other.AckedSequence != 0UL) {
         AckedSequence = other.AckedSequence;
+      }
+      if (other.SessionNonce != 0UL) {
+        SessionNonce = other.SessionNonce;
       }
       switch (other.PayloadCase) {
         case PayloadOneofCase.ClientHello:
@@ -570,6 +937,42 @@ namespace Hypedomino.V1 {
             MatchView = new global::Hypedomino.V1.MatchView();
           }
           MatchView.MergeFrom(other.MatchView);
+          break;
+        case PayloadOneofCase.EmojiShown:
+          if (EmojiShown == null) {
+            EmojiShown = new global::Hypedomino.V1.EmojiShown();
+          }
+          EmojiShown.MergeFrom(other.EmojiShown);
+          break;
+        case PayloadOneofCase.QuickMessageShown:
+          if (QuickMessageShown == null) {
+            QuickMessageShown = new global::Hypedomino.V1.QuickMessageShown();
+          }
+          QuickMessageShown.MergeFrom(other.QuickMessageShown);
+          break;
+        case PayloadOneofCase.QueueState:
+          if (QueueState == null) {
+            QueueState = new global::Hypedomino.V1.QueueState();
+          }
+          QueueState.MergeFrom(other.QueueState);
+          break;
+        case PayloadOneofCase.LobbyState:
+          if (LobbyState == null) {
+            LobbyState = new global::Hypedomino.V1.LobbyState();
+          }
+          LobbyState.MergeFrom(other.LobbyState);
+          break;
+        case PayloadOneofCase.LobbyRelay:
+          if (LobbyRelay == null) {
+            LobbyRelay = new global::Hypedomino.V1.LobbyRelay();
+          }
+          LobbyRelay.MergeFrom(other.LobbyRelay);
+          break;
+        case PayloadOneofCase.LobbyInvite:
+          if (LobbyInvite == null) {
+            LobbyInvite = new global::Hypedomino.V1.LobbyInvite();
+          }
+          LobbyInvite.MergeFrom(other.LobbyInvite);
           break;
         case PayloadOneofCase.PlaceTileIntent:
           if (PlaceTileIntent == null) {
@@ -600,6 +1003,36 @@ namespace Hypedomino.V1 {
             LoadingIntent = new global::Hypedomino.V1.LoadingIntent();
           }
           LoadingIntent.MergeFrom(other.LoadingIntent);
+          break;
+        case PayloadOneofCase.EmojiIntent:
+          if (EmojiIntent == null) {
+            EmojiIntent = new global::Hypedomino.V1.EmojiIntent();
+          }
+          EmojiIntent.MergeFrom(other.EmojiIntent);
+          break;
+        case PayloadOneofCase.QuickMessageIntent:
+          if (QuickMessageIntent == null) {
+            QuickMessageIntent = new global::Hypedomino.V1.QuickMessageIntent();
+          }
+          QuickMessageIntent.MergeFrom(other.QuickMessageIntent);
+          break;
+        case PayloadOneofCase.JoinQueueIntent:
+          if (JoinQueueIntent == null) {
+            JoinQueueIntent = new global::Hypedomino.V1.JoinQueueIntent();
+          }
+          JoinQueueIntent.MergeFrom(other.JoinQueueIntent);
+          break;
+        case PayloadOneofCase.LeaveQueueIntent:
+          if (LeaveQueueIntent == null) {
+            LeaveQueueIntent = new global::Hypedomino.V1.LeaveQueueIntent();
+          }
+          LeaveQueueIntent.MergeFrom(other.LeaveQueueIntent);
+          break;
+        case PayloadOneofCase.LobbyIntent:
+          if (LobbyIntent == null) {
+            LobbyIntent = new global::Hypedomino.V1.LobbyIntent();
+          }
+          LobbyIntent.MergeFrom(other.LobbyIntent);
           break;
       }
 
@@ -634,6 +1067,10 @@ namespace Hypedomino.V1 {
             AckedSequence = input.ReadUInt64();
             break;
           }
+          case 33: {
+            SessionNonce = input.ReadFixed64();
+            break;
+          }
           case 82: {
             global::Hypedomino.V1.ClientHello subBuilder = new global::Hypedomino.V1.ClientHello();
             if (payloadCase_ == PayloadOneofCase.ClientHello) {
@@ -668,6 +1105,60 @@ namespace Hypedomino.V1 {
             }
             input.ReadMessage(subBuilder);
             MatchView = subBuilder;
+            break;
+          }
+          case 114: {
+            global::Hypedomino.V1.EmojiShown subBuilder = new global::Hypedomino.V1.EmojiShown();
+            if (payloadCase_ == PayloadOneofCase.EmojiShown) {
+              subBuilder.MergeFrom(EmojiShown);
+            }
+            input.ReadMessage(subBuilder);
+            EmojiShown = subBuilder;
+            break;
+          }
+          case 122: {
+            global::Hypedomino.V1.QuickMessageShown subBuilder = new global::Hypedomino.V1.QuickMessageShown();
+            if (payloadCase_ == PayloadOneofCase.QuickMessageShown) {
+              subBuilder.MergeFrom(QuickMessageShown);
+            }
+            input.ReadMessage(subBuilder);
+            QuickMessageShown = subBuilder;
+            break;
+          }
+          case 130: {
+            global::Hypedomino.V1.QueueState subBuilder = new global::Hypedomino.V1.QueueState();
+            if (payloadCase_ == PayloadOneofCase.QueueState) {
+              subBuilder.MergeFrom(QueueState);
+            }
+            input.ReadMessage(subBuilder);
+            QueueState = subBuilder;
+            break;
+          }
+          case 138: {
+            global::Hypedomino.V1.LobbyState subBuilder = new global::Hypedomino.V1.LobbyState();
+            if (payloadCase_ == PayloadOneofCase.LobbyState) {
+              subBuilder.MergeFrom(LobbyState);
+            }
+            input.ReadMessage(subBuilder);
+            LobbyState = subBuilder;
+            break;
+          }
+          case 146: {
+            global::Hypedomino.V1.LobbyRelay subBuilder = new global::Hypedomino.V1.LobbyRelay();
+            if (payloadCase_ == PayloadOneofCase.LobbyRelay) {
+              subBuilder.MergeFrom(LobbyRelay);
+            }
+            input.ReadMessage(subBuilder);
+            LobbyRelay = subBuilder;
+            break;
+          }
+          case 154: {
+            global::Hypedomino.V1.LobbyInvite subBuilder = new global::Hypedomino.V1.LobbyInvite();
+            if (payloadCase_ == PayloadOneofCase.LobbyInvite) {
+              subBuilder.MergeFrom(LobbyInvite);
+            }
+            input.ReadMessage(subBuilder);
+            LobbyInvite = subBuilder;
             break;
           }
           case 162: {
@@ -713,6 +1204,51 @@ namespace Hypedomino.V1 {
             }
             input.ReadMessage(subBuilder);
             LoadingIntent = subBuilder;
+            break;
+          }
+          case 202: {
+            global::Hypedomino.V1.EmojiIntent subBuilder = new global::Hypedomino.V1.EmojiIntent();
+            if (payloadCase_ == PayloadOneofCase.EmojiIntent) {
+              subBuilder.MergeFrom(EmojiIntent);
+            }
+            input.ReadMessage(subBuilder);
+            EmojiIntent = subBuilder;
+            break;
+          }
+          case 210: {
+            global::Hypedomino.V1.QuickMessageIntent subBuilder = new global::Hypedomino.V1.QuickMessageIntent();
+            if (payloadCase_ == PayloadOneofCase.QuickMessageIntent) {
+              subBuilder.MergeFrom(QuickMessageIntent);
+            }
+            input.ReadMessage(subBuilder);
+            QuickMessageIntent = subBuilder;
+            break;
+          }
+          case 218: {
+            global::Hypedomino.V1.JoinQueueIntent subBuilder = new global::Hypedomino.V1.JoinQueueIntent();
+            if (payloadCase_ == PayloadOneofCase.JoinQueueIntent) {
+              subBuilder.MergeFrom(JoinQueueIntent);
+            }
+            input.ReadMessage(subBuilder);
+            JoinQueueIntent = subBuilder;
+            break;
+          }
+          case 226: {
+            global::Hypedomino.V1.LeaveQueueIntent subBuilder = new global::Hypedomino.V1.LeaveQueueIntent();
+            if (payloadCase_ == PayloadOneofCase.LeaveQueueIntent) {
+              subBuilder.MergeFrom(LeaveQueueIntent);
+            }
+            input.ReadMessage(subBuilder);
+            LeaveQueueIntent = subBuilder;
+            break;
+          }
+          case 234: {
+            global::Hypedomino.V1.LobbyIntent subBuilder = new global::Hypedomino.V1.LobbyIntent();
+            if (payloadCase_ == PayloadOneofCase.LobbyIntent) {
+              subBuilder.MergeFrom(LobbyIntent);
+            }
+            input.ReadMessage(subBuilder);
+            LobbyIntent = subBuilder;
             break;
           }
         }
@@ -746,6 +1282,10 @@ namespace Hypedomino.V1 {
             AckedSequence = input.ReadUInt64();
             break;
           }
+          case 33: {
+            SessionNonce = input.ReadFixed64();
+            break;
+          }
           case 82: {
             global::Hypedomino.V1.ClientHello subBuilder = new global::Hypedomino.V1.ClientHello();
             if (payloadCase_ == PayloadOneofCase.ClientHello) {
@@ -780,6 +1320,60 @@ namespace Hypedomino.V1 {
             }
             input.ReadMessage(subBuilder);
             MatchView = subBuilder;
+            break;
+          }
+          case 114: {
+            global::Hypedomino.V1.EmojiShown subBuilder = new global::Hypedomino.V1.EmojiShown();
+            if (payloadCase_ == PayloadOneofCase.EmojiShown) {
+              subBuilder.MergeFrom(EmojiShown);
+            }
+            input.ReadMessage(subBuilder);
+            EmojiShown = subBuilder;
+            break;
+          }
+          case 122: {
+            global::Hypedomino.V1.QuickMessageShown subBuilder = new global::Hypedomino.V1.QuickMessageShown();
+            if (payloadCase_ == PayloadOneofCase.QuickMessageShown) {
+              subBuilder.MergeFrom(QuickMessageShown);
+            }
+            input.ReadMessage(subBuilder);
+            QuickMessageShown = subBuilder;
+            break;
+          }
+          case 130: {
+            global::Hypedomino.V1.QueueState subBuilder = new global::Hypedomino.V1.QueueState();
+            if (payloadCase_ == PayloadOneofCase.QueueState) {
+              subBuilder.MergeFrom(QueueState);
+            }
+            input.ReadMessage(subBuilder);
+            QueueState = subBuilder;
+            break;
+          }
+          case 138: {
+            global::Hypedomino.V1.LobbyState subBuilder = new global::Hypedomino.V1.LobbyState();
+            if (payloadCase_ == PayloadOneofCase.LobbyState) {
+              subBuilder.MergeFrom(LobbyState);
+            }
+            input.ReadMessage(subBuilder);
+            LobbyState = subBuilder;
+            break;
+          }
+          case 146: {
+            global::Hypedomino.V1.LobbyRelay subBuilder = new global::Hypedomino.V1.LobbyRelay();
+            if (payloadCase_ == PayloadOneofCase.LobbyRelay) {
+              subBuilder.MergeFrom(LobbyRelay);
+            }
+            input.ReadMessage(subBuilder);
+            LobbyRelay = subBuilder;
+            break;
+          }
+          case 154: {
+            global::Hypedomino.V1.LobbyInvite subBuilder = new global::Hypedomino.V1.LobbyInvite();
+            if (payloadCase_ == PayloadOneofCase.LobbyInvite) {
+              subBuilder.MergeFrom(LobbyInvite);
+            }
+            input.ReadMessage(subBuilder);
+            LobbyInvite = subBuilder;
             break;
           }
           case 162: {
@@ -825,6 +1419,51 @@ namespace Hypedomino.V1 {
             }
             input.ReadMessage(subBuilder);
             LoadingIntent = subBuilder;
+            break;
+          }
+          case 202: {
+            global::Hypedomino.V1.EmojiIntent subBuilder = new global::Hypedomino.V1.EmojiIntent();
+            if (payloadCase_ == PayloadOneofCase.EmojiIntent) {
+              subBuilder.MergeFrom(EmojiIntent);
+            }
+            input.ReadMessage(subBuilder);
+            EmojiIntent = subBuilder;
+            break;
+          }
+          case 210: {
+            global::Hypedomino.V1.QuickMessageIntent subBuilder = new global::Hypedomino.V1.QuickMessageIntent();
+            if (payloadCase_ == PayloadOneofCase.QuickMessageIntent) {
+              subBuilder.MergeFrom(QuickMessageIntent);
+            }
+            input.ReadMessage(subBuilder);
+            QuickMessageIntent = subBuilder;
+            break;
+          }
+          case 218: {
+            global::Hypedomino.V1.JoinQueueIntent subBuilder = new global::Hypedomino.V1.JoinQueueIntent();
+            if (payloadCase_ == PayloadOneofCase.JoinQueueIntent) {
+              subBuilder.MergeFrom(JoinQueueIntent);
+            }
+            input.ReadMessage(subBuilder);
+            JoinQueueIntent = subBuilder;
+            break;
+          }
+          case 226: {
+            global::Hypedomino.V1.LeaveQueueIntent subBuilder = new global::Hypedomino.V1.LeaveQueueIntent();
+            if (payloadCase_ == PayloadOneofCase.LeaveQueueIntent) {
+              subBuilder.MergeFrom(LeaveQueueIntent);
+            }
+            input.ReadMessage(subBuilder);
+            LeaveQueueIntent = subBuilder;
+            break;
+          }
+          case 234: {
+            global::Hypedomino.V1.LobbyIntent subBuilder = new global::Hypedomino.V1.LobbyIntent();
+            if (payloadCase_ == PayloadOneofCase.LobbyIntent) {
+              subBuilder.MergeFrom(LobbyIntent);
+            }
+            input.ReadMessage(subBuilder);
+            LobbyIntent = subBuilder;
             break;
           }
         }

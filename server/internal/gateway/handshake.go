@@ -1,10 +1,15 @@
 package gateway
 
 import (
+	"slices"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/coder/websocket"
 
 	pb "github.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1"
+	"github.com/Alievs-corp/hypedomino/server/internal/secrand"
 )
 
 func VersionAtLeast(version, minimum string) bool {
@@ -40,17 +45,110 @@ func parseVersion(text string) ([3]int, bool) {
 	return parts, true
 }
 
+type Admission struct {
+	MinimumAppVersion string
+	EnforceBuilds     bool
+	Builds            []string
+	MaintenanceEndsAt time.Time
+}
+
+func (a Admission) Maintenance() bool {
+	return !a.MaintenanceEndsAt.IsZero()
+}
+
+func (a Admission) Admits(version, build string) bool {
+	if !VersionAtLeast(version, a.MinimumAppVersion) {
+		return false
+	}
+	return !a.EnforceBuilds || slices.Contains(a.Builds, build)
+}
+
+type clientBuild struct {
+	version string
+	hash    string
+}
+
+func (c *Conn) admission() Admission {
+	if c.options.Admission == nil {
+		return Admission{MinimumAppVersion: c.options.Config.MinimumAppVersion}
+	}
+	return c.options.Admission()
+}
+
+func (c *Conn) enforce() {
+	build := c.build.Load()
+	if build == nil {
+		return
+	}
+	if c.admission().Maintenance() && !c.session.InMatch() {
+		c.refuseForMaintenance()
+		return
+	}
+	if c.admission().Admits(build.version, build.hash) {
+		return
+	}
+	c.Send(c.serverHello(pb.HelloStatus_HELLO_STATUS_UPDATE_REQUIRED, 0, false))
+	c.Close(websocket.StatusNormalClosure, "update required")
+}
+
 func (c *Conn) serverHello(status pb.HelloStatus, acked uint64, inMatch bool) *pb.Envelope {
+	hello := &pb.ServerHello{
+		Status:            status,
+		MinimumAppVersion: c.admission().MinimumAppVersion,
+		ServerTimeUnixMs:  uint64(c.options.Clock.Now().UnixMilli()),
+		CatalogVersion:    c.options.Config.CatalogVersion,
+		ContentBaseUrl:    c.options.Config.ContentBaseURL,
+		InMatch:           inMatch,
+	}
+	if status == pb.HelloStatus_HELLO_STATUS_MAINTENANCE {
+		hello.MaintenanceEndsUnixMs = uint64(c.admission().MaintenanceEndsAt.UnixMilli())
+	}
+	if status == pb.HelloStatus_HELLO_STATUS_ACCEPTED {
+		hello.SessionNonce = c.nonce
+	}
+	if status == pb.HelloStatus_HELLO_STATUS_ACCEPTED && c.options.Strings != nil {
+		localized := c.options.Strings()
+		hello.StringBundles, hello.FallbackChains = localized.Bundles, localized.Chains
+	}
+	if status == pb.HelloStatus_HELLO_STATUS_ACCEPTED && c.options.Cosmetics != nil {
+		hello.CosmeticsManifest = c.options.Cosmetics()
+	}
+	if status == pb.HelloStatus_HELLO_STATUS_ACCEPTED && c.options.Analytics != nil {
+		hello.AnalyticsConfig = c.options.Analytics()
+	}
 	return &pb.Envelope{
 		ProtocolVersion: ProtocolVersion,
 		AckedSequence:   acked,
-		Payload: &pb.Envelope_ServerHello{ServerHello: &pb.ServerHello{
-			Status:            status,
-			MinimumAppVersion: c.options.Config.MinimumAppVersion,
-			ServerTimeUnixMs:  uint64(c.options.Clock.Now().UnixMilli()),
-			CatalogVersion:    c.options.Config.CatalogVersion,
-			InMatch:           inMatch,
-		}},
+		Payload:         &pb.Envelope_ServerHello{ServerHello: hello},
+	}
+}
+
+type ReplayCounter interface {
+	Replayed()
+}
+
+type Queuer interface {
+	JoinQueue(intent *pb.JoinQueueIntent)
+	LeaveQueue()
+}
+
+type Lobbyist interface {
+	Lobby(intent *pb.LobbyIntent)
+}
+
+func LobbyStateFrame(state *pb.LobbyState, acked uint64) *pb.Envelope {
+	return &pb.Envelope{ProtocolVersion: ProtocolVersion, AckedSequence: acked, Payload: &pb.Envelope_LobbyState{LobbyState: state}}
+}
+
+func QueueStateFrame(state *pb.QueueState, acked uint64) *pb.Envelope {
+	return &pb.Envelope{ProtocolVersion: ProtocolVersion, AckedSequence: acked, Payload: &pb.Envelope_QueueState{QueueState: state}}
+}
+
+func sessionNonce() uint64 {
+	for {
+		if nonce := (secrand.Source{}).Uint64(); nonce != 0 {
+			return nonce
+		}
 	}
 }
 
@@ -60,4 +158,9 @@ func ErrorFrame(code pb.ErrorCode, rejected, acked uint64) *pb.Envelope {
 		AckedSequence:   acked,
 		Payload:         &pb.Envelope_Error{Error: &pb.Error{Code: code, RejectedSequence: rejected}},
 	}
+}
+
+func (c *Conn) refuseForMaintenance() {
+	c.Send(c.serverHello(pb.HelloStatus_HELLO_STATUS_MAINTENANCE, 0, false))
+	c.Close(websocket.StatusNormalClosure, "maintenance")
 }

@@ -10,7 +10,7 @@ Owned elsewhere and only referenced here: item shape, sources, availability and 
 
 | In | Out (owner) |
 |---|---|
-| Cosmetic and medal counts, item readiness, pass season 1 with its pass products, ranked season 1, mission pools, promo code templates | Coin packs, the starter offer and the licensed test purchase (GN-22); performance budgets (gate 2); UI, banner and FAQ strings (GN-18, GN-26); kill switch and maintenance states (GN-17); leaderboard emblem art, needed only at the first season end (#178, `docs/ranking.md` 8.3) |
+| Cosmetic and medal counts, item readiness, pass season 1 with its pass products, ranked season 1, mission pools, promo code templates | Crystal packs, the starter offer and the licensed test purchase (GN-22); performance budgets (gate 2); UI, banner and FAQ strings (GN-18, GN-26); kill switch and maintenance states (GN-17); leaderboard emblem art, needed only at the first season end (#178, `docs/ranking.md` 8.3) |
 
 `launchAt` is the planned T-0 (`docs/launch-runbook.md` section 4) in server UTC, entered when the report is run. At the first launch, pass season 1 is `season_1` and ranked season 1 is the first ranked season.
 
@@ -18,14 +18,14 @@ Owned elsewhere and only referenced here: item shape, sources, availability and 
 
 | Id | Category | Counts | Key | Default |
 |---|---|---|---|---|
-| MC-1 | Characters | Ready `character` items | `ContentGateMinCharacters` | 12 |
+| MC-1 | Removed 2026-11-12 (characters; the game has no characters) | | | |
 | MC-2 | Animated avatars | Ready `avatar` items with `animated` true | `ContentGateMinAvatarsAnimated` | 30 |
 | MC-3 | Static avatars | Ready `avatar` items with `animated` false | `ContentGateMinAvatarsStatic` | 60 |
 | MC-4 | Frames | Ready `frame` items | `ContentGateMinFrames` | 20 |
 | MC-5 | Tables | Ready `table` items | `ContentGateMinTables` | 15 |
 | MC-6 | Emoji | Ready `emoji` items | `ContentGateMinEmoji` | 40 |
 | MC-7 | Medals | Ready medals | `ContentGateMinMedals` | 40 |
-| MC-8 | Lobby actions | Ready `action` items | `ContentGateMinActions` | 8 |
+| MC-8 | Removed 2026-11-12 (lobby actions; the `action` type is removed) | | | |
 
 - An item counts once, in the category of its `type` and `animated` flag, whatever its sources: `default` items (static, `docs/cosmetics.md` V-19), pass track items, shop, mission, promo, rank reward and event items all count.
 - Only items in the active production manifest or progression domain count. A draft, a scheduled change set and a `retired` or `disabled` item do not.
@@ -33,11 +33,11 @@ Owned elsewhere and only referenced here: item shape, sources, availability and 
 
 ### 2.1 Rarity distribution
 
-Owner decision OD-1: MC-1 to MC-5 each need at least one ready item of every tier from `common` to `legendary` (`docs/rarity.md` 1). `mythic` is not required, since it is sold only in time-limited offers. Emoji, medals and lobby actions have no per-tier minimum. Beyond that the report shows the count per category and `rarityId` as information. Constraints that already hold through other specs:
+Owner decision OD-1: MC-2 to MC-5 each need at least one ready item of every tier from `common` to `legendary` (`docs/rarity.md` 1). `mythic` is not required, since it is sold only in time-limited offers. Emoji and medals have no per-tier minimum. Beyond that the report shows the count per category and `rarityId` as information. Constraints that already hold through other specs:
 
 | Constraint | Source |
 |---|---|
-| Every type except `action` has at least one `live` `default` item, and every `default` item is static | `docs/cosmetics.md` V-11, V-19 |
+| Every type has at least one `live` `default` item, and every `default` item is static | `docs/cosmetics.md` V-11, V-19 |
 | No `mythic` item on a pass track | `docs/pass-missions-medals.md` PV-10 |
 | `mythic` items are sold only in time-limited offers | `docs/economy.md` 3.1 |
 | No `mythic` medal at launch | `docs/pass-missions-medals.md` 5.3 |
@@ -54,7 +54,7 @@ A thing is ready only when every rule of its table holds in production at report
 | CR-1 | In the active production manifest with `availability` `live` | `docs/cosmetics.md` 6, 7.3 |
 | CR-2 | V-1 to V-19 pass when the report runs them again on current data. This includes `culturalReview` `approved`, `artSource` recorded, every source resolving to an existing record (V-15) | `docs/cosmetics.md` 9 |
 | CR-3 | `rarityId` resolves in the active rarity table, so the item has its rarity marks and status colour (the tier's `fill`; the manifest has no colour field) | `docs/rarity.md` 1, 7; V-14 |
-| CR-4 | `staticAddress` (the static fallback) and, if `animated`, every animation address (`animationAddress`, the four `clips`, every layer) resolve to an asset in the Addressables catalog version active in production | `docs/cosmetics.md` 8, V-2, V-17; ADR 0002 |
+| CR-4 | `staticAddress` (the static fallback) and, if `animated`, every animation address (`animationAddress`, every layer) resolve to an asset in the Addressables catalog version active in production | `docs/cosmetics.md` 8, V-2, V-17; ADR 0002 |
 | CR-5 | Every asset of the item passes its server checks (format, size, atlas, frame count, static present) | `docs/admin.md` 5.2, #93, #135 |
 | CR-6 | `nameKey` in four languages | `docs/localization.md` 2.1 |
 
@@ -105,7 +105,7 @@ The ranked season whose window contains `launchAt`.
 
 ### 3.6 Promo code template
 
-A template is a promo code record with `template` true (`docs/admin.md` 5.11): it stays a draft, never redeems, and is cloned to issue codes. Cloning adds the window, cap, code and, for `targeted`, the account list, and then follows `docs/economy.md` section 8, including second-admin approval above `PromoCoinsApprovalThreshold` or with a `mythic` item.
+A template is a promo code record with `template` true (`docs/admin.md` 5.11): it stays a draft, never redeems, and is cloned to issue codes. Cloning adds the window, cap, code and, for `targeted`, the account list, and then follows `docs/economy.md` section 8, including second-admin approval above `PromoCoinsApprovalThreshold`, with a `mythic` item or with `passPremium`. A template does not hold `passPremium`; it is chosen when the code is issued.
 
 | Id | Rule | Source |
 |---|---|---|
@@ -144,7 +144,7 @@ Admin screen A-41 (`docs/admin.md` section 10). Computed by the admin API from p
 
 | Id | Check | Pass when |
 |---|---|---|
-| CG-1 to CG-7 | MC-1 to MC-7 | Count of ready items at or above the key's value; for MC-1 to MC-5 also at least one ready item per tier `common` to `legendary` (2.1) |
+| CG-2 to CG-7 | MC-2 to MC-7 | Count of ready items at or above the key's value; for MC-2 to MC-5 also at least one ready item per tier `common` to `legendary` (2.1). CG-1 was removed with MC-1 |
 | CG-8 | Every `live` cosmetic and medal is ready | No `live` item fails a CR or MR rule. Failures list the item id and rule id |
 | CG-9 | Missions | MS-1 to MS-4 hold |
 | CG-10 | Pass season 1 | A pass season contains `launchAt` and PS-1 to PS-5 hold |
@@ -178,14 +178,14 @@ Admin screen A-41 (`docs/admin.md` section 10). Computed by the admin API from p
 
 | Key | Default | Section |
 |---|---|---|
-| `ContentGateMinCharacters` | 12 | 2 |
 | `ContentGateMinAvatarsAnimated` | 30 | 2 |
 | `ContentGateMinAvatarsStatic` | 60 | 2 |
 | `ContentGateMinFrames` | 20 | 2 |
 | `ContentGateMinTables` | 15 | 2 |
 | `ContentGateMinEmoji` | 40 | 2 |
 | `ContentGateMinMedals` | 40 | 2 |
-| `ContentGateMinActions` | 8 | 2 |
+
+Implemented in `server/internal/liveops` (#145): the admin API edits, publishes and rolls back these keys at `/config/liveops` (`docs/admin.md` 9.1), and `config-publish -domain liveops` checks a snapshot the same way. A snapshot with an unknown key, a value that is not an integer or a value below 0 is refused; a key it leaves out keeps its default.
 
 Used here and defined elsewhere: `DailyMissionSlots`, `WeeklyMissionSlots`, `DailyMissionRerolls`, `WeeklyMissionRerolls`, `PassLevels` (`docs/pass-missions-medals.md`), `PromoCoinsApprovalThreshold` (`docs/economy.md`), `LeaderboardRegions` (`docs/ranking.md`).
 
@@ -202,5 +202,5 @@ Decided by the owner on 2026-10-26.
 
 | Id | Question | Decision |
 |---|---|---|
-| OD-1 | Per-rarity minimums per category | MC-1 to MC-5: at least one ready item per tier `common` to `legendary` (2.1) |
+| OD-1 | Per-rarity minimums per category | MC-2 to MC-5 (MC-1 removed 2026-11-12): at least one ready item per tier `common` to `legendary` (2.1) |
 | OD-2 | Promo templates at launch | Welcome, creator and compensation templates (3.6) |

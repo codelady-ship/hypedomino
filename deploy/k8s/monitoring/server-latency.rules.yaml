@@ -1,0 +1,21 @@
+groups:
+  - name: server-latency
+    rules:
+      - record: hd:move_roundtrip_seconds:p99_5m
+        expr: histogram_quantile(0.99, sum by (le) (rate(move_roundtrip_seconds_bucket[5m])))
+      - record: hd:move_roundtrip_seconds:rate_5m
+        expr: sum(rate(move_roundtrip_seconds_count[5m]))
+      - alert: GameNodeMoveRoundTripOverBudget
+        expr: hd:move_roundtrip_seconds:p99_5m > 0.1 and on() hd:move_roundtrip_seconds:rate_5m > 1
+        for: 15m
+        labels:
+          severity: sev2
+          team: server
+        annotations:
+          summary: Move round-trip p99 over the 100 ms budget for 15 minutes
+          description: >-
+            The server histogram move_roundtrip_seconds reports a p99 of {{ $value | humanizeDuration }}
+            over the last 5 minutes, above the 100 ms budget of docs/performance.md 6.2, for 15 minutes.
+            It measures only the in-process share of the round-trip, so players see at least this much.
+            On a shared vCPU game node this is the trigger to move the game node to dedicated vCPU (ADR 0014).
+          runbook: docs/launch-runbook.md 5.6 Game node to dedicated vCPU

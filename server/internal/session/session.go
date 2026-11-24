@@ -9,6 +9,7 @@ import (
 
 	"github.com/coder/websocket"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/custom"
 	"github.com/Alievs-corp/hypedomino/server/internal/gateway"
 	pb "github.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1"
 	"github.com/Alievs-corp/hypedomino/server/internal/replay"
@@ -52,6 +53,7 @@ type Session struct {
 	active     *connection
 	generation uint64
 	routed     bool
+	lobby      *custom.Room
 }
 
 type Router interface {
@@ -60,14 +62,25 @@ type Router interface {
 }
 
 type Manager struct {
-	config   Config
-	clock    Clock
-	random   Random
-	router   Router
-	auth     Authenticator
-	mu       sync.Mutex
-	sessions map[string]*Session
-	accounts map[string]map[string]*Session
+	config    Config
+	clock     Clock
+	random    Random
+	router    Router
+	auth      Authenticator
+	clocks    ClockObserver
+	replays   ReplayObserver
+	devices   DeviceObserver
+	checker   IntegrityChecker
+	queue     Queue
+	lobby     *custom.Lobby
+	members   LobbyMembers
+	friends   Friends
+	remote    RemoteLobby
+	rankedBan RankedBanCheck
+	appeal    AppealFunc
+	mu        sync.Mutex
+	sessions  map[string]*Session
+	accounts  map[string]map[string]*Session
 }
 
 func New(config Config, clock Clock, random Random) *Manager {
@@ -80,6 +93,45 @@ func (m *Manager) Route(router Router) {
 
 func (m *Manager) Authenticate(auth Authenticator) {
 	m.auth = auth
+}
+
+type ClockObserver interface {
+	Observe(ctx context.Context, account string, clientUnixMs uint64)
+}
+
+type ReplayObserver interface {
+	Observe(ctx context.Context, account string)
+}
+
+type DeviceObserver interface {
+	Observe(ctx context.Context, account string, deviceSignals, hookSignals []string)
+}
+
+type IntegrityChecker interface {
+	SessionStart(ctx context.Context, account, session string, proof *pb.IntegrityProof) bool
+	MatchStart(ctx context.Context, account, session string, queue pb.QueueKind, proof *pb.IntegrityProof) pb.QueueRefusal
+}
+
+func (m *Manager) CheckIntegrity(checker IntegrityChecker) {
+	m.checker = checker
+}
+
+func (m *Manager) ObserveClocks(observer ClockObserver) {
+	m.clocks = observer
+}
+
+func (m *Manager) ObserveDevices(observer DeviceObserver) {
+	m.devices = observer
+}
+
+func (m *Manager) ObserveReplays(observer ReplayObserver) {
+	m.replays = observer
+}
+
+func (c *connection) Replayed() {
+	if c.manager.replays != nil {
+		c.manager.replays.Observe(context.Background(), c.session.account)
+	}
 }
 
 func (m *Manager) claim(token string) error {
@@ -155,10 +207,13 @@ func (m *Manager) finish(s *Session, r *room.Room) {
 		return
 	}
 	s.room, s.joined, s.acked = nil, false, 0
-	routed := s.routed
-	s.routed = false
+	m.unroute(s)
 	m.mu.Unlock()
-	if routed {
+}
+
+func (m *Manager) unroute(s *Session) {
+	if s.routed && s.room == nil && s.lobby == nil {
+		s.routed = false
 		m.release(s.token)
 	}
 }
@@ -191,6 +246,7 @@ func (m *Manager) Revoke(token string) {
 	routed := ok && s.routed
 	if ok {
 		s.routed = false
+		m.dropLobby(s)
 		delete(m.accounts[s.account], token)
 		if len(m.accounts[s.account]) == 0 {
 			delete(m.accounts, s.account)
@@ -205,17 +261,42 @@ func (m *Manager) Revoke(token string) {
 	}
 }
 
-func (m *Manager) Connect(ctx context.Context, conn *gateway.Conn, hello *pb.ClientHello) (gateway.Session, error) {
+func (m *Manager) Presence() map[string]bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	s, ok := m.sessions[hello.GetSessionToken()]
-	if !ok && m.auth != nil {
-		account, id, err := m.auth.Authenticate(hello.GetSessionToken())
-		if err != nil || id == "" || account == "" {
-			return nil, gateway.ErrUnauthenticated
+	connected := make(map[string]bool, len(m.sessions))
+	for _, s := range m.sessions {
+		if s.active != nil {
+			connected[s.account] = connected[s.account] || s.room != nil
 		}
-		s, ok = m.ensure(id, account), true
 	}
+	return connected
+}
+
+func (m *Manager) Connect(ctx context.Context, conn *gateway.Conn, hello *pb.ClientHello) (gateway.Session, error) {
+	if key, elsewhere := m.routedElsewhere(ctx, hello.GetSessionToken()); elsewhere {
+		return nil, &gateway.RoutedElsewhere{Key: key}
+	}
+	if !m.startAllowed(ctx, hello) {
+		return nil, gateway.ErrIntegrityFailed
+	}
+	c, err := m.connect(conn, hello)
+	if err != nil {
+		return nil, err
+	}
+	if m.clocks != nil {
+		m.clocks.Observe(ctx, c.session.account, hello.GetClientTimeUnixMs())
+	}
+	if m.devices != nil {
+		m.devices.Observe(ctx, c.session.account, hello.GetDeviceRiskSignals(), hello.GetHookSignals())
+	}
+	return c, nil
+}
+
+func (m *Manager) connect(conn *gateway.Conn, hello *pb.ClientHello) (*connection, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.sessionFor(hello.GetSessionToken())
 	if !ok {
 		return nil, gateway.ErrUnauthenticated
 	}
@@ -226,6 +307,18 @@ func (m *Manager) Connect(ctx context.Context, conn *gateway.Conn, hello *pb.Cli
 	c := &connection{manager: m, session: s, conn: conn}
 	s.active = c
 	return c, nil
+}
+
+func (m *Manager) sessionFor(token string) (*Session, bool) {
+	if m.auth == nil {
+		s, ok := m.sessions[token]
+		return s, ok
+	}
+	account, id, err := m.auth.Authenticate(token)
+	if err != nil || id == "" || account == "" {
+		return nil, false
+	}
+	return m.ensure(id, account), true
 }
 
 type connection struct {
@@ -257,11 +350,37 @@ func (c *connection) Loading(progress int, ready bool) {
 	}
 }
 
+func (c *connection) Emoji(item string) {
+	c.mu.Lock()
+	seat := c.seat
+	c.mu.Unlock()
+	if seat != nil {
+		seat.Emoji(item)
+		return
+	}
+	if r := c.manager.lobbyOf(c.session); r != nil {
+		r.Emote(c.session.account, item, c.manager.clock.Now())
+	}
+}
+
+func (c *connection) QuickMessage(key string, teamOnly bool) {
+	c.mu.Lock()
+	seat := c.seat
+	c.mu.Unlock()
+	if seat != nil {
+		seat.QuickMessage(key, teamOnly)
+	}
+}
+
 func (c *connection) Attach() {
 	c.manager.mu.Lock()
-	defer c.manager.mu.Unlock()
 	if c.session.room != nil {
 		c.attach(c.session)
+	}
+	lobby := c.session.lobby
+	c.manager.mu.Unlock()
+	if lobby != nil {
+		c.sendLobby(stateMessage(lobby.State()))
 	}
 }
 
@@ -302,12 +421,15 @@ func (c *connection) Close() {
 		return
 	}
 	s.active = nil
+	go c.leaveOnClose()
 	if seat != nil {
 		s.acked = seat.Acked()
 	}
-	if s.room != nil {
-		go c.manager.expire(s, s.generation, c.manager.clock.After(c.manager.config.ReconnectGrace))
+	if s.room == nil {
+		c.manager.dropLobby(s)
+		return
 	}
+	go c.manager.expire(s, s.generation, c.manager.clock.After(c.manager.config.ReconnectGrace))
 }
 
 func (m *Manager) Connected(token string) bool {
@@ -321,7 +443,11 @@ func (m *Manager) expire(s *Session, generation uint64, due <-chan time.Time) {
 	<-due
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if s.generation != generation || s.active != nil || s.room == nil {
+	if s.generation != generation || s.active != nil {
+		return
+	}
+	m.dropLobby(s)
+	if s.room == nil {
 		return
 	}
 	s.room.Leave(s.seat)
@@ -329,4 +455,22 @@ func (m *Manager) expire(s *Session, generation uint64, due <-chan time.Time) {
 		s.routed = false
 		m.release(s.token)
 	}
+}
+
+func (m *Manager) startAllowed(ctx context.Context, hello *pb.ClientHello) bool {
+	if m.checker == nil || m.auth == nil {
+		return true
+	}
+	account, id, err := m.auth.Authenticate(hello.GetSessionToken())
+	if err != nil || m.known(id) {
+		return true
+	}
+	return m.checker.SessionStart(ctx, account, id, hello.GetIntegrity())
+}
+
+func (m *Manager) known(id string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	_, ok := m.sessions[id]
+	return ok
 }

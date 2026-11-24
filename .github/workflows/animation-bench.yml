@@ -1,0 +1,60 @@
+name: Bench APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      bench:
+        description: Which bench to build
+        type: choice
+        options:
+          - animation
+          - canvas
+          - art
+        default: animation
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+      - uses: actions/cache@v4
+        with:
+          path: client/Library
+          key: unity-library-android-bench-${{ hashFiles('client/Packages/**', 'client/ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: unity-library-android-bench-
+      - name: Stage the source art for the art bench
+        if: inputs.bench == 'art'
+        run: |
+          art=client/Assets/HypeDomino/Bench/Generated/Art
+          for export in assets-src/cosmetic/*/*/export assets-src/medal/*/export; do
+            item=${export%/export}
+            mkdir -p "$art/${item#assets-src/}"
+            cp -R "$export"/. "$art/${item#assets-src/}"/
+          done
+          find "$art" -type f | cut -d/ -f7-8 | sort | uniq -c
+      - uses: game-ci/unity-builder@v6
+        continue-on-error: true
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: client
+          targetPlatform: Android
+          buildMethod: ${{ inputs.bench == 'art' && 'HypeDomino.Editor.ArtBenchBuild.BuildAndroid' || inputs.bench == 'canvas' && 'HypeDomino.Editor.CanvasBenchBuild.BuildAndroid' || 'HypeDomino.Editor.AnimationBenchBuild.BuildAndroid' }}
+          versioning: None
+          allowDirtyBuild: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.bench }}-bench-apk
+          path: build/Android/Android.apk
+          if-no-files-found: error
+          retention-days: 7

@@ -70,7 +70,7 @@ func TestNamesAreStable(t *testing.T) {
 	if Reason(0).String() != "invalid" || ReasonUnknownSigningCertificate.String() != "unknown_signing_certificate" {
 		t.Fatal("reason names changed")
 	}
-	if PurposeRankedMatch.String() != "ranked_match" || ActionBlock.String() != "block" || SignalDeviceRisk.String() != "device_risk" {
+	if PurposeRankedMatch.String() != "ranked_match" || ActionBlock.String() != "block" || SignalDeviceRisk.String() != "device_risk" || SignalHook.String() != "hook_signal" {
 		t.Fatal("enum names changed")
 	}
 }

@@ -152,6 +152,7 @@ type Policy struct {
 	IntegrityFailureWeight int
 	DeviceRiskAction       DeviceRiskAction
 	DeviceRiskWeight       int
+	HookSignalWeight       int
 	MinDeviceLevel         DeviceLevel
 	RequireLicensed        bool
 }
@@ -161,6 +162,7 @@ type SignalKind uint8
 const (
 	SignalIntegrityFailure SignalKind = iota + 1
 	SignalDeviceRisk
+	SignalHook
 )
 
 func (k SignalKind) String() string {
@@ -169,6 +171,8 @@ func (k SignalKind) String() string {
 		return "integrity_failure"
 	case SignalDeviceRisk:
 		return "device_risk"
+	case SignalHook:
+		return "hook_signal"
 	}
 	return "invalid"
 }
@@ -249,4 +253,48 @@ func deviceRiskAction(policy Policy, purpose Purpose) Action {
 		return ActionBlock
 	}
 	return ActionFlag
+}
+
+func (d Decision) ReasonNames() []string {
+	names := make([]string, len(d.Reasons))
+	for i, reason := range d.Reasons {
+		names[i] = reason.String()
+	}
+	return names
+}
+
+func ParseAction(name string) (Action, bool) {
+	switch name {
+	case "flag":
+		return ActionFlag, true
+	case "block":
+		return ActionBlock, true
+	}
+	return 0, false
+}
+
+func ParseDeviceRiskAction(name string) (DeviceRiskAction, bool) {
+	switch name {
+	case "warn":
+		return DeviceRiskWarn, true
+	case "flag":
+		return DeviceRiskFlag, true
+	case "block_ranked":
+		return DeviceRiskBlockRanked, true
+	}
+	return 0, false
+}
+
+func ParseDeviceLevel(name string) (DeviceLevel, bool) {
+	switch name {
+	case "none":
+		return DeviceLevelNone, true
+	case "basic":
+		return DeviceLevelBasic, true
+	case "device":
+		return DeviceLevelDevice, true
+	case "strong":
+		return DeviceLevelStrong, true
+	}
+	return 0, false
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -107,9 +108,20 @@ type player struct {
 	acked    uint64
 	hello    *pb.Envelope
 	last     *pb.MatchView
+	nonce    uint64
 }
 
 func (tab *table) connect(token string, expectAccepted bool) *player {
+	tab.t.Helper()
+	return tab.connectAt(token, 0, expectAccepted)
+}
+
+func (tab *table) connectAt(token string, clientUnixMs uint64, expectAccepted bool) *player {
+	tab.t.Helper()
+	return tab.connectWith(&pb.ClientHello{AppVersion: "1.0.0", SessionToken: token, ClientTimeUnixMs: clientUnixMs}, expectAccepted)
+}
+
+func (tab *table) connectWith(hello *pb.ClientHello, expectAccepted bool) *player {
 	tab.t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	tab.t.Cleanup(cancel)
@@ -122,13 +134,14 @@ func (tab *table) connect(token string, expectAccepted bool) *player {
 	p.write(&pb.Envelope{
 		ProtocolVersion: gateway.ProtocolVersion,
 		Sequence:        1,
-		Payload:         &pb.Envelope_ClientHello{ClientHello: &pb.ClientHello{AppVersion: "1.0.0", SessionToken: token}},
+		Payload:         &pb.Envelope_ClientHello{ClientHello: hello},
 	})
 	p.hello = p.read()
 	if accepted := p.hello.GetServerHello().GetStatus() == pb.HelloStatus_HELLO_STATUS_ACCEPTED; accepted != expectAccepted {
 		tab.t.Fatalf("hello answered %v", p.hello)
 	}
 	p.acked = p.hello.GetAckedSequence()
+	p.nonce = p.hello.GetServerHello().GetSessionNonce()
 	p.sequence = p.acked
 	if expectAccepted {
 		p.write(&pb.Envelope{ProtocolVersion: gateway.ProtocolVersion, Payload: &pb.Envelope_LoadingIntent{LoadingIntent: &pb.LoadingIntent{Progress: 100, Ready: true}}})
@@ -145,6 +158,9 @@ func (tab *table) join(seat rules.Seat) *player {
 
 func (p *player) write(frame *pb.Envelope) {
 	p.t.Helper()
+	if frame.GetClientHello() == nil {
+		frame.SessionNonce = p.nonce
+	}
 	data, err := proto.Marshal(frame)
 	if err != nil {
 		p.t.Fatal(err)
@@ -175,10 +191,10 @@ func (p *player) tryRead() (*pb.Envelope, error) {
 	return frame, nil
 }
 
-func (p *player) closeReason() error {
+func (p *player) closeStatus() websocket.StatusCode {
 	for {
 		if _, err := p.tryRead(); err != nil {
-			return err
+			return websocket.CloseStatus(err)
 		}
 	}
 }
@@ -355,9 +371,8 @@ func TestASecondDeviceReplacesTheFirstWithoutStartingTheGrace(t *testing.T) {
 	first := tab.join(rules.SeatX)
 	first.awaitReady()
 	second := tab.join(rules.SeatX)
-	err := first.closeReason()
-	if websocket.CloseStatus(err) != websocket.StatusPolicyViolation {
-		t.Fatalf("first device saw %v", err)
+	if status := first.closeStatus(); status != websocket.StatusPolicyViolation {
+		t.Fatalf("first device closed with %v", status)
 	}
 	if view := second.view(); view.GetSeat() != pb.Seat_SEAT_X || controllerOf(view, pb.Seat_SEAT_X) != pb.Controller_CONTROLLER_PLAYER {
 		t.Fatalf("second device view %v", view)
@@ -385,8 +400,8 @@ func TestIntentsBeforeASeatAreIllegalAndRevokeCloses(t *testing.T) {
 		t.Fatalf("intent without a room answered %v", frame)
 	}
 	tab.manager.Revoke(token)
-	if _, err := p.tryRead(); websocket.CloseStatus(err) != websocket.StatusPolicyViolation {
-		t.Fatalf("after revoke: %v", err)
+	if status := p.closeStatus(); status != websocket.StatusPolicyViolation {
+		t.Fatalf("after revoke closed with %v", status)
 	}
 	if again := tab.connect(token, false); again.hello.GetError().GetCode() != pb.ErrorCode_ERROR_CODE_UNAUTHENTICATED {
 		t.Fatalf("revoked token answered %v", again.hello)
@@ -397,6 +412,9 @@ func TestSeatingAConnectedSessionJoinsAtOnce(t *testing.T) {
 	tab := newTable(t, rules.Mode2v2)
 	token := tab.manager.Create("late")
 	p := tab.connect(token, true)
+	if inMatch, online := tab.manager.Presence()["late"]; !online || inMatch {
+		t.Fatalf("presence before seating %v %v", online, inMatch)
+	}
 	other := room.New(room.Options{Mode: rules.Mode1v1, Config: rules.DefaultConfig(), Bot: bot.DefaultConfig(), Seed: 2, Clock: tab.clock})
 	ctx, cancel := context.WithCancel(context.Background())
 	go other.Run(ctx)
@@ -406,6 +424,9 @@ func TestSeatingAConnectedSessionJoinsAtOnce(t *testing.T) {
 	}
 	if view := p.view(); view.GetState() != pb.MatchState_MATCH_STATE_LOADING || view.GetSeat() != pb.Seat_SEAT_Y || view.GetMode() != pb.Mode_MODE_1V1 {
 		t.Fatalf("view after seating %v", view)
+	}
+	if !tab.manager.Presence()["late"] {
+		t.Fatal("a seated session is not in a match")
 	}
 }
 
@@ -494,11 +515,238 @@ func TestAccessTokensOpenSessionsKeyedByTheirSessionIdAndLogoutAllClosesThem(t *
 		t.Fatalf("revoked %d sessions", n)
 	}
 	for _, p := range []*player{refreshed, other} {
-		if err := p.closeReason(); websocket.CloseStatus(err) != websocket.StatusPolicyViolation {
-			t.Fatalf("after logout-all the device saw %v", err)
+		if status := p.closeStatus(); status != websocket.StatusPolicyViolation {
+			t.Fatalf("after logout-all the device closed with %v", status)
 		}
 	}
 	if tab.manager.InMatch("ayla") || tab.manager.RevokeAccount("ayla") != 0 {
 		t.Fatal("sessions survived logout-all")
+	}
+}
+
+func TestTheBareSessionIdOfAnAuthenticatedSessionIsNotACredential(t *testing.T) {
+	tab := newTable(t, rules.Mode1v1)
+	tab.manager.Authenticate(fakeAuthenticator{"jwt-1": {"ayla", "sid-1"}})
+	first := tab.connect("jwt-1", true)
+	if err := tab.manager.Seat("sid-1", tab.room, rules.SeatX); err != nil {
+		t.Fatal(err)
+	}
+	first.socket.CloseNow()
+	for tab.manager.Connected("sid-1") {
+		time.Sleep(time.Millisecond)
+	}
+	refused := tab.connect("sid-1", false)
+	if refused.hello.GetError().GetCode() != pb.ErrorCode_ERROR_CODE_UNAUTHENTICATED || tab.manager.Connected("sid-1") {
+		t.Fatalf("the bare session id answered %v", refused.hello)
+	}
+	tab.connect("jwt-1", true)
+}
+
+type observedClock struct {
+	account string
+	client  uint64
+}
+
+type clockLog struct {
+	mu   sync.Mutex
+	seen []observedClock
+}
+
+func (l *clockLog) Observe(_ context.Context, account string, clientUnixMs uint64) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.seen = append(l.seen, observedClock{account, clientUnixMs})
+}
+
+func TestAMovedDeviceClockIsObservedButTheServerKeepsItsOwnTime(t *testing.T) {
+	tab := newTable(t, rules.Mode1v1)
+	clocks := &clockLog{}
+	tab.manager.ObserveClocks(clocks)
+	now := time.Now()
+	twoDaysAhead := uint64(now.Add(48 * time.Hour).UnixMilli())
+	tab.connectAt("not-a-token", twoDaysAhead, false)
+	p := tab.connectAt(tab.tokens[rules.SeatX], twoDaysAhead, true)
+	if got := time.UnixMilli(int64(p.hello.GetServerHello().GetServerTimeUnixMs())); got.Sub(now).Abs() > time.Minute {
+		t.Fatalf("server hello time %v follows the device clock", got)
+	}
+	clocks.mu.Lock()
+	defer clocks.mu.Unlock()
+	if len(clocks.seen) != 1 || clocks.seen[0] != (observedClock{"account-X", twoDaysAhead}) {
+		t.Fatalf("observed clocks %v", clocks.seen)
+	}
+}
+
+type deviceLog struct {
+	mu    sync.Mutex
+	seen  map[string][]string
+	hooks map[string][]string
+}
+
+func (l *deviceLog) Observe(_ context.Context, account string, deviceSignals, hookSignals []string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.seen[account] = deviceSignals
+	l.hooks[account] = hookSignals
+}
+
+func TestTheHelloDeviceSignalsAreObservedForTheAccount(t *testing.T) {
+	tab := newTable(t, rules.Mode1v1)
+	devices := &deviceLog{seen: map[string][]string{}, hooks: map[string][]string{}}
+	tab.manager.ObserveDevices(devices)
+	tab.connectWith(&pb.ClientHello{AppVersion: "1.0.0", SessionToken: tab.tokens[rules.SeatX], DeviceRiskSignals: []string{"root", "emulator"}, HookSignals: []string{"debugger"}}, true)
+	devices.mu.Lock()
+	defer devices.mu.Unlock()
+	if got := devices.seen["account-X"]; !slices.Equal(got, []string{"root", "emulator"}) {
+		t.Fatalf("observed device signals %v", devices.seen)
+	}
+	if got := devices.hooks["account-X"]; !slices.Equal(got, []string{"debugger"}) {
+		t.Fatalf("observed hook signals %v", devices.hooks)
+	}
+}
+
+type replayLog struct {
+	mu   sync.Mutex
+	seen []string
+}
+
+func (l *replayLog) Observe(_ context.Context, account string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.seen = append(l.seen, account)
+}
+
+func TestAFrameFromAnEarlierConnectionIsCountedForTheAccount(t *testing.T) {
+	tab := newTable(t, rules.Mode1v1)
+	replays := &replayLog{}
+	tab.manager.ObserveReplays(replays)
+	earlier := tab.connect(tab.tokens[rules.SeatX], true)
+	captured := earlier.nonce
+	later := tab.connect(tab.tokens[rules.SeatX], true)
+	if later.nonce == captured {
+		t.Fatal("a reconnect kept the nonce")
+	}
+	later.nonce = captured
+	later.write(&pb.Envelope{ProtocolVersion: gateway.ProtocolVersion, Sequence: later.sequence + 1, Payload: &pb.Envelope_DrawIntent{DrawIntent: &pb.DrawIntent{}}})
+	for {
+		frame := later.read()
+		if code := frame.GetError().GetCode(); code != pb.ErrorCode_ERROR_CODE_UNSPECIFIED {
+			if code != pb.ErrorCode_ERROR_CODE_REPLAY_REJECTED {
+				t.Fatalf("captured frame answered %v", frame)
+			}
+			break
+		}
+	}
+	replays.mu.Lock()
+	defer replays.mu.Unlock()
+	if len(replays.seen) != 1 || replays.seen[0] != "account-X" {
+		t.Fatalf("observed replays %v", replays.seen)
+	}
+}
+
+type integrityLog struct {
+	mu      sync.Mutex
+	allow   bool
+	started []string
+}
+
+func (l *integrityLog) SessionStart(_ context.Context, account, session string, _ *pb.IntegrityProof) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.started = append(l.started, account+"/"+session)
+	return l.allow
+}
+
+func TestOnlyANewSessionIsCheckedForDeviceIntegrity(t *testing.T) {
+	tab := newTable(t, rules.Mode1v1)
+	tab.manager.Authenticate(fakeAuthenticator{"jwt-1": {"ayla", "sid-1"}, "jwt-2": {"ayla", "sid-1"}})
+	checks := &integrityLog{}
+	tab.manager.CheckIntegrity(checks)
+	refused := tab.connect("jwt-1", false)
+	if refused.hello.GetError().GetCode() != pb.ErrorCode_ERROR_CODE_INTEGRITY_FAILED || tab.manager.Connected("sid-1") {
+		t.Fatalf("refused start answered %v", refused.hello)
+	}
+	checks.allow = true
+	first := tab.connect("jwt-1", true)
+	first.socket.CloseNow()
+	for tab.manager.Connected("sid-1") {
+		time.Sleep(time.Millisecond)
+	}
+	checks.allow = false
+	tab.connect("jwt-2", true)
+	tab.connect("jwt-bad", false)
+	checks.mu.Lock()
+	defer checks.mu.Unlock()
+	if !slices.Equal(checks.started, []string{"ayla/sid-1", "ayla/sid-1"}) {
+		t.Fatalf("integrity checked for %v", checks.started)
+	}
+}
+
+func (l *integrityLog) MatchStart(_ context.Context, account, session string, queue pb.QueueKind, _ *pb.IntegrityProof) pb.QueueRefusal {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.started = append(l.started, account+"/"+session+"/"+queue.String())
+	if l.allow {
+		return pb.QueueRefusal_QUEUE_REFUSAL_UNSPECIFIED
+	}
+	return pb.QueueRefusal_QUEUE_REFUSAL_INTEGRITY_FAILED
+}
+
+func (l *integrityLog) setAllow(allow bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.allow = allow
+}
+
+type queueLog struct {
+	mu     sync.Mutex
+	joined []string
+}
+
+func (q *queueLog) Join(_ context.Context, account, _ string, intent *pb.JoinQueueIntent) *pb.QueueState {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.joined = append(q.joined, account)
+	return &pb.QueueState{Status: pb.QueueStatus_QUEUE_STATUS_SEARCHING, Queue: intent.GetQueue()}
+}
+
+func (q *queueLog) Leave(context.Context, string) *pb.QueueState {
+	return &pb.QueueState{Status: pb.QueueStatus_QUEUE_STATUS_LEFT}
+}
+
+func TestMatchmakingEntryIsCheckedForDeviceIntegrityBeforeTheQueue(t *testing.T) {
+	tab := newTable(t, rules.Mode1v1)
+	tab.manager.Authenticate(fakeAuthenticator{"jwt-1": {"ayla", "sid-1"}})
+	checks := &integrityLog{allow: true}
+	queue := &queueLog{}
+	tab.manager.CheckIntegrity(checks)
+	tab.manager.Queue(queue)
+	p := tab.connect("jwt-1", true)
+	checks.setAllow(false)
+	join := &pb.Envelope{ProtocolVersion: gateway.ProtocolVersion, Payload: &pb.Envelope_JoinQueueIntent{JoinQueueIntent: &pb.JoinQueueIntent{Mode: pb.Mode_MODE_1V1, Queue: pb.QueueKind_QUEUE_KIND_RANKED}}}
+	p.write(join)
+	if state := p.queueState(); state.GetStatus() != pb.QueueStatus_QUEUE_STATUS_REFUSED || state.GetRefusal() != pb.QueueRefusal_QUEUE_REFUSAL_INTEGRITY_FAILED {
+		t.Fatalf("refused entry answered %v", state)
+	}
+	checks.setAllow(true)
+	p.write(join)
+	if state := p.queueState(); state.GetStatus() != pb.QueueStatus_QUEUE_STATUS_SEARCHING {
+		t.Fatalf("allowed entry answered %v", state)
+	}
+	checks.mu.Lock()
+	defer checks.mu.Unlock()
+	queue.mu.Lock()
+	defer queue.mu.Unlock()
+	want := []string{"ayla/sid-1", "ayla/sid-1/QUEUE_KIND_RANKED", "ayla/sid-1/QUEUE_KIND_RANKED"}
+	if !slices.Equal(checks.started, want) || !slices.Equal(queue.joined, []string{"ayla"}) {
+		t.Fatalf("checked %v joined %v", checks.started, queue.joined)
+	}
+}
+
+func (p *player) queueState() *pb.QueueState {
+	p.t.Helper()
+	for {
+		if state := p.read().GetQueueState(); state != nil {
+			return state
+		}
 	}
 }

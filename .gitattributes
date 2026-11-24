@@ -54,3 +54,5 @@ assets-src/**/*.flac filter=lfs diff=lfs merge=lfs -text
 assets-src/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
 assets-src/**/*.ogg filter=lfs diff=lfs merge=lfs -text
 assets-src/**/*.zip filter=lfs diff=lfs merge=lfs -text
+client/Assets/Cosmetics/**/*.png filter=lfs diff=lfs merge=lfs -text
+client/Assets/HypeDomino/UI/Audio/Clips/**/*.wav filter=lfs diff=lfs merge=lfs -text

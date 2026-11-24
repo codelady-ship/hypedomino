@@ -1,0 +1,29 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hypedomino-agents",
+  "description": "Agent skills every HypeDomino session uses, pinned to reviewed commits.",
+  "owner": {
+    "name": "Alievs-corp",
+    "url": "https://github.com/Alievs-corp"
+  },
+  "plugins": [
+    {
+      "name": "caveman",
+      "description": "Terse replies and compressed context.",
+      "source": { "source": "github", "repo": "juliusbrussee/caveman", "ref": "v4.0.1", "sha": "d262ab3882952a59312ff3537cd86d894523c5ab" },
+      "category": "productivity"
+    },
+    {
+      "name": "ponytail",
+      "description": "Prefer deleting and reusing over writing.",
+      "source": { "source": "github", "repo": "DietrichGebert/ponytail", "ref": "v5.3.3", "sha": "7801d061243d7b753bad0e0b3c057cd250b11755" },
+      "category": "productivity"
+    },
+    {
+      "name": "andrej-karpathy-skills",
+      "description": "Think before coding, simplicity first, surgical changes, goal-driven verification.",
+      "source": { "source": "github", "repo": "multica-ai/andrej-karpathy-skills", "ref": "main", "sha": "2c606141936f1eeef17fa3043a72095b4765b9c2" },
+      "category": "workflow"
+    }
+  ]
+}

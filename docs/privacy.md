@@ -52,7 +52,7 @@ Access roles are the admin roles of `docs/admin.md` section 2 (super admin, cont
 
 | ID | Data item | Source | Purpose | Basis | Storage | Retention | Access | Processor |
 |---|---|---|---|---|---|---|---|---|
-| D-1 | Account id (random, internal) | Server | Key for every other row | CON | PostgreSQL | Account lifetime; becomes a tombstone id at deletion | support, super admin | Hosting |
+| D-1 | Account id (random, internal) | Server | Key for every other row | CON | PostgreSQL | Account lifetime; becomes a tombstone id at deletion | support, super admin; public as the key of leaderboard rows and profiles (section 5) | Hosting |
 | D-2 | Auth identity: provider and subject id | Google or Apple ID token (#57) | Sign-in, account lookup | CON | PostgreSQL | Account lifetime | super admin | Hosting; Google, Apple |
 | D-3 | Email address (Apple may give a relay address) | ID token (#57) | Support lookup (#144), account notices | CON | PostgreSQL | Account lifetime | support, super admin | Hosting |
 | D-4 | Session data: refresh token hash, device binding, resume token | Server (#58, #45) | Keep the player signed in, reconnect | CON | PostgreSQL, Redis | Access token `HD_ACCESS_TTL` (15 min), refresh token `HD_REFRESH_TTL` (30 days from last use); revoked and expired `auth_sessions` rows go with the account (#63); Redis keys carry TTLs | none | Hosting |
@@ -61,12 +61,12 @@ Access roles are the admin roles of `docs/admin.md` section 2 (super admin, cont
 | D-7 | IP address | Network connection | Transport, rate limits (#184), country fallback (#117), network signals (V-9) | CON, LI | Memory, Redis counters, logs; signals as keyed hash | Counters: their window; logs: `ServerLogRetentionDays`; hash: `NetworkSignalRetentionDays` | eng | Hosting, CDN |
 | D-8 | Account country | Profile choice, IP fallback (#117) | Country and region leaderboards (`docs/ranking.md` 8.2), age thresholds (section 7) | CON | PostgreSQL | Account lifetime | support, super admin; public through country boards | Hosting |
 | D-9 | Nickname and nickname history; custom room names | Player | Identity in game, moderation (`docs/localization.md` 5) | CON, LI | PostgreSQL; room names in room state | Nickname: account lifetime; history: until deletion; room name: room lifetime | support; nickname public | Hosting |
-| D-10 | Profile: equipped cosmetics, level, XP, statistics | Server (#59, #62) | Profile, progression | CON | PostgreSQL | Account lifetime | support; public (section 5) | Hosting |
+| D-10 | Profile: equipped cosmetics, level, XP, statistics; level and XP are the current pass season's level and XP (owner decision 2026-11-10, `docs/pass-missions-medals.md` 2.1), derived from the pass progress of D-16 | Server (#59, #62) | Profile, progression | CON | PostgreSQL | Account lifetime | support; public (section 5) | Hosting |
 | D-11 | Preferences: language, sound, graphics, haptics, notification categories | Player (#157, `docs/localization.md` 1.1) | Settings | CON | Device; language and notification categories synced to PostgreSQL | Account lifetime | none | Hosting |
 | D-12 | Match records: participants, seats, results, scores, events, config version | Server (#50) | Play, results, ranking, rewards | CON | PostgreSQL | Account lifetime; anonymized at deletion | support | Hosting |
 | D-13 | Replay records: seed, table draw and moves (#41, #98) | Server | Disputes, collusion review (V-9) | LI | PostgreSQL or object storage | `ReplayRetentionDays`; longer while linked to an open case | support | Hosting |
 | D-14 | In-match emoji and quick messages (catalog ids only) | Player (#151, #152) | Relay to the room | CON | Memory only | Not stored | none | Hosting |
-| D-15 | Rank state: MMR, rank, LP, season results, leaderboard snapshots, leaderboard emblems and profile showcase | Server (`docs/ranking.md`) | Ranked play, leaderboards | CON | PostgreSQL, Redis read models | Season snapshots kept; anonymized at deletion | support; rank and position public, MMR never shown | Hosting |
+| D-15 | Rank state: MMR, rank, LP, season results, leaderboard snapshots, leaderboard emblems and profile showcase | Server (`docs/ranking.md`) | Ranked play, leaderboards | CON | PostgreSQL, Redis read models | Season snapshots kept; anonymized at deletion | support; rank, LP, ranked wins and position public, MMR never shown | Hosting |
 | D-16 | Economy: ledger, inventory, pass progress, missions, medals, daily rewards, promo redemptions | Server (#101, #61, #123, #127, #129, #131, #108) | Grant and keep what the player earned or bought | CON | PostgreSQL | Account lifetime | support | Hosting |
 | D-17 | Purchases: store, product id, transaction id, purchase token or receipt, purchase time, bound account token, refund and chargeback notices | Store APIs (#106, #107, #204) | Grant purchases, restore, refunds, fraud | CON, LEG, LI | PostgreSQL | `PurchaseRecordRetentionYears` after purchase | support, super admin | Hosting; Google, Apple |
 | D-18 | Offenses and penalties | Server (`docs/penalties.md`) | Fair play in ranked and casual matches | CON | PostgreSQL | `OffenseWindowDays` or `CasualOffenseWindowDays`, then `ExpiredOffenseRetentionDays` | support | Hosting |
@@ -79,7 +79,7 @@ Access roles are the admin roles of `docs/admin.md` section 2 (super admin, cont
 | D-25 | Crash reports and client error telemetry (stack trace, device model, OS, app version; missing localization keys, manifest failures) | Client (#182) | Stability | CNS (OQ-5) | Sentry (EU data region), telemetry store | `CrashReportRetentionDays` | eng | Sentry |
 | D-26 | Server logs and metrics | Server (#28) | Operations, security investigation | LI | Log store | `ServerLogRetentionDays` | eng | Hosting |
 | D-27 | Admin audit log entries about a player | Admin panel (#134, #144) | Accountability of staff actions | LI | PostgreSQL | `AdminAuditRetentionDays` | super admin | Hosting |
-| D-28 | Deletion tombstone; ban-evasion hash of the auth identity | Server (section 8.2) | Re-apply deletions after a backup restore; keep bans effective | LI | PostgreSQL | Tombstone: `BackupRetentionDays`; hash: section 4 | super admin | Hosting |
+| D-28 | Deletion tombstone; deletion log entry (account id, tombstone id, deletion time); ban-evasion hash of the auth identity | Server (section 8.2) | Re-apply deletions after a backup restore; keep bans effective | LI | PostgreSQL; deletion log bucket in the backup location (`docs/backup-restore.md` 3.7) | Tombstone and log entry: `BackupRetentionDays`; hash: section 4 | super admin; the log: eng | Hosting |
 | D-29 | Data export files | Server (section 8.3) | Access and portability | LEG | Object storage | `ExportLinkTtlHours` | the player only | Hosting, CDN |
 | D-30 | Backups of PostgreSQL | Server (#188) | Disaster recovery | LI | Backup store | `BackupRetentionDays` (#188) | eng | Hosting |
 
@@ -106,7 +106,7 @@ The clock is server UTC (ADR 0007). Expiry runs as an idempotent daily job; "del
 | `PurchaseRecordRetentionYears` | 10, counted from the end of the purchase's calendar year (OQ-7) | D-17 | Delete |
 | `ConsentRecordRetentionYears` | 3, counted from the end of the calendar year of the account's deletion (OQ-7) | D-23 after deletion | Delete |
 | `PermanentBanEvasionRetentionDays` | 1095 after the account's deletion (OQ-10) | D-28 hash for a permanent ban | Delete |
-| `BackupRetentionDays` | set in #188 | D-30, D-28 tombstone | Backup rotated out |
+| `BackupRetentionDays` | 35 (`docs/backup-restore.md` section 3.2) | D-30, D-28 tombstone and deletion log entry | Backup rotated out; log entry deleted by the deletion job (`HD_DELETION_LOG_RETENTION`) |
 
 - Inactive accounts are never deleted automatically (owner decision, #187). There is no inactivity deletion and no config key for it at launch.
 - A temporary ban's ban-evasion hash expires when the ban would have ended.
@@ -117,10 +117,14 @@ The clock is server UTC (ADR 0007). Expiry runs as an idempotent daily job; "del
 
 | Visible to | Data |
 |---|---|
-| Everyone (profile, match, leaderboards) | Nickname, equipped cosmetics, level, statistics allowed by #59, rank and leaderboard position, membership of a country board (which reveals D-8), earned leaderboard emblems chosen for the profile showcase (`docs/ranking.md` 8.3, 8.4), earned medals chosen for the medal showcase (`docs/pass-missions-medals.md` 5.4) |
+| Everyone (profile, match, leaderboards) | Nickname, equipped cosmetics, level, statistics allowed by #59, rank, LP and leaderboard position, ranked wins of the season and mode on a leaderboard row, membership of a country board (which reveals D-8), earned leaderboard emblems chosen for the profile showcase (`docs/ranking.md` 8.3, 8.4), earned medals chosen for the medal showcase (`docs/pass-missions-medals.md` 5.4) |
 | Room members | Custom room name, seats, in-match emoji and quick messages |
 | Friends | Online presence (#153) |
 | Nobody | Email, auth identity, MMR, install id, IP, purchases, offenses, anti-cheat data, reports |
+
+A leaderboard row (`docs/ranking.md` 8.2) carries position, nickname, rank, apex tier, LP and ranked wins, and the random account id (D-1) that opens the player's profile; never MMR. Other players' LP is public on every board (owner decision 2026-11-21 on #852, https://github.com/Alievs-corp/hypedomino/issues/852#issuecomment-7065712190).
+
+On the client, `UI/Profile/PlayerProfile` (#75) reads `GET /profile/me` and `GET /profile/{account}` and shows only what the server sent: the own profile shows level, XP and games, wins, losses, win rate, streak and best streak, and games, wins and losses per mode; another player's profile shows level, games, win rate and best streak, the rank of each placed mode, and the medal and emblem showcases in the server's order. Every value, the win rate included, is the server's; the client works none of them out.
 
 The privacy policy states this table. A deleted account appears in past matches and season snapshots as a neutral localized placeholder name, never its nickname.
 
@@ -159,13 +163,24 @@ The privacy policy states this table. A deleted account appears in past matches 
 
 One row per change: account id, purpose, state, `PrivacyPolicyVersion`, server timestamp, source (first launch or settings), app version. Choices made before sign-in are held on the device and written at step 5 with their original order. Rows are append-only.
 
+- Implementation: table `consent_records` (migration `00051_consent_records.sql`). `PUT /push/settings` writes it for `promotional_push` (`docs/push.md` PN-9) and `PUT /consents` (`server/internal/consent`, #157) for `analytics` and `diagnostics`; the policy and app versions come from the client, the timestamp from the server. The state of a purpose is its latest row; a purpose without a row is off. On account deletion the rows move to the tombstone id (8.2). `POST /consents/first-launch` (#73) writes the `analytics` and `diagnostics` choices made before sign-in at step 5, one row per choice in the order the player made them, with source `first_launch`. When the account already has a row of any purpose for that `policyVersion`, the server's record applies (6.1) and nothing is written. On the client, `Game/Privacy/FirstLaunchConsents` holds the choices in memory only, never in device storage, so an app closed before sign-in shows steps 2 to 4 again; `Write` sends them after sign-in and drops them once the server answers, and a failed write keeps them for the next `Write`. At every accepted server hello `Game/Privacy/ConsentStartup` (`Game/PrivacyBoot`) writes the held choices through `Write`, or reads `GET /consents` when none are held, and opens or closes the analytics queue and the crash reporter to the server's answer only; nothing opens before that answer, and a failed write or read opens nothing and is tried again at the next hello. Not yet built: the first-launch screens (steps 2 to 4) that hand their choices to it, the first-launch write of `promotional_push`, the refusal of a grant below the digital consent age (the age gate result is not stored yet, section 7), the Settings, Privacy toggles on the client (#157), and the purge after `ConsentRecordRetentionYears`.
+
+| Request (access token) | Answer |
+|---|---|
+| `GET /consents` | `{analytics, diagnostics}` |
+| `PUT /consents` `{analytics, diagnostics, policyVersion, appVersion}` | Changes the purposes given, keeps the others, returns `{analytics, diagnostics}`. Each purpose that changes writes one row with source `settings`; a change needs `policyVersion` (the `PrivacyPolicyVersion` the player saw) and `appVersion`, or it answers 400 `consent.context_required` and writes nothing. A body that is not valid JSON or is larger than 4 KiB answers 400 `consent.malformed` |
+| `POST /consents/first-launch` `{choices: [{purpose, granted}], policyVersion, appVersion}` | Writes one row per entry of `choices`, in order, with source `first_launch`, unless the account already has a row for `policyVersion`; returns `{analytics, diagnostics}` either way. Empty `choices` writes nothing. Non-empty `choices` need `policyVersion` and `appVersion`, or it answers 400 `consent.context_required`. A purpose other than `analytics` or `diagnostics`, a body that is not valid JSON or one larger than 4 KiB answers 400 `consent.malformed` and writes nothing |
+
 ### 6.4 Analytics rules (#181)
 
 - No event is sent, queued or written to disk before `analytics` is on. Events from before consent are dropped, not held.
 - Events carry the analytics id, never account id, email, nickname, IP or install id. The analytics store drops the source IP on ingestion or truncates it before storage.
 - Server-side events (match end, purchase, reward) for a player without `analytics` carry no analytics id and only feed aggregates. Revenue and economy KPIs (#147) are computed from D-16 and D-17, not from analytics.
 - Analytics is first-party: the client sends events only to the game's own server. No third-party analytics SDK ships.
+- Implementation (#181): `POST /analytics/events` stores client events in `analytics_events` keyed by the analytics id only, and the first account that sends an analytics id owns it in `analytics_ids`, the only link from the id to an account. The source IP is not stored. The hourly deletion job deletes raw events received more than `AnalyticsRawRetentionDays` ago (`HD_ANALYTICS_RAW_RETENTION`). The server events `match_end`, `mission_complete`, `pass_level`, `reward_grant` and `purchase_complete` are written from the match outcome, the mission completion, the pass XP gain, the reward grant and the validated purchase. They carry the player's analytics id only while the latest `analytics` record is a grant, and only an id the account first sent after its latest withdrawal, so a rotated id is never bound again; of several such ids (several devices) they carry the newest. Otherwise they carry no analytics id. `reward_grant` is labeled with the grant's source type and `purchase_complete` records no price, currency or product. Bound events go with the analytics id on deletion and appear in the export (8.2, 8.3). Details in `docs/analytics.md` 3 and 5.
 - Sentry SDK defaults that collect more (IP address, default personal data, automatic session tracking with device ids) are disabled in the client build (#76).
+- The client sends crash reports without a vendor SDK (#182, `client/README.md`, Error reports): events carry no user, device id, server name or session and set `infer_ip` to `never`; UUIDs, email addresses, bearer tokens, JWTs and URL query strings are removed from the message and stack trace before sending.
+- Server panic reports (#182, `server/internal/panics`, from `cmd/server` and `cmd/admin-api`) go to Sentry in the EU data region only when `HD_SENTRY_DSN` is set. They carry the site name (`where`), the panic value, the stack of the server goroutine and the environment name; never an account id, analytics id, nickname, IP or match id, and the SDK's default personal data is off. They describe the server, not a player, so they are not D-25 and need no `diagnostics` consent. They expire by `CrashReportRetentionDays`.
 
 ## 7. Age gate and children
 
@@ -173,7 +188,7 @@ One row per change: account id, purpose, state, `PrivacyPolicyVersion`, server t
 
 - Content target is PEGI 3, IARC lowest tier, App Store 4+ (`docs/localization.md` 7). A content rating says the content suits all ages; it does not declare who the game targets. The target audience declared to the stores is 13 and older (7.3).
 - The game has accounts, purchases, public nicknames, leaderboards and moderated user names; it has no free-text or voice chat.
-- Bright cartoon visuals make the stores likely to treat the game as appealing to children even if not targeted at them, so the store listing and the age gate must be consistent with option A.
+- Animated, effect-heavy visuals can make the stores treat the game as appealing to children even if not targeted at them, even with the premium look of `docs/art-direction.md`, so the store listing and the age gate must be consistent with option A.
 
 ### 7.2 Thresholds (KVKK and Azerbaijan open, OQ-14)
 
@@ -224,11 +239,11 @@ Decision: **A**, accounts 13 and older only (owner, #187, 2026-10-26). `MinAccou
 
 | Step | What happens |
 |---|---|
-| 1. Request | Settings, Account, Delete account; or the web page (Google Play requires one reachable outside the app). Requires a fresh sign-in. Not available during a match. The screen states that coins, items and pass progress are lost and that store purchases are not refunded by deletion |
+| 1. Request | Settings, Account, Delete account; or the web page (Google Play requires one reachable outside the app). Requires a fresh sign-in. Not available during a match on any server node; a match with no end that started more than `HD_STALE_MATCH_AFTER` (2 hours) ago counts as abandoned by a crashed node and no longer blocks the request. The screen states that coins, items and pass progress are lost and that store purchases are not refunded by deletion |
 | 2. Pending | State `pending_deletion`. All sessions and refresh tokens revoked (#58); removed from matchmaking, presence, friends lists and current leaderboards; push tokens deleted |
 | 3. Grace | `AccountDeletionGraceDays`. Signing in during the grace shows only the pending state and a cancel button; cancel restores the account unchanged |
 | 4. Deletion job | Runs after the grace, idempotent, per the table below. Revokes Sign in with Apple tokens through Apple's REST API. Deletes raw events for the analytics id in the analytics store and sends a deletion request for user keys to Sentry |
-| 5. Tombstone | D-28 records the tombstone id and deletion time so a backup restore re-applies the deletion before the restored database serves traffic (#188) |
+| 5. Tombstone | D-28 records the tombstone id and deletion time. In the same run the job appends the account id, tombstone id and deletion time to the deletion log outside the database; the deletion is complete only once that write succeeded, and a failed write is retried. After a backup restore, `account-deletion replay` re-applies every logged deletion after the restore point before the restored database serves traffic (`docs/backup-restore.md` 3.7 and 7.3, #188, #601) |
 
 | Data | At deletion |
 |---|---|
@@ -238,6 +253,7 @@ Decision: **A**, accounts 13 and older only (owner, #187, 2026-10-26). `MinAccou
 | D-8, D-10, D-16 | Delete |
 | D-12, D-15 | Anonymize: opponents' and partners' history stays correct, the player is shown as a placeholder |
 | D-13, D-18, D-19, D-20 | Kept to their own retention, linked to the tombstone id only; deleted when it ends |
+| D-29 | The request record moves to the tombstone id so the purge job still deletes a file that has not expired; files expire by `ExportLinkTtlHours` |
 | D-17 | Kept for `PurchaseRecordRetentionYears`, linked to the tombstone id, without contact data |
 | D-23 | Kept for `ConsentRecordRetentionYears` as proof, linked to the tombstone id |
 | D-24 | Delete raw events for the analytics id in the analytics store |
@@ -248,12 +264,20 @@ Decision: **A**, accounts 13 and older only (owner, #187, 2026-10-26). `MinAccou
 | D-30 | Expires with backup rotation; the tombstone re-applies the deletion on restore |
 
 - Acceptance check (#63): a deleted account cannot sign in, and a query by its former email, auth identity or nickname returns nothing outside D-28.
+- Implementation (#63, `server/internal/account/deletion.go`, `server/internal/auth/deletion.go`): request and cancel each need a fresh Google or Apple ID token, so the same endpoints serve the app and the web page. The request deletes the push tokens (D-22) at once. The tombstone is a new `accounts` row in state `deleted`; it is the D-28 tombstone record (id and deletion time). Current rank state (`ratings`) is deleted with the account so a placeholder never appears on a live board; season results, rank rewards, emblems, leaderboard removals and rating history move to the tombstone. To keep the `NicknameReleaseDays` rule, the current nickname stays in the nickname history under the tombstone id. Admin audit entries are append-only and keep the former account id, which no longer resolves to any row. The analytics ids of the account and their raw events (D-24) are deleted. Not yet built: the ban-evasion hash (banned accounts cannot request deletion until it exists), Sign in with Apple token revocation, Sentry deletion requests, and the in-match check across nodes (only the node serving the request is checked). The client side of request, cancel and the pending state is `Game/Privacy/AccountDeletion` (`client/README.md` Settings screen, #157); its screens are not built yet (#848).
 
 ### 8.3 Export (#63)
 
 - In-app request in Settings, Account. The server builds one JSON file with a versioned schema and offers it as a download through a signed URL valid for `ExportLinkTtlHours`. One request per `DataExportCooldownDays` (proposed default 7).
 - Contents: D-1, D-3, D-8 to D-11, D-12 (own seats only), D-15, D-16, D-17 without purchase tokens or receipts, D-18, D-21 (friends and blocks as nicknames), D-23, D-24 for the player's analytics ids, and from D-19 every sanction, active or past, including a shadowban, with its reason category, start and end, plus the signals that led to it as signal category and time (OQ-9).
 - Never included: other players' account ids or hidden tiles, reporter identities, the risk score, signal weights, thresholds, which detector fired and raw evidence that shows how detection works (Art. 15(4), OQ-9), receipts and tokens, logs.
+- Implemented in `server/internal/account/export.go` and `server/internal/dataexport` (#63). `POST /account/export` with the access token reserves a request row in `data_exports`, builds the document, writes it to the private export bucket as `exports/<random id>.json` and answers 201 with the signed URL and `expires_at`. Inside the cooldown it answers 429 `export_cooldown` with `retry_at`; if the build or upload fails the row is released and it answers 503 `export_unavailable`, so a failure does not start the cooldown. A purge job, run every `HD_SEASON_POLL`, deletes each file once `expires_at` passes and marks the row. Without `HD_EXPORT_STORE_URL` the endpoint is not served (`docs/environments.md` 2.1).
+- Document: `schema_version` (1), `generated_at` and `sections`, each a list of rows. Every table that references an account is either exported with an explicit column list or withheld, and a test fails when a new table is neither. Withheld: `auth_sessions` (D-4), `app_attest_keys` (D-19 device keys), `push_devices` (D-22), `rating_signals` and `risk_reviews` (detection internals, other players' account ids), `player_reports` (D-20, reporter identities), `data_exports`. D-2 is left out; the email (D-3) is included.
+- Anti-cheat content: `account_sanctions` lists each temporary, ranked, penalty ladder and permanent ban and each forced rename with its id, kind, reason category, start, end and lift time (#186); `appeals` lists each appeal the player sent with its sanction id, text, state and times, without who decided (account deletion erases the appeal rows, since the text is free text; the decision stays in the audit log); `sanctions` lists each ban-wave action with its time; the `account` section holds the current `banned_until`, `shadowbanned_at` and `muted_until`; `sanction_signals` lists the category (the signal kind) and time of each signal recorded at or before the latest sanction. Signals after the latest sanction, weights, scores, dedupe keys and evidence are withheld.
+- D-23: the `consents` section lists every `consent_records` row (purpose, choice, policy and app version, source, time). The age gate result is not stored yet, so it is not in the document.
+- D-24: the `analytics` section lists every stored event of the account's analytics ids (analytics id, name, label, value, device time, receive time).
+- Not yet in the document, because the data is not stored yet: the history of past admin mutes and of bans before #186, which lives only in the admin audit log (D-27).
+- Client: `Game/Privacy/DataExport` sends the request from Settings, Account and hands the signed URL and its expiry to the screen, which opens the link in the browser; the link is held in memory only, never stored on the device (`client/README.md` Settings screen, #157). The Settings, Account screen itself is not built yet.
 - A support answer to an access request (8.1) gives the same anti-cheat content and states, with the reason, what was withheld and that the player may complain to a supervisory authority (GDPR Art. 12(4)).
 
 ## 9. Regulation mapping
@@ -513,7 +537,7 @@ Every item must be checked, or waived by an owner comment on #187, before releas
 | L-16 | Export as 8.3, including sanctions and signal categories (OQ-9) | Eng | #63 | Open |
 | L-17 | Sign in with Apple token revocation on deletion | Eng | #57, #63 | Open |
 | L-18 | Deletion propagated to the analytics store and Sentry | Eng | #181, #182 | Open |
-| L-19 | Backup restore re-applies tombstones before serving traffic; exercised in the restore drill | Eng | #188 | Open |
+| L-19 | Backup restore re-applies tombstones before serving traffic; exercised in the restore drill | Eng | #188, #601 | Done in the repository (#601): deletion log, replay command, `backup-restore.md` 7.3 step 1, local and CI drill. Open until the deletion log bucket and key exist (#25) and the staging drill replays from it (`backup-restore.md` 8.2) |
 | L-20 | Breach response in the runbook: assess, notify the authority within 72 hours (GDPR, KVKK), inform players where required | Owner | #197 | Open |
 | L-21 | Rights request handling in support tools with a 30-day clock | Eng | #144 | Open |
 | L-22 | PII access limited to support and super admin roles; analyst sees pseudonymous data only | Eng | #134, #148 | Open |

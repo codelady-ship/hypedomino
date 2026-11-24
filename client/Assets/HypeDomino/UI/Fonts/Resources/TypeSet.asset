@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7563a330f32e4ace88a1d613dcceb9e3, type: 3}
+  m_Name: TypeSet
+  m_EditorClassIdentifier: HypeDomino.UI::HypeDomino.UI.Typography.TypeSet
+  faces:
+  - family: 0
+    weight: 900
+    font: {fileID: 11400000, guid: 7b8de96df6cbc7550823b31e93b8a2c7, type: 2}
+  - family: 1
+    weight: 700
+    font: {fileID: 11400000, guid: 5628b3a1486f5acf9b5b621154ebcc23, type: 2}
+  - family: 1
+    weight: 900
+    font: {fileID: 11400000, guid: cfcc51b8e0069922186efbf51158bd3c, type: 2}
+  - family: 2
+    weight: 700
+    font: {fileID: 11400000, guid: 32da6020c48788c80bda74071eb09302, type: 2}
+  - family: 3
+    weight: 300
+    font: {fileID: 11400000, guid: b6a096322c0ac638e80d30c4f7501f06, type: 2}
+  - family: 3
+    weight: 400
+    font: {fileID: 11400000, guid: b8c5d2c2f39377861a1f1e63c1acb415, type: 2}
+  - family: 4
+    weight: 300
+    font: {fileID: 11400000, guid: 1de9b41a7d4e160658f3442d25cb3a7b, type: 2}
+  - family: 4
+    weight: 400
+    font: {fileID: 11400000, guid: c080bfe81ac6d4357a2f49155451c5bf, type: 2}

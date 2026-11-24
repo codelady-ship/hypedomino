@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: cosmetic-tile-sema
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: cosmetic-tile-sema
+  m_GUID: 5ce4085377b8ca5879c4fac61920b32e
+  m_SerializeEntries:
+  - m_GUID: 53b23ce6313e95c04b32c0df8ff2c475
+    m_Address: cosmetic/tile/sema/anim
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - cosmetic
+    - cosmetic-tile
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 87f85d9699a7de4b79942d0c1311824d
+    m_Address: cosmetic/tile/sema/static
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - cosmetic
+    - cosmetic-static
+    - cosmetic-tile
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 2667f55286d5ca50895119175a44896c, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 74cfdcea0140081489a03e0cbabfbb24, type: 2}
+    - {fileID: 11400000, guid: 607594c45ee574d6f9f0c3f20279728b, type: 2}

@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/analytics"
 	"github.com/Alievs-corp/hypedomino/server/internal/cosmetics"
 	"github.com/Alievs-corp/hypedomino/server/internal/inventory"
 	"github.com/Alievs-corp/hypedomino/server/internal/wallet"
@@ -33,7 +34,7 @@ func DefaultConfig() Config {
 	return Config{
 		DuplicateCompensationPercent: 20,
 		GuidePriceCoins:              map[string]int64{"common": 400, "rare": 1500, "epic": 3500, "legendary": 12000, "mythic": 30000},
-		GuidePriceTypePercent:        map[string]int{cosmetics.TypeAvatar: 100, cosmetics.TypeCharacter: 150, cosmetics.TypeFrame: 100, cosmetics.TypeTable: 150, cosmetics.TypeEmoji: 50, cosmetics.TypeAction: 50},
+		GuidePriceTypePercent:        map[string]int{cosmetics.TypeAvatar: 100, cosmetics.TypeFrame: 100, cosmetics.TypeTable: 150, cosmetics.TypeTile: 125, cosmetics.TypeEmoji: 50},
 	}
 }
 
@@ -51,13 +52,14 @@ type Medals interface {
 }
 
 type Pass interface {
-	AddIn(ctx context.Context, tx pgx.Tx, account string, xp int, now time.Time) (bool, error)
+	AddIn(ctx context.Context, tx pgx.Tx, account string, xp int, source cosmetics.Source, key string, now time.Time) (bool, error)
 }
 
 type Grant struct {
 	Account       string
 	Bundle        Bundle
 	Source        cosmetics.Source
+	LedgerSource  wallet.Source
 	Reason        wallet.Reason
 	Key           string
 	ConfigVersion int
@@ -73,6 +75,7 @@ type Report struct {
 	Key           string           `json:"key"`
 	ConfigVersion int              `json:"config_version"`
 	Coins         int64            `json:"coins"`
+	Crystals      int64            `json:"crystals,omitempty"`
 	Cosmetics     []string         `json:"cosmetics"`
 	Duplicates    map[string]int64 `json:"duplicates"`
 	Medals        []string         `json:"medals"`
@@ -112,14 +115,25 @@ func (g Grant) validate() error {
 	if !wallet.Known(g.Reason) {
 		return fmt.Errorf("%w: unknown reason %q", ErrInvalidGrant, g.Reason)
 	}
-	if g.Bundle.Coins == 0 {
-		return nil
-	}
-	probe := wallet.Entry{Account: g.Account, Amount: g.Bundle.Coins, Reason: g.Reason, Source: wallet.Source{Type: g.Source.Type, Ref: g.Source.Ref}, Key: g.Key}
-	if err := probe.Validate(); err != nil {
-		return fmt.Errorf("%w: %v", ErrInvalidGrant, err)
+	source := g.ledgerSource()
+	amounts := map[wallet.Currency]int64{wallet.Coin: g.Bundle.Coins, wallet.Crystal: g.Bundle.Crystals}
+	for _, currency := range wallet.Currencies {
+		if amounts[currency] == 0 {
+			continue
+		}
+		probe := wallet.Entry{Account: g.Account, Currency: currency, Amount: amounts[currency], Reason: g.Reason, Source: source, Key: g.Key}
+		if err := probe.Validate(); err != nil {
+			return fmt.Errorf("%w: %v", ErrInvalidGrant, err)
+		}
 	}
 	return nil
+}
+
+func (g Grant) ledgerSource() wallet.Source {
+	if g.LedgerSource.Type != "" {
+		return g.LedgerSource
+	}
+	return wallet.Source{Type: g.Source.Type, Ref: g.Source.Ref}
 }
 
 func (e *Engine) Apply(ctx context.Context, grant Grant, now time.Time) (Report, error) {
@@ -160,12 +174,18 @@ func (e *Engine) ApplyIn(ctx context.Context, tx pgx.Tx, grant Grant, now time.T
 		return Report{}, err
 	}
 	report := Report{Account: grant.Account, BundleID: grant.Bundle.ID, Revision: grant.Bundle.Revision, Source: grant.Source, Reason: grant.Reason, Key: grant.Key, ConfigVersion: grant.ConfigVersion, Cosmetics: []string{}, Duplicates: map[string]int64{}, Medals: []string{}, MedalsSkipped: []string{}, At: now}
-	source := wallet.Source{Type: grant.Source.Type, Ref: grant.Source.Ref}
+	source := grant.ledgerSource()
 	if grant.Bundle.Coins > 0 {
 		if _, err := e.wallet.ApplyIn(ctx, tx, wallet.Entry{Account: grant.Account, Amount: grant.Bundle.Coins, Reason: grant.Reason, Source: source, Key: grant.Key, ConfigVersion: grant.ConfigVersion}, now); err != nil {
 			return Report{}, err
 		}
 		report.Coins = grant.Bundle.Coins
+	}
+	if grant.Bundle.Crystals > 0 {
+		if _, err := e.wallet.ApplyIn(ctx, tx, wallet.Entry{Account: grant.Account, Currency: wallet.Crystal, Amount: grant.Bundle.Crystals, Reason: grant.Reason, Source: source, Key: grant.Key, ConfigVersion: grant.ConfigVersion}, now); err != nil {
+			return Report{}, err
+		}
+		report.Crystals = grant.Bundle.Crystals
 	}
 	for _, id := range grant.Bundle.Cosmetics {
 		granted, err := e.inventory.GrantIn(ctx, tx, grant.Account, id, grant.Source, now)
@@ -202,7 +222,7 @@ func (e *Engine) ApplyIn(ctx context.Context, tx pgx.Tx, grant Grant, now time.T
 	if grant.Bundle.PassXP > 0 {
 		applied := false
 		if e.pass != nil {
-			if applied, err = e.pass.AddIn(ctx, tx, grant.Account, grant.Bundle.PassXP, now); err != nil {
+			if applied, err = e.pass.AddIn(ctx, tx, grant.Account, grant.Bundle.PassXP, grant.Source, grant.Key, now); err != nil {
 				return Report{}, err
 			}
 		}
@@ -257,6 +277,9 @@ func (e *Engine) record(ctx context.Context, tx pgx.Tx, report *Report) error {
 	if _, err := tx.Exec(ctx, `update reward_grants set report = $2 where id = $1`, report.ID, encoded); err != nil {
 		return err
 	}
+	if err := analytics.RecordServerLabeledIn(ctx, tx, analytics.RewardGrant, report.Account, report.Source.Type, 1, report.At); err != nil {
+		return err
+	}
 	_, err = tx.Exec(ctx, `insert into outbox (topic, key, payload) values ($1, $2, $3) on conflict (topic, key) do nothing`, Topic, report.Account+":"+report.Key, encoded)
 	return err
 }
@@ -301,6 +324,14 @@ func (e *Engine) Revoke(ctx context.Context, account, key string, reason wallet.
 		return Report{}, err
 	}
 	defer tx.Rollback(ctx)
+	report, err := e.RevokeIn(ctx, tx, account, key, reason, revokeKey, now)
+	if err != nil {
+		return Report{}, err
+	}
+	return report, tx.Commit(ctx)
+}
+
+func (e *Engine) RevokeIn(ctx context.Context, tx pgx.Tx, account, key string, reason wallet.Reason, revokeKey string, now time.Time) (Report, error) {
 	report, err := load(ctx, tx, account, key)
 	if err != nil {
 		return Report{}, err
@@ -308,14 +339,8 @@ func (e *Engine) Revoke(ctx context.Context, account, key string, reason wallet.
 	if report.Revoked() {
 		return report, ErrAlreadyRevoke
 	}
-	coins := report.Coins
-	for _, compensation := range report.Duplicates {
-		coins += compensation
-	}
-	if coins > 0 {
-		if _, err := e.wallet.ApplyIn(ctx, tx, wallet.Entry{Account: account, Amount: -coins, Reason: reason, Source: wallet.Source{Type: report.Source.Type, Ref: report.Source.Ref}, Key: revokeKey, ConfigVersion: report.ConfigVersion}, now); err != nil {
-			return Report{}, err
-		}
+	if err := e.move(ctx, tx, report, -1, reason, revokeKey, now); err != nil {
+		return Report{}, err
 	}
 	for _, id := range report.Cosmetics {
 		if err := e.inventory.RevokeIn(ctx, tx, account, id, now); err != nil && !errors.Is(err, inventory.ErrNotOwned) {
@@ -333,5 +358,55 @@ func (e *Engine) Revoke(ctx context.Context, account, key string, reason wallet.
 		return Report{}, err
 	}
 	report.RevokedAt, report.RevokeKey = now, revokeKey
-	return report, tx.Commit(ctx)
+	return report, nil
+}
+
+func (e *Engine) ReinstateIn(ctx context.Context, tx pgx.Tx, account, key string, reason wallet.Reason, reinstateKey string, now time.Time) (Report, error) {
+	report, err := load(ctx, tx, account, key)
+	if err != nil || !report.Revoked() {
+		return report, err
+	}
+	if err := e.move(ctx, tx, report, 1, reason, reinstateKey, now); err != nil {
+		return Report{}, err
+	}
+	for _, id := range report.Cosmetics {
+		if _, err := e.inventory.GrantIn(ctx, tx, account, id, report.Source, now); err != nil {
+			return Report{}, err
+		}
+	}
+	if e.medals != nil {
+		for _, id := range report.Medals {
+			if _, err := e.medals.GrantIn(ctx, tx, account, id, report.Source, now); err != nil {
+				return Report{}, err
+			}
+		}
+	}
+	if _, err := tx.Exec(ctx, `update reward_grants set revoked_at = null, revoke_key = null where id = $1`, report.ID); err != nil {
+		return Report{}, err
+	}
+	report.RevokedAt, report.RevokeKey = time.Time{}, ""
+	return report, nil
+}
+
+func (r Report) amounts() map[wallet.Currency]int64 {
+	coins := r.Coins
+	for _, compensation := range r.Duplicates {
+		coins += compensation
+	}
+	return map[wallet.Currency]int64{wallet.Coin: coins, wallet.Crystal: r.Crystals}
+}
+
+func (e *Engine) move(ctx context.Context, tx pgx.Tx, report Report, sign int64, reason wallet.Reason, key string, now time.Time) error {
+	amounts := report.amounts()
+	source := wallet.Source{Type: report.Source.Type, Ref: report.Source.Ref}
+	for _, currency := range wallet.Currencies {
+		if amounts[currency] == 0 || !wallet.Moves(reason, currency) {
+			continue
+		}
+		entry := wallet.Entry{Account: report.Account, Currency: currency, Amount: sign * amounts[currency], Reason: reason, Source: source, Key: key, ConfigVersion: report.ConfigVersion}
+		if _, err := e.wallet.ApplyIn(ctx, tx, entry, now); err != nil {
+			return err
+		}
+	}
+	return nil
 }

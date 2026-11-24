@@ -107,7 +107,7 @@ E1 (specs, owner confirmation #3) -> E3 rules engine -> E4 realtime match -> E7 
 - Admin config before tunable features: shop packages (#139), reward bundles (#138), pass seasons (#140), ranking tiers (#143) and remote config (#145) must exist before the features that read them can ship values; no tunable number is hardcoded.
 - Anti-crack before economy sign-off: #202, #204 and #208 gate #101, #106 and #110.
 - Ranking needs the match pipeline and leaver rules: #48, #52, #112 and `docs/penalties.md`.
-- Art direction (#166, #167) before any asset set (#169 to #178); the animated asset runtime (#93) before avatars, characters and boards (#94, #95, #97).
+- Art direction (#166, #167) before any asset set (#169 to #178); the animated asset runtime (#93) before avatars and boards (#94, #97).
 - Decision gates: issues labelled `status: needs-decision` are blocked on an owner decision and are not implemented around. #3 (confirmation of rule ambiguities) is such a gate for E3 and M1. At the time of writing no issue carries the label; check `gh issue list -l "status: needs-decision"` before starting work.
 
 ## 3. Priorities

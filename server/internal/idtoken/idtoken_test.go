@@ -265,6 +265,16 @@ func TestVerify(t *testing.T) {
 			},
 		},
 		{
+			name:     "google workspace token carries its hosted domain",
+			provider: ProviderGoogle,
+			claims:   with(googleClaims, func(c map[string]any) { c["hd"] = "example.com" }),
+			check: func(t *testing.T, identity Identity) {
+				if identity.HostedDomain != "example.com" {
+					t.Fatalf("identity = %+v, want hosted domain example.com", identity)
+				}
+			},
+		},
+		{
 			name:     "google issuer without scheme",
 			provider: ProviderGoogle,
 			claims:   with(googleClaims, func(c map[string]any) { c["iss"] = "accounts.google.com" }),

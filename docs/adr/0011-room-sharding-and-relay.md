@@ -17,7 +17,7 @@ A room lives in the memory of exactly one node (ADR 0003) and players reach node
 - Every node writes a heartbeat to Redis (`hd:node:<id>`, JSON with address, capacity, rooms, connections, draining; TTL `HD_NODE_TTL`) and its id into the set `hd:nodes`. A node whose heartbeat expired is dropped from the set on the next read. Membership changes are published on `hd:members`.
 
 ### Player to node routing
-- When a session is seated in a room, the hosting node claims `hd:route:<sha256(token)[:16]>` = node id with TTL `HD_ROUTE_TTL`; the claim is refused if another live node owns it. The route is released when the session leaves the room after the reconnect grace or is revoked. The raw session token never reaches Redis (`docs/environments.md` S-3).
+- When a session is seated in a room, the hosting node claims `hd:route:<sha256(token)[:16]>` = node id with TTL `HD_ROUTE_TTL`; the claim is refused if another live node owns it. The hosting node re-claims the routes of its routed sessions every half `HD_ROUTE_TTL`, so a long match or a long-open friend lobby stays resumable. The route is released when the session leaves the room after the reconnect grace or is revoked. The raw session token never reaches Redis (`docs/environments.md` S-3).
 - A hello with a token the node does not know is looked up in the routes. If another live node owns it, the node dials that node's internal address over the cluster network with the `X-HD-Relay` header, replays the hello and pipes frames both ways for the life of the connection. The player keeps one public endpoint and TLS stays on the load balancer. A node accepts relayed connections while draining, so a player whose connection dropped during a deploy resumes into the old pod and finishes the match there.
 - A relayed connection is never relayed again: a hosting node answers a foreign hello that arrived through a relay with `UNAUTHENTICATED`.
 
@@ -35,5 +35,5 @@ A room lives in the memory of exactly one node (ADR 0003) and players reach node
 
 ## Consequences
 - Easier: horizontal scaling by adding pods; deploys and reconnects during a drain need no client change; the operator has one number for scale decisions.
-- Harder: Redis is on the resume path, so a Redis outage turns cross-node resumes into `UNAUTHENTICATED` until it returns (same-node resumes still work). Route keys expire after `HD_ROUTE_TTL`, so a match longer than that cannot be resumed across nodes.
+- Harder: Redis is on the resume path, so a Redis outage turns cross-node resumes into `UNAUTHENTICATED` until it returns (same-node resumes still work). Route keys of a node that stops renewing them without a clean release expire after `HD_ROUTE_TTL`.
 - Must be verified: the two-node relay and drain tests of `server/internal/cluster` run against a real Redis 7 in CI; the 10k rooms per node figure waits for the reference node of #192 (`docs/performance.md` section 9 holds the developer-machine run).

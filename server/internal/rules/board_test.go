@@ -198,6 +198,38 @@ func TestOpeningDoubleBecomesSpinner(t *testing.T) {
 	}
 }
 
+func TestOpeningIndexFollowsLeftPlacements(t *testing.T) {
+	type placement struct {
+		tile string
+		end  End
+	}
+	cases := []struct {
+		name       string
+		opening    Tile
+		placements []placement
+		want       int
+	}{
+		{"opening only", MustTile(2, 3), nil, 0},
+		{"right placements keep it first", MustTile(2, 3), []placement{{"3-4", EndRight}, {"4-6", EndRight}}, 0},
+		{"each left placement moves it right", MustTile(2, 3), []placement{{"2-5", EndLeft}, {"3-3", EndRight}, {"1-5", EndLeft}}, 2},
+		{"arm placements leave it", MustTile(6, 6), []placement{{"6-1", EndRight}, {"4-6", EndLeft}, {"3-6", EndTop}, {"0-6", EndBottom}}, 1},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			board := NewBoard(c.opening)
+			for _, p := range c.placements {
+				mustPlace(t, &board, p.tile, p.end)
+			}
+			if got := board.OpeningIndex(); got != c.want {
+				t.Fatalf("opening index %d, want %d", got, c.want)
+			}
+			if line := board.Line(); line[c.want].Tile() != c.opening {
+				t.Fatalf("line %q has %v at the opening index", lineText(line), line[c.want])
+			}
+		})
+	}
+}
+
 func TestBoardCopiesAreIndependent(t *testing.T) {
 	board := NewBoard(MustTile(2, 3))
 	snapshot := board

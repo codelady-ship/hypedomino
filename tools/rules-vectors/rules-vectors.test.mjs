@@ -30,7 +30,7 @@ test("the suite has more than 60 vectors", () => {
 test("every rule is either covered or explicitly excluded", () => {
   const excluded = excludedRules(suite.readme);
   assert.ok(excluded.length > 0);
-  assert.equal(ruleIds(suite.rulesText).length, 58);
+  assert.equal(ruleIds(suite.rulesText).length, 59);
 });
 
 test("a duplicate id is reported", () => {

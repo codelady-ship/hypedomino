@@ -41,26 +41,15 @@ test("an animated avatar, frame or emoji without an animation address is rejecte
   }
 });
 
-test("an action is always animated and needs its clip", () => {
-  assertReported(errorsAfter((_, item) => delete item("action.victory_dance").animationAddress), "missing animationAddress");
-  assertReported(
-    errorsAfter((_, item) => {
-      item("action.victory_dance").animated = false;
-    }),
-    "animated",
-  );
-});
-
-test("an action cannot be a default item and no default action is required", () => {
-  assertReported(
-    errorsAfter((_, item) => {
-      item("action.victory_dance").sources = [{ type: "default" }];
-    }),
-    "action cannot have a default source",
-  );
-  const minimal = examples.find(({ name }) => name === "minimal.json").manifest;
-  assert.ok(!minimal.items.some((item) => item.type === "action"));
-  assert.deepEqual(checkManifest(schema, minimal), []);
+test("the removed character and action types are rejected", () => {
+  for (const type of ["character", "action"]) {
+    assertReported(
+      errorsAfter((manifest) => {
+        manifest.items.push({ ...structuredClone(manifest.items[0]), id: `${type}.ali`, type, nameKey: `cosmetic.${type}.ali.name`, staticAddress: `cosmetic/${type}/ali/static` });
+      }),
+      "does not match",
+    );
+  }
 });
 
 test("a static item with animation fields is rejected", () => {
@@ -78,29 +67,25 @@ test("a static item with animation fields is rejected", () => {
   );
 });
 
-test("an animated character needs all four clips", () => {
-  assertReported(errorsAfter((_, item) => delete item("character.tile_wizard").clips), "missing clips");
-  assertReported(errorsAfter((_, item) => delete item("character.tile_wizard").clips.reaction), "missing reaction");
-});
-
-test("an animated character needs a model and the high-detail model stays optional", () => {
-  assertReported(errorsAfter((_, item) => delete item("character.tile_wizard").modelAddress), "missing modelAddress");
-  assert.deepEqual(errorsAfter((_, item) => delete item("character.tile_wizard").modelHqAddress), []);
-});
-
-test("a static character carries no model", () => {
+test("a model or clips on any item are rejected", () => {
   assertReported(
     errorsAfter((_, item) => {
-      item("character.starter").modelAddress = "cosmetic/character/starter/model";
+      item("avatar.tile_wizard").modelAddress = "cosmetic/avatar/tile_wizard/model";
     }),
     "unexpected property modelAddress",
+  );
+  assertReported(
+    errorsAfter((_, item) => {
+      item("avatar.tile_wizard").clips = { idle: "cosmetic/avatar/tile_wizard/clip/idle" };
+    }),
+    "unexpected property clips",
   );
 });
 
 test("fields of another type are rejected", () => {
   assertReported(
     errorsAfter((_, item) => {
-      item("character.tile_wizard").animationAddress = "cosmetic/character/tile_wizard/anim";
+      item("table.night_market").animationAddress = "cosmetic/table/night_market/anim";
     }),
     "unexpected property animationAddress",
   );
@@ -217,15 +202,9 @@ test("an address off the naming convention is rejected", () => {
   );
   assertReported(
     errorsAfter((_, item) => {
-      item("character.tile_wizard").clips.win = "cosmetic/character/tile_wizard/clip/lose";
+      item("table.night_market").layers[0].address = "cosmetic/table/night_market/layer/other";
     }),
-    "clips.win is cosmetic/character/tile_wizard/clip/lose",
-  );
-  assertReported(
-    errorsAfter((_, item) => {
-      item("character.tile_wizard").modelHqAddress = "cosmetic/character/tile_wizard/model";
-    }),
-    "modelHqAddress is cosmetic/character/tile_wizard/model",
+    "is cosmetic/table/night_market/layer/other",
   );
   assertReported(
     errorsAfter((_, item) => {

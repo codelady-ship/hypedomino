@@ -1,0 +1,6 @@
+{
+  "protocolVersion": 1,
+  "sequence": "4",
+  "sessionNonce": "81985529216486895",
+  "lobbyIntent": { "command": "LOBBY_COMMAND_PLACE", "accountId": "0b7c3f2e-5a41-4d8e-9c1f-2a6b8d4e7f10", "seat": "SEAT_EAST" }
+}

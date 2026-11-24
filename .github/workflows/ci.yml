@@ -26,6 +26,8 @@ jobs:
       proto: ${{ steps.areas.outputs.proto }}
       proto_breaking: ${{ steps.areas.outputs.proto_breaking }}
       deploy: ${{ steps.areas.outputs.deploy }}
+      backup: ${{ steps.areas.outputs.backup }}
+      assets: ${{ steps.areas.outputs.assets }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,17 +38,40 @@ jobs:
           filters: |
             server:
               - 'server/**'
+              - 'docs/cosmetics/schema.json'
+              - 'tools/asset-export/budgets.json'
               - '.github/workflows/ci.yml'
             admin:
               - 'admin/**'
               - '.github/workflows/ci.yml'
             client:
               - 'client/**'
+              - 'server/internal/cosmetics/builtin.json'
+              - 'docs/cosmetics/examples/**'
+              - '.github/workflows/ci.yml'
+            assets:
+              - 'assets-src/**'
+              - 'tools/asset-export/**'
+              - 'tools/asset-naming/**'
+              - 'tools/cosmetics-schema/**'
               - '.github/workflows/ci.yml'
             deploy:
               - 'server/**'
               - 'deploy/**'
               - 'tools/deploy/**'
+              - '.github/workflows/ci.yml'
+            backup:
+              - 'tools/backup-drill/**'
+              - 'deploy/k8s/backup/**'
+              - 'deploy/k8s/postgres/**'
+              - 'server/Dockerfile'
+              - 'server/go.mod'
+              - 'server/cmd/account-deletion/**'
+              - 'server/cmd/migrate/**'
+              - 'server/internal/account/**'
+              - 'server/internal/db/**'
+              - 'server/internal/deletionlog/**'
+              - 'server/internal/objectstore/**'
               - '.github/workflows/ci.yml'
             proto:
               - 'proto/**'
@@ -62,6 +87,8 @@ jobs:
           CLIENT_CHANGED: ${{ steps.filter.outputs.client }}
           PROTO_CHANGED: ${{ steps.filter.outputs.proto }}
           DEPLOY_CHANGED: ${{ steps.filter.outputs.deploy }}
+          BACKUP_CHANGED: ${{ steps.filter.outputs.backup }}
+          ASSETS_CHANGED: ${{ steps.filter.outputs.assets }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           emit() {
@@ -72,6 +99,8 @@ jobs:
           emit client "$CLIENT_CHANGED" client/ProjectSettings/ProjectVersion.txt
           emit proto "$PROTO_CHANGED" proto/buf.yaml
           emit deploy "$DEPLOY_CHANGED" server/Dockerfile
+          emit backup "$BACKUP_CHANGED" tools/backup-drill/drill.sh
+          emit assets "$ASSETS_CHANGED" tools/asset-export/asset-export.mjs
           if [ -n "$BASE_SHA" ] && git cat-file -e "$BASE_SHA:proto/buf.yaml" 2>/dev/null; then
             echo "proto_breaking=true" >> "$GITHUB_OUTPUT"
           else
@@ -165,6 +194,8 @@ jobs:
           percent=$(go test -cover ./internal/rules/ | grep -o 'coverage: [0-9.]*' | grep -o '[0-9.]*')
           echo "server/internal/rules coverage: ${percent}% (${rules} functions)" | tee -a "$GITHUB_STEP_SUMMARY"
           awk -v p="$percent" 'BEGIN { exit (p + 0 >= 95) ? 0 : 1 }' || { echo "rules coverage ${percent}% is below the 95% floor of docs/test-strategy.md section 11"; exit 1; }
+      - name: Admin API has no known reachable vulnerability
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./cmd/admin-api/...
 
   bench:
     needs: changes
@@ -201,24 +232,84 @@ jobs:
     if: needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     env:
+      KUBECONFORM_VERSION: v0.8.0
+      KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
       KIND_VERSION: v0.33.0
       KIND_SHA256: aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d
+      PROMETHEUS_IMAGE: prom/prometheus:v3.5.0@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
     steps:
       - uses: actions/checkout@v4
-      - name: Build the server image
-        run: docker build -t hypedomino-server:ci server
-      - name: Container health, bad config exit and SIGTERM drain
-        run: bash tools/deploy/container-smoke.sh hypedomino-server:ci
-      - name: Install kind
+      - name: Install kubeconform and kind
         run: |
+          curl -sSfL -o "$RUNNER_TEMP/kubeconform.tar.gz" "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          echo "$KUBECONFORM_SHA256  $RUNNER_TEMP/kubeconform.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/kubeconform.tar.gz" -C "$RUNNER_TEMP" kubeconform
           curl -sSfL -o "$RUNNER_TEMP/kind" "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
           echo "$KIND_SHA256  $RUNNER_TEMP/kind" | sha256sum -c -
           chmod +x "$RUNNER_TEMP/kind"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Server manifests render and match the Kubernetes schema
+        run: |
+          for dir in deploy/k8s/base deploy/k8s/overlays/ci deploy/k8s/monitoring; do
+            kubectl kustomize "$dir" | kubeconform -strict -summary -
+          done
+          kubeconform -strict -summary tools/deploy/ci-postgres.yaml
+      - name: Alert rules load and fire as their tests expect
+        run: |
+          docker run --rm -v "$PWD/deploy/k8s/monitoring:/rules:ro" -w /rules --entrypoint promtool "$PROMETHEUS_IMAGE" check rules server-latency.rules.yaml
+          docker run --rm -v "$PWD/deploy/k8s/monitoring:/rules:ro" -w /rules --entrypoint promtool "$PROMETHEUS_IMAGE" test rules server-latency.rules.test.yaml
+      - name: Build the server image
+        run: docker build -t hypedomino-server:ci server
+      - name: Image size
+        run: docker image inspect -f 'hypedomino-server:ci {{.Size}} bytes' hypedomino-server:ci | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Container health, bad config exit and SIGTERM drain
+        run: bash tools/deploy/container-smoke.sh hypedomino-server:ci
       - name: Create the cluster
         run: kind create cluster --name hd --wait 120s
-      - name: Rolling deploy drains old pods, rollback under 5 minutes
+      - name: Migration job before the rollout, rolling deploy drains old pods, rollback under 5 minutes
         run: bash tools/deploy/kind-rollout.sh hd hypedomino-server:ci
+      - name: Debug port scraped from the monitoring namespace only
+        run: bash tools/deploy/kind-metrics.sh hd-ci
+
+  backup-drill:
+    needs: changes
+    if: needs.changes.outputs.backup == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      KUBECONFORM_VERSION: v0.8.0
+      KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
+      KIND_VERSION: v0.33.0
+      KIND_SHA256: aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform and kind
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/kubeconform.tar.gz" "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          echo "$KUBECONFORM_SHA256  $RUNNER_TEMP/kubeconform.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/kubeconform.tar.gz" -C "$RUNNER_TEMP" kubeconform
+          curl -sSfL -o "$RUNNER_TEMP/kind" "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+          echo "$KIND_SHA256  $RUNNER_TEMP/kind" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/kind"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Backup and PostgreSQL manifests render and match the Kubernetes schema
+        run: |
+          for dir in deploy/k8s/backup deploy/k8s/postgres; do
+            kubectl kustomize "$dir" | kubeconform -strict -summary -
+          done
+      - name: Manifests use the image tag the Dockerfile publishes
+        run: |
+          expected="ghcr.io/alievs-corp/hypedomino-postgres-walg:$(bash tools/backup-drill/image-tag.sh)"
+          for dir in deploy/k8s/backup deploy/k8s/postgres; do
+            found=$(kubectl kustomize "$dir" | sed -nE 's/^ *image: (.*hypedomino-postgres-walg.*)$/\1/p' | sort -u)
+            [ "$found" = "$expected" ] || { echo "$dir uses '$found', the publish workflow pushes $expected"; exit 1; }
+          done
+      - name: Restore to a point in time from WAL-G backups
+        run: bash tools/backup-drill/drill.sh
+      - name: Create the cluster
+        run: kind create cluster --name hd --wait 120s
+      - name: PostgreSQL StatefulSet archives WAL and the backup CronJobs run against it
+        run: bash tools/backup-drill/kind-postgres.sh hd
 
   admin:
     needs: changes
@@ -241,6 +332,8 @@ jobs:
       - run: pnpm run --if-present typecheck
       - run: pnpm run --if-present test
       - run: pnpm run build
+      - name: No critical vulnerability in admin dependencies
+        run: pnpm audit --audit-level=critical
 
   client:
     needs: changes
@@ -263,6 +356,41 @@ jobs:
         with:
           projectPath: client
           testMode: all
+          githubToken: ''
+
+  assets:
+    needs: changes
+    if: needs.changes.outputs.assets == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Naming of assets-src
+        run: node tools/asset-naming/asset-naming.mjs
+      - name: Export and size budget of new and changed items
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "$BASE_SHA" HEAD -- assets-src)
+          else
+            changed=$(git ls-files assets-src)
+          fi
+          mapfile -t items < <(printf '%s\n' "$changed" | node tools/asset-export/asset-export.mjs items)
+          if [ "${#items[@]}" -eq 0 ]; then
+            echo "No cosmetic item with an export changed" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          include=$(printf '%s/export/**,' "${items[@]}")
+          git lfs install --local
+          git lfs pull --include="${include%,}"
+          { echo '## Asset size budget'; echo; } >> "$GITHUB_STEP_SUMMARY"
+          node tools/asset-export/asset-export.mjs check "${items[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
 
   proto:
     needs: changes
@@ -280,6 +408,7 @@ jobs:
       - if: github.event_name == 'pull_request' && needs.changes.outputs.proto_breaking == 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GIT_LFS_SKIP_SMUDGE: '1'
         run: buf breaking proto --against ".git#ref=${BASE_SHA},subdir=proto"
       - uses: actions/setup-node@v4
         with:
@@ -294,7 +423,7 @@ jobs:
   ci-complete:
     name: CI complete
     if: always()
-    needs: [changes, lint, secret-scan, pr-meta, server, image, admin, client, proto]
+    needs: [changes, lint, secret-scan, pr-meta, server, image, backup-drill, admin, client, assets, proto]
     runs-on: ubuntu-latest
     steps:
       - env:

@@ -1,0 +1,17 @@
+{
+  "slug": "emerald_bower",
+  "canvas": [1280, 720],
+  "seed": 17411,
+  "edges": {"depth": 150},
+  "back": {
+    "concept": "concept/20261115-01.png",
+    "threads": {"hue": [0.08, 0.17], "saturation": 0.55, "value": 0.45}
+  },
+  "motion": {
+    "frames": 10,
+    "key": 4,
+    "parts": [
+      {"kind": "shimmer", "bands": 3, "sharpness": 3, "wave": 0.8, "twinkle": 0.5, "cell": 2, "alpha": 0.8}
+    ]
+  }
+}

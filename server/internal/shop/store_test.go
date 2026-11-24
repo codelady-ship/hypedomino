@@ -39,7 +39,7 @@ type fixture struct {
 	store     *shop.Store
 }
 
-func newFixture(t *testing.T, seedFile bool) *fixture {
+func newFixture(t testing.TB, seedFile bool) *fixture {
 	t.Helper()
 	_, pool := dbtest.Fresh(t)
 	catalog, err := cosmetics.Load("../../../docs/cosmetics/examples/catalog.json")
@@ -59,7 +59,7 @@ func newFixture(t *testing.T, seedFile bool) *fixture {
 	return f
 }
 
-func (f *fixture) account(t *testing.T, coins int64) string {
+func (f *fixture) account(t testing.TB, coins int64) string {
 	t.Helper()
 	var id string
 	if err := f.pool.QueryRow(context.Background(), `insert into accounts (created_at) values ($1) returning id`, now.Add(-time.Hour)).Scan(&id); err != nil {
@@ -84,8 +84,23 @@ func section(t *testing.T, view shop.View, name string) shop.SectionView {
 	return shop.SectionView{}
 }
 
+func discountedTable(t *testing.T) *shop.Catalog {
+	t.Helper()
+	raw, err := os.ReadFile("../../../docs/economy/examples/shop.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	named := `"nameKey": "shop.offer.table_night_market"`
+	catalog, err := shop.Parse([]byte(strings.Replace(string(raw), named, named+`, "referencePriceCoins": 3500`, 1)), shop.DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return catalog
+}
+
 func TestTheViewShowsEverySectionForTheAccount(t *testing.T) {
-	f := newFixture(t, true)
+	f := newFixture(t, false)
+	f.watcher.Seed(discountedTable(t), 0)
 	ctx := context.Background()
 	account := f.account(t, 0)
 	view, err := f.store.View(ctx, account, now)
@@ -104,11 +119,11 @@ func TestTheViewShowsEverySectionForTheAccount(t *testing.T) {
 		t.Fatalf("weekly %+v", weekly)
 	}
 	featured := section(t, view, shop.SectionFeatured)
-	if len(featured.Offers) != 1 || featured.Offers[0].ProductID != "offer_starter" || !featured.Offers[0].Purchasable || featured.Offers[0].Coins != 1500 {
+	if len(featured.Offers) != 1 || featured.Offers[0].ProductID != "offer_starter" || !featured.Offers[0].Purchasable || featured.Offers[0].Crystals != 300 {
 		t.Fatalf("featured %+v", featured)
 	}
-	if coins := section(t, view, shop.SectionCoins); len(coins.Offers) != 2 || coins.Offers[1].ProductID != "coins_tier2" || coins.Offers[1].Limit != 0 {
-		t.Fatalf("coins %+v", coins)
+	if packs := section(t, view, shop.SectionCrystals); len(packs.Offers) != 5 || packs.Offers[4].ProductID != "crystals_tier5" || packs.Offers[4].Crystals != 7000 || packs.Offers[4].Limit != 0 {
+		t.Fatalf("crystal packs %+v", packs)
 	}
 	if pass := section(t, view, shop.SectionPass); len(pass.Offers) != 1 || pass.Offers[0].Purchasable || pass.Offers[0].Reason != "offer.unsupported" {
 		t.Fatalf("pass %+v", pass)
@@ -129,7 +144,7 @@ func TestACoinPurchaseIsAtomicIdempotentAndLimited(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first.Repeated || first.Balance != 4600 || first.Offer != "offer.avatar_comet_fox" || len(first.Grant.Cosmetics) != 1 || first.Grant.Cosmetics[0] != "avatar.comet_fox" || first.Grant.Reason != wallet.ShopPurchase {
+	if first.Repeated || first.Currency != wallet.Coin || first.Balance != 4600 || first.Offer != "offer.avatar_comet_fox" || len(first.Grant.Cosmetics) != 1 || first.Grant.Cosmetics[0] != "avatar.comet_fox" || first.Grant.Reason != wallet.ShopPurchase {
 		t.Fatalf("first purchase %+v", first)
 	}
 	if owned, err := f.inventory.Owns(ctx, account, "avatar.comet_fox"); err != nil || !owned {
@@ -145,7 +160,7 @@ func TestACoinPurchaseIsAtomicIdempotentAndLimited(t *testing.T) {
 	if _, err := f.store.Buy(ctx, account, "offer.avatar_comet_fox", "r2", now); !errors.Is(err, shop.ErrLimit) {
 		t.Fatalf("second purchase of a limited offer: %v", err)
 	}
-	if balance, _ := f.wallet.Balance(ctx, account); balance != 4600 {
+	if balance, _ := f.wallet.Balance(ctx, account, wallet.Coin); balance != 4600 {
 		t.Fatalf("balance after refusals %d", balance)
 	}
 	view, err := f.store.View(ctx, account, now)
@@ -179,7 +194,7 @@ func TestARefusedPurchaseWritesNothing(t *testing.T) {
 	if _, err := f.engine.Get(ctx, poor, "shop:r1"); !errors.Is(err, reward.ErrUnknownGrant) {
 		t.Fatalf("grant after a refused purchase: %v", err)
 	}
-	if balance, _ := f.wallet.Balance(ctx, poor); balance != 100 {
+	if balance, _ := f.wallet.Balance(ctx, poor, wallet.Coin); balance != 100 {
 		t.Fatalf("balance %d", balance)
 	}
 	cases := map[string]struct {
@@ -216,13 +231,13 @@ func TestAStoreOfferStartsACheckoutForEligibleAccountsOnly(t *testing.T) {
 	if checkout.Offer != "offer.starter" || checkout.ProductID != "offer_starter" || checkout.AccountToken != shop.AccountToken(account) || checkout.AccountToken == account || len(checkout.AccountToken) != 36 {
 		t.Fatalf("checkout %+v", checkout)
 	}
-	if _, err := f.store.Begin(ctx, account, "offer.avatar_comet_fox", now); !errors.Is(err, shop.ErrCoinsOnly) {
+	if _, err := f.store.Begin(ctx, account, "offer.avatar_comet_fox", now); !errors.Is(err, shop.ErrInGameOnly) {
 		t.Fatalf("checkout of a coin offer: %v", err)
 	}
 	if _, err := f.store.Begin(ctx, account, "offer.starter", now.Add(169*time.Hour)); !errors.Is(err, shop.ErrNotEligible) {
 		t.Fatalf("checkout after the starter window: %v", err)
 	}
-	if _, err := f.wallet.Apply(ctx, wallet.Entry{Account: account, Amount: 500, Reason: wallet.Purchase, Source: wallet.Source{Type: "purchase", Ref: "coins_tier1"}, Key: "tx-1"}, now); err != nil {
+	if _, err := f.wallet.Apply(ctx, wallet.Entry{Account: account, Amount: 500, Reason: wallet.Purchase, Source: wallet.Source{Type: "purchase", Ref: "crystals_tier1"}, Key: "tx-1"}, now); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.store.Begin(ctx, account, "offer.starter", now); !errors.Is(err, shop.ErrNotEligible) {
@@ -235,7 +250,7 @@ func TestAStoreOfferStartsACheckoutForEligibleAccountsOnly(t *testing.T) {
 	if starter := section(t, view, shop.SectionFeatured).Offers[0]; starter.Purchasable || starter.Reason != "offer.not_eligible" {
 		t.Fatalf("starter after a purchase %+v", starter)
 	}
-	if _, err := f.store.Begin(ctx, account, "offer.coins_tier1", now); err != nil {
+	if _, err := f.store.Begin(ctx, account, "offer.crystals_tier1", now); err != nil {
 		t.Fatalf("coin pack checkout: %v", err)
 	}
 }
@@ -289,5 +304,83 @@ func TestAPublishedCatalogIsVisibleWithoutARestart(t *testing.T) {
 	}
 	if view, err := f.store.View(ctx, account, now); err != nil || view.Version != next {
 		t.Fatalf("view after an invalid publish %+v %v", view, err)
+	}
+}
+
+func TestTheViewShowsEachAccountItsVariantOfAnOffer(t *testing.T) {
+	f := newFixture(t, false)
+	raw, err := os.ReadFile("../../../docs/economy/examples/shop.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	named := `"nameKey": "shop.offer.crystals_tier5"`
+	catalog, err := shop.Parse([]byte(strings.Replace(string(raw), named, named+`, "variants": [{"id": "top", "nameKey": "shop.offer.crystals_tier5_top", "position": 1}]`, 1)), shop.DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.watcher.Seed(catalog, 0)
+	offer, _ := catalog.Offer("offer.crystals_tier5")
+	seen := map[bool]bool{}
+	for attempt := 0; len(seen) < 2; attempt++ {
+		if attempt == 64 {
+			t.Fatalf("64 accounts saw only %v", seen)
+		}
+		account := f.account(t, 0)
+		_, inVariant := offer.VariantFor(account)
+		view, err := f.store.View(context.Background(), account, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		packs := section(t, view, shop.SectionCrystals).Offers
+		want := shop.OfferView{ID: "offer.crystals_tier5", NameKey: "shop.offer.crystals_tier5"}
+		at := 4
+		if inVariant {
+			want.NameKey, want.Variant, at = "shop.offer.crystals_tier5_top", "top", 0
+		}
+		if len(packs) != 5 || packs[at].ID != want.ID || packs[at].NameKey != want.NameKey || packs[at].Variant != want.Variant || packs[at].Crystals != 7000 || packs[at].ProductID != "crystals_tier5" {
+			t.Fatalf("variant %v packs %+v", inVariant, packs)
+		}
+		for _, other := range view.Sections {
+			for _, shown := range other.Offers {
+				if shown.ID != want.ID && shown.Variant != "" {
+					t.Fatalf("offer %s without variants shows variant %q", shown.ID, shown.Variant)
+				}
+			}
+		}
+		seen[inVariant] = true
+	}
+}
+
+func TestACrystalPricedOfferSpendsCrystalsOnly(t *testing.T) {
+	f := newFixture(t, false)
+	ctx := context.Background()
+	raw, err := os.ReadFile("../../../docs/economy/examples/shop.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	crystalPriced := strings.Replace(string(raw), `"priceCoins": 400`, `"priceCrystals": 80`, 1)
+	if _, err := snapshot.Publish(ctx, f.pool, shop.Domain, []byte(crystalPriced)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.watcher.Load(ctx); err != nil {
+		t.Fatal(err)
+	}
+	account := f.account(t, 5000)
+	if _, err := f.store.Buy(ctx, account, "offer.avatar_comet_fox", "r1", now); !errors.Is(err, wallet.ErrInsufficient) {
+		t.Fatalf("crystal offer bought with coins only: %v", err)
+	}
+	if _, err := f.wallet.Apply(ctx, wallet.Entry{Account: account, Currency: wallet.Crystal, Amount: 100, Reason: wallet.Purchase, Source: wallet.Source{Type: "store", Ref: "t1"}, Key: "purchase:google:t1"}, now); err != nil {
+		t.Fatal(err)
+	}
+	bought, err := f.store.Buy(ctx, account, "offer.avatar_comet_fox", "r2", now)
+	if err != nil || bought.Currency != wallet.Crystal || bought.Balance != 20 || len(bought.Grant.Cosmetics) != 1 {
+		t.Fatalf("crystal purchase %+v %v", bought, err)
+	}
+	if coins, _ := f.wallet.Balance(ctx, account, wallet.Coin); coins != 5000 {
+		t.Fatalf("coins after a crystal purchase %d", coins)
+	}
+	view, err := f.store.View(ctx, account, now)
+	if err != nil || section(t, view, shop.SectionDaily).Offers[0].PriceCrystals != 80 {
+		t.Fatalf("view of the crystal price %+v %v", view, err)
 	}
 }

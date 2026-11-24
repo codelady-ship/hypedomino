@@ -1,6 +1,6 @@
 # Pass, missions and medals
 
-The seasonal pass with a free and a premium track, daily, weekly, achievement and event missions, and the medal collection. The server alone computes and stores everything here (ADR 0003, ADR 0007); the client sends intents and shows what the server sends (`docs/anti-cheat.md` NT-1 to NT-12).
+The seasonal pass, named **Hype Pass**, with a free and a premium track, daily, weekly, achievement and event missions, and the medal collection. The server alone computes and stores everything here (ADR 0003, ADR 0007); the client sends intents and shows what the server sends (`docs/anti-cheat.md` NT-1 to NT-12).
 
 **Status: approved by the owner on 2026-10-26 (section 11).** Every number is a launch default to be tuned with closed-beta data (#193). Values marked *economy* are defined in `docs/economy.md` and only repeated here. Every number is admin config (ADR 0006): read from the published config snapshot, recorded with the config version each match and grant used, and changed without a release. Names in `CamelCase` code font are config keys (section 9).
 
@@ -27,6 +27,7 @@ Related: `docs/economy.md` (coins, reward bundle, ledger, pass products), `docs/
 - Pass seasons never overlap. A gap is allowed; during a gap pass XP is dropped and the grant records that (`docs/economy.md` section 4).
 - Frozen while the season runs: `PassLevels`, the XP curve (2.2) and which bundle sits at which level of each track (2.4). The only change allowed to a running track is replacing a `disabled` cosmetic (`docs/cosmetics.md` section 6) with another item of the same type and rarity, with an audited reason. XP source values (2.3) may change mid-season and apply to matches that end after the publish.
 - Every account is in the active season from its first session in it, at level 1 with 0 XP. Level and XP never carry over to the next season.
+- Profile level and XP, owner decision 2026-11-10: profile level and XP are the current pass season's level and XP. There is no separate account level. `GET /profile/me` (`level`, `xp`), the public profile `GET /profile/{account}` (`level`) and the admin player record read them from the active season's progress. With no active season, or no progress in it yet, they are level 1 with 0 XP.
 
 ### 2.2 Levels and XP curve
 
@@ -73,7 +74,7 @@ Defaults `PassXpBase` 300, `PassXpStep` 50, `PassXpMax` 1000: early levels are f
 ### 2.4 Tracks and rewards
 
 - Each level has one free-track bundle and one premium-track bundle. A free-track level may be empty; a premium-track level may not.
-- Coin budgets per season, *economy*: `PassFreeTrackCoins` 1500 on the free track, `PassPremiumTrackCoins` 3000 on the premium track. Admin publish rejects a season above either.
+- Coin budgets per season, *economy*: `PassFreeTrackCoins` 1500 coins on the free track, `PassPremiumTrackCrystals` 600 crystals on the premium track: the premium track is bought with real money, so it pays crystals, never coins (`docs/economy.md` EP-1). Admin publish rejects a season above either.
 - Track bundles carry `coins` and `cosmetics`. They never carry `medals` (PM-5) and never `passXp` (a level that grants levels would make the curve meaningless).
 - Track cosmetics list the source `pass` with ref `pass.<seasonId>.<track>.level_<n>`, for example `pass.season_1.premium.level_30` (`docs/cosmetics.md` section 5).
 - Level 1 rewards are granted when the account enters the season (free) and when premium is unlocked (premium), so the premium track gives its headline item at once.
@@ -84,19 +85,22 @@ Defaults `PassXpBase` 300, `PassXpStep` 50, `PassXpMax` 1000: early levels are f
 
 Products, *economy* (`docs/economy.md` 7.2): `pass_premium` (`PassPremiumUsd` 4.99) unlocks the premium track of the current season; `pass_premium_plus` (`PassPremiumPlusUsd` 9.99) unlocks it and adds `PassPremiumPlusLevels` (20) levels. The premium track is never sold for coins.
 
+The premium track is unlocked by `pass_premium`, by `pass_premium_plus`, or by a `passPremium` promo code approved by a second admin (`docs/economy.md` section 8, OQ-18). The code unlocks the season active at redemption with premium ref `promo:<codeId>`, and the late-purchase rule below applies to it the same way. It is refused, and stays redeemable, when no season is active or the account already has premium in it. A promo unlock is not a store transaction, so the refund rules below do not apply to it.
+
 - Purchase flow, receipt validation and binding to the season active at the store's purchase time: `docs/economy.md` 7.5 and #125. A second premium purchase in the same season is rejected before the store flow starts.
 - **Late purchase.** When premium unlocks at level `L`, the server grants the premium bundle of every level 1 to `L` at once, then continues normally. Each level is its own grant with key `pass:<seasonId>:premium:<level>`, so an interrupted batch resumes and a repeated one grants nothing twice.
 - `pass_premium_plus` adds the XP from the current XP total to the total of level `L + 20`, keeping progress inside the current level. Levels crossed grant both tracks.
-- `pass_premium_plus` is offered only while the account's level is at most `PassLevels` - `PassPremiumPlusLevels` (80), so its levels are never wasted. Above that only `pass_premium` is offered. If the account levels up between the buy intent and validation, levels past `PassLevels` are paid out as `PassLevelCoinPrice` (200, *economy*) coins each in the purchase grant.
+- `pass_premium_plus` is offered only while the account's level is at most `PassLevels` - `PassPremiumPlusLevels` (80), so its levels are never wasted. Above that only `pass_premium` is offered. If the account levels up between the buy intent and validation, levels past `PassLevels` are paid out as `PassLevelCrystalPrice` (40, *economy*) crystals each in the purchase grant: a real-money product never pays coins (`docs/economy.md` EP-1).
 - A validated purchase is always granted, even after the season ended (`docs/economy.md` 7.5 step 7). Its premium bundles for the levels reached are granted at validation.
-- Refund (`docs/economy.md` section 9): the premium track and every premium reward granted are revoked. For `pass_premium_plus` the XP it added is also removed, the level is derived again, and both tracks' rewards of levels no longer reached are revoked the same way.
+- Refund (`docs/economy.md` section 9): the premium track and every premium reward granted are revoked. For `pass_premium_plus` the XP it added is also removed, the level is derived again, and both tracks' rewards of levels no longer reached are revoked the same way: their cosmetics are removed and their crystals debited, while free-track coins are kept, since a refund never touches coins (`docs/economy.md` section 9).
 
 ### 2.6 Level purchase
 
-- Intent with a count `k` and a client request id. Price `k` x `PassLevelCoinPrice` (200, *economy*), ledger reason `pass_level_purchase`, key `spend:<requestId>` (`docs/economy.md` 3.2, section 5).
+- Intent with a count `k`, a currency (`coin`, the default, or `crystal`) and a client request id. Price `k` x `PassLevelCoinPrice` (200, *economy*) coins or `k` x `PassLevelCrystalPrice` (40, *economy*) crystals, ledger reason `pass_level_purchase`, key `spend:<requestId>` (`docs/economy.md` 3.2, section 5).
+- `GET /pass` sends the current per-level prices as `level_coin_price` and `level_crystal_price` (the config's `levelCoinPrice` and `levelCrystalPrice`), so the screen shows `k` x price before the intent. The shown price is display only: the intent carries no price, and the server charges the configured price at purchase time.
 - The server rejects `k` < 1, a count that would pass `PassLevels`, a balance below the price, and any purchase outside the season window.
 - A bought level adds the XP from the current total to the total of level `L + k`, keeping progress inside the current level. Levels crossed grant the free track, and the premium track if unlocked.
-- Coins are not refunded for levels, and a later premium unlock grants the premium rewards of bought levels as in 2.5.
+- Coins and crystals are not refunded for levels, and a later premium unlock grants the premium rewards of bought levels as in 2.5.
 
 ### 2.7 Season end
 
@@ -198,7 +202,8 @@ Each slot has a fixed reward; every mission in the slot's pool pays it, so selec
 - Assignment: at the first moment the server needs the player's missions in a period (session start or match end), it draws one live mission per slot by weight with the server's cryptographically secure random source, avoiding the mission the slot had in the previous period when the pool has another. The draw is stored; it happens once per player and period.
 - Expiry: at the end of the period unfinished missions and their progress end. Completed missions were already granted (PM-3).
 - Reroll: `DailyMissionRerolls` (1) per economy day and `WeeklyMissionRerolls` (1) per week, free, by intent. It replaces one uncompleted mission with another live mission of the same slot that the player has not had in this period; progress on the replaced mission is lost. A reroll is rejected when the slot has no such mission. Rerolls are never sold and do not accumulate.
-- Grant key: `mission:<missionId>:<period>`, the period being the economy day (`2026-11-03`) or week (`2026-W45`) of the player's reset time zone (#131, #208).
+- Implemented reroll intent: the server's `POST /missions/reroll` takes `{"mission"}` and answers the new board, or `409` with `mission.reroll_used`, `mission.not_assigned` or `mission.no_replacement`. The client (`Game/Missions/MissionReroller`, #128) sends it only for a card the board offers to reroll and shows the board the server answers with; it never picks the replacement or counts rerolls itself.
+- Grant key: `mission:<missionId>:<period>`, the period being the economy day (`2026-11-03`) or ISO week (`2026-W45`) at 00:00 UTC, the same for every player (`docs/economy.md` 2, #131, #208).
 
 ### 4.5 Achievements
 
@@ -258,7 +263,10 @@ The admin sets each medal's `rarityId` from the share of players active in the s
 - Locked medal: the locked look from #178, its name, its description, and for a mission source the current progress and target from the server.
 - Earned medal: its art, rarity marks and the server date earned.
 - The collection header shows earned / shown medals. Emblems follow in their own section (5.5).
-- Profile showcase: a player chooses up to `ProfileMedalSlots` (3) owned medals and their order, as an intent with medal ids. The server accepts only owned medals, stores the showcase, and other players see the server's copy (NT-9). A revoked medal leaves the showcase at once. The medal showcase sits next to the emblem showcase on the public profile (`docs/privacy.md` section 5).
+- Profile showcase: a player chooses up to `ProfileMedalSlots` (3) owned medals and their order, as an intent with medal ids. The server accepts only owned medals, stores the showcase, and other players see the server's copy (NT-9). A revoked medal leaves the showcase at once. The medal showcase sits next to the emblem showcase on the public profile (`docs/privacy.md` section 5). Implemented: `GET /profile/{account}` carries `medals`, the showcase medals in order as catalog entries.
+- Implemented on the client (`UI/Medals/MedalCollection`, #130): it reads `GET /medals` and shows only the medals the server lists, earned with the server date or locked with name and description, the earned / shown header count and the showcase in the server's order. A showcase change is an intent (`PUT /medals/showcase`) built only from shown, earned medals within the slots, so it never names an unowned medal; the showcase changes on screen only from the server's reply. A locked medal shows its mission progress and target with `TryMissionProgress`: the first `mission` source whose id is on the `Achievement` tab of the server's mission board (`GET /missions`) gives the card as the server sent it; an earned medal, a `rank_reward` source or a mission not on the board shows no progress, and nothing is counted on the client.
+- Implemented showcase intent: `Game/Medals/MedalShowcaseSaver` (#130) sends the `PUT /medals/showcase` body `MedalCollection` built and hands the server's `{"showcase"}` reply to `MedalCollection.Apply`. A `400 medal.showcase_invalid` or `409 medal.not_owned` refusal leaves the shown showcase unchanged; after `medal.not_owned` the screen reads `GET /medals` again, since the server's ownership is the only one that counts.
+- Implemented grid order: `GET /medals` gives each medal a `group`, taken from its first source that has one: `rank_reward` for a rank reward, and for a `mission` source the type of that mission in the current mission catalog when it is `achievement` or `event`. A medal with no such source has no group. The client (`MedalCollection.ShownAt`) orders achievement, event, rank reward, then no group; inside a group by the rarity ordinal of the rarity table, highest first (an unknown rarity last), then by id in ordinal order.
 - Medals have no effect in a match and are not shown at the table.
 
 ### 5.5 Emblems
@@ -267,12 +275,27 @@ The admin sets each medal's `rarityId` from the share of players active in the s
 - The medal collection screen shows emblems in their own section after the medals, newest season first, with the same art (#178). Emblems do not count toward the medal total.
 - Reason: emblems are positional season records with board and bracket fields; making each board, bracket and season a catalogue medal would add thousands of entries for no player-visible gain. One screen, two systems.
 
+### 5.6 Medal art
+
+Proposal of #178; the owner approves it by merging. Look and materials follow `docs/art-direction.md`; the production steps and the provenance record are `docs/asset-workflow.md`.
+
+| Topic | Rule |
+|---|---|
+| Source | `assets-src/medal/<slug>/` with the item layout of `docs/asset-workflow.md` 4.1. `export/static.png` is the file uploaded for `medal/<slug>/static` (5.1) |
+| Canvas | 256 x 256, square, PNG with straight alpha, sRGB. The medal is centred on the canvas (pivot at the centre) and its longer side is 240, so an 8 px band stays empty and no medal touches the canvas edge |
+| Smallest display size | `size.touchTargetMin` (120 units): a collection cell and a showcase slot are touch targets, so no medal is drawn smaller. Every medal is checked at 120 and at 64 px on `color.background.base` and `color.surface.default` |
+| Shape | One emblem per medal with its own outer silhouette, painted in the house materials (gold, brass, bronze, silver, ivory, gemstone). No ribbon, text, numbers, flags, stars, crosses, crescents, fleur-de-lis, landscapes or weapons. The count a medal stands for is in its description string, never in the art. The steps of one chain share a motif and climb in material, from brass or bronze to silver, gold and gems |
+| Rarity | Nothing about rarity is painted. An earned medal shows the diamond, label and halo of `docs/rarity.md` 2.3 for an item card, drawn from its `rarityId`. There is no rarity rim or frame sprite: `docs/rarity.md` section 2 defines the marks, and a tinted rim would be a new one |
+| Locked look | No texture of its own. A locked medal draws its own static with vertex colour `color.surface.raised`, which turns it into a dark silhouette that keeps its outline, and the lock icon of the UI kit (#168) centred over it. No rarity marks and no halo while locked (5.4). The default UI material serves both looks, so locked and earned medals batch together and no medal needs a second sprite |
+
 ## 6. Grants, claim and reveal
 
 - **No claim step.** Pass levels, mission completions and medals are granted by the server in the transaction that records the earning event (match end, purchase, level purchase, season end). A reward is never lost to a missed claim, a period end or a season end; the season-end job (2.7) is the safety net for defects.
 - Ordering at match end: match XP, then mission progress, then each completed mission's bundle, then each level crossed. Each step is idempotent on its own key.
+- Match XP is applied by the game server's relay on the `xp` outbox topic (`HD_OUTBOX_POLL`, #440): `pass.Store.Publish` runs `AwardMatch` for every player of the `matchstore.Outcome`. Mission progress comes the same way from the `missions` topic: `mission.Store.Publish` runs `ApplyMatch` per player with the hands won, dominoes, board points and double chains the outcome carries. The two topics are relayed independently, so mission progress may land before the match XP; each step stays idempotent and the end state is the same. Matchmade rooms write the outcome when they end (`docs/matchmaking.md` section 4); hands won, dominoes, board points and double chains are counted from the replay timeline (`replay.Timeline.Stats`).
 - The server keeps a list of grants the client has not presented yet and sends it with the state. The client presents them as reveals and sends an acknowledge intent with the last grant id shown. Acknowledging changes only what is still to be presented, never ownership.
 - Notices are `key` plus typed parameters (`docs/localization.md` section 3); items, medals and missions are sent as ids.
+- The pass screen (#126) reads `GET /pass` and sends no intent but the level purchase of 2.6 (`POST /pass/levels`), after which it reads `GET /pass` again: a level of a track is earned up to the server's `level`, upcoming above it, and every premium level is locked until the server reports `premium`. The level bar fills from `level_xp` to `next_level_xp`, and the season countdown runs to `ends_at` on server time (PM-2). With no claim step the client sends no claim intent (`client/README.md`, Hype Pass). Each row of the screen is one level with a cell per track: its state, the reward the server sent for it, and the reward's cosmetics as the manifest renders them (`live` or `retired`, `docs/cosmetics.md` section 6), with their animation; a cosmetic the manifest does not render is left out of the cell, never replaced.
 
 ### 6.1 Reward reveal
 
@@ -288,14 +311,14 @@ Uses existing tokens of `docs/ui-motion.md` and `docs/rarity.md`; no new duratio
 - Several grants queue one card each. A tap jumps the current card to its end state; a "collect all" button jumps the whole queue (`docs/ui-motion.md` section 6 rule 4).
 - Reduce motion and effect levels follow `docs/ui-motion.md` (pops become `fast` fades, flow rests).
 - Reveals run outside the match scene and add no particles. Adding any particle effect is a `docs/ui-motion.md` change with its budgets (section 7 there).
-- Nothing in a reveal suggests chance: no chests, reels, wheels or spinning reveals, and the reward shown is the one already granted (`docs/localization.md` section 6, EP-3).
+- Nothing in a reveal suggests chance: no chest imagery (chests exist only in the shop, `docs/economy.md` 3.4), reels, wheels or spinning reveals, and the reward shown is the one already granted (`docs/localization.md` section 6, EP-3).
 
 ## 7. Data and idempotency
 
 | Record | Holds | Unique on |
 |---|---|---|
 | Pass season | Id, window, `PassLevels`, curve values, the level-to-bundle table per track, config version | Season id |
-| Pass progress | Account, season, XP total, premium flag with its purchase ref | Account, season |
+| Pass progress | Account, season, XP total, premium flag with its purchase or promo ref | Account, season |
 | XP event | Account, season, amount, source type, source ref, idempotency key, server time | Account, key |
 | Mission assignment | Account, mission, period, slot, progress, completed time | Account, mission, period |
 | Medal ownership | Account, medal, server time, source type and ref, grant key | Account, medal |
@@ -323,110 +346,110 @@ Inputs from `docs/economy.md` section 11: ranked 1v1, 10-minute matches plus 1 m
 
 ### 8.2 Levels and rewards
 
-Free track: 30 coins on every odd level (1500), a cosmetic on every tenth level. Premium track: 30 coins on every level (3000), a cosmetic on level 1 and every tenth level. Cosmetics at guide prices (`docs/economy.md` 3.1): free 11850 coins, premium 45000 coins. `node tools/pass-season/pass-season.mjs` checks the table against the curve (2.2) and the track budgets in `docs/economy/balance.csv` (2.4); CI runs it through `npm run test:tools`.
+Free track: 30 coins on every odd level (1500), a cosmetic on every tenth level. Premium track: 6 crystals on every level (600), a cosmetic on level 1 and every tenth level. Cosmetics at guide prices (`docs/economy.md` 3.1): free 11850 coins, premium 45000 coins. `node tools/pass-season/pass-season.mjs` checks the table against the curve (2.2) and the track budgets in `docs/economy/balance.csv` (2.4); CI runs it through `npm run test:tools`.
 
 | Level | XP total to reach | Free | Premium |
 |---|---|---|---|
-| 1 | 0 | 30 coins | 30 coins + `character.s1_navigator` (`epic`) |
-| 2 | 300 | - | 30 coins |
-| 3 | 650 | 30 coins | 30 coins |
-| 4 | 1050 | - | 30 coins |
-| 5 | 1500 | 30 coins | 30 coins |
-| 6 | 2000 | - | 30 coins |
-| 7 | 2550 | 30 coins | 30 coins |
-| 8 | 3150 | - | 30 coins |
-| 9 | 3800 | 30 coins | 30 coins |
-| 10 | 4500 | `emoji.s1_wave` (`common`) | 30 coins + `avatar.s1_pirate` (`rare`) |
-| 11 | 5250 | 30 coins | 30 coins |
-| 12 | 6050 | - | 30 coins |
-| 13 | 6900 | 30 coins | 30 coins |
-| 14 | 7800 | - | 30 coins |
-| 15 | 8750 | 30 coins | 30 coins |
-| 16 | 9750 | - | 30 coins |
-| 17 | 10750 | 30 coins | 30 coins |
-| 18 | 11750 | - | 30 coins |
-| 19 | 12750 | 30 coins | 30 coins |
-| 20 | 13750 | `avatar.s1_sailor` (`common`) | 30 coins + `emoji.s1_wink` (`rare`) |
-| 21 | 14750 | 30 coins | 30 coins |
-| 22 | 15750 | - | 30 coins |
-| 23 | 16750 | 30 coins | 30 coins |
-| 24 | 17750 | - | 30 coins |
-| 25 | 18750 | 30 coins | 30 coins |
-| 26 | 19750 | - | 30 coins |
-| 27 | 20750 | 30 coins | 30 coins |
-| 28 | 21750 | - | 30 coins |
-| 29 | 22750 | 30 coins | 30 coins |
-| 30 | 23750 | `frame.s1_rope` (`common`) | 30 coins + `frame.s1_wave` (`rare`) |
-| 31 | 24750 | 30 coins | 30 coins |
-| 32 | 25750 | - | 30 coins |
-| 33 | 26750 | 30 coins | 30 coins |
-| 34 | 27750 | - | 30 coins |
-| 35 | 28750 | 30 coins | 30 coins |
-| 36 | 29750 | - | 30 coins |
-| 37 | 30750 | 30 coins | 30 coins |
-| 38 | 31750 | - | 30 coins |
-| 39 | 32750 | 30 coins | 30 coins |
-| 40 | 33750 | `emoji.s1_thumbs` (`rare`) | 30 coins + `table.s1_reef` (`rare`) |
-| 41 | 34750 | 30 coins | 30 coins |
-| 42 | 35750 | - | 30 coins |
-| 43 | 36750 | 30 coins | 30 coins |
-| 44 | 37750 | - | 30 coins |
-| 45 | 38750 | 30 coins | 30 coins |
-| 46 | 39750 | - | 30 coins |
-| 47 | 40750 | 30 coins | 30 coins |
-| 48 | 41750 | - | 30 coins |
-| 49 | 42750 | 30 coins | 30 coins |
-| 50 | 43750 | `avatar.s1_captain` (`rare`) | 30 coins + `avatar.s1_admiral` (`epic`) |
-| 51 | 44750 | 30 coins | 30 coins |
-| 52 | 45750 | - | 30 coins |
-| 53 | 46750 | 30 coins | 30 coins |
-| 54 | 47750 | - | 30 coins |
-| 55 | 48750 | 30 coins | 30 coins |
-| 56 | 49750 | - | 30 coins |
-| 57 | 50750 | 30 coins | 30 coins |
-| 58 | 51750 | - | 30 coins |
-| 59 | 52750 | 30 coins | 30 coins |
-| 60 | 53750 | `table.s1_harbor` (`common`) | 30 coins + `emoji.s1_storm` (`epic`) |
-| 61 | 54750 | 30 coins | 30 coins |
-| 62 | 55750 | - | 30 coins |
-| 63 | 56750 | 30 coins | 30 coins |
-| 64 | 57750 | - | 30 coins |
-| 65 | 58750 | 30 coins | 30 coins |
-| 66 | 59750 | - | 30 coins |
-| 67 | 60750 | 30 coins | 30 coins |
-| 68 | 61750 | - | 30 coins |
-| 69 | 62750 | 30 coins | 30 coins |
-| 70 | 63750 | `frame.s1_anchor` (`rare`) | 30 coins + `frame.s1_kraken` (`epic`) |
-| 71 | 64750 | 30 coins | 30 coins |
-| 72 | 65750 | - | 30 coins |
-| 73 | 66750 | 30 coins | 30 coins |
-| 74 | 67750 | - | 30 coins |
-| 75 | 68750 | 30 coins | 30 coins |
-| 76 | 69750 | - | 30 coins |
-| 77 | 70750 | 30 coins | 30 coins |
-| 78 | 71750 | - | 30 coins |
-| 79 | 72750 | 30 coins | 30 coins |
-| 80 | 73750 | `emoji.s1_cheer` (`rare`) | 30 coins + `table.s1_deep_sea` (`epic`) |
-| 81 | 74750 | 30 coins | 30 coins |
-| 82 | 75750 | - | 30 coins |
-| 83 | 76750 | 30 coins | 30 coins |
-| 84 | 77750 | - | 30 coins |
-| 85 | 78750 | 30 coins | 30 coins |
-| 86 | 79750 | - | 30 coins |
-| 87 | 80750 | 30 coins | 30 coins |
-| 88 | 81750 | - | 30 coins |
-| 89 | 82750 | 30 coins | 30 coins |
-| 90 | 83750 | `table.s1_lighthouse` (`rare`) | 30 coins + `emoji.s1_treasure_map` (`epic`) |
-| 91 | 84750 | 30 coins | 30 coins |
-| 92 | 85750 | - | 30 coins |
-| 93 | 86750 | 30 coins | 30 coins |
-| 94 | 87750 | - | 30 coins |
-| 95 | 88750 | 30 coins | 30 coins |
-| 96 | 89750 | - | 30 coins |
-| 97 | 90750 | 30 coins | 30 coins |
-| 98 | 91750 | - | 30 coins |
-| 99 | 92750 | 30 coins | 30 coins |
-| 100 | 93750 | `frame.s1_compass` (`epic`) | 30 coins + `character.s1_sea_queen` (`legendary`) |
+| 1 | 0 | 30 coins | 6 crystals + `avatar.s1_navigator` (`epic`) |
+| 2 | 300 | - | 6 crystals |
+| 3 | 650 | 30 coins | 6 crystals |
+| 4 | 1050 | - | 6 crystals |
+| 5 | 1500 | 30 coins | 6 crystals |
+| 6 | 2000 | - | 6 crystals |
+| 7 | 2550 | 30 coins | 6 crystals |
+| 8 | 3150 | - | 6 crystals |
+| 9 | 3800 | 30 coins | 6 crystals |
+| 10 | 4500 | `emoji.s1_wave` (`common`) | 6 crystals + `avatar.s1_pirate` (`rare`) |
+| 11 | 5250 | 30 coins | 6 crystals |
+| 12 | 6050 | - | 6 crystals |
+| 13 | 6900 | 30 coins | 6 crystals |
+| 14 | 7800 | - | 6 crystals |
+| 15 | 8750 | 30 coins | 6 crystals |
+| 16 | 9750 | - | 6 crystals |
+| 17 | 10750 | 30 coins | 6 crystals |
+| 18 | 11750 | - | 6 crystals |
+| 19 | 12750 | 30 coins | 6 crystals |
+| 20 | 13750 | `avatar.s1_sailor` (`common`) | 6 crystals + `emoji.s1_wink` (`rare`) |
+| 21 | 14750 | 30 coins | 6 crystals |
+| 22 | 15750 | - | 6 crystals |
+| 23 | 16750 | 30 coins | 6 crystals |
+| 24 | 17750 | - | 6 crystals |
+| 25 | 18750 | 30 coins | 6 crystals |
+| 26 | 19750 | - | 6 crystals |
+| 27 | 20750 | 30 coins | 6 crystals |
+| 28 | 21750 | - | 6 crystals |
+| 29 | 22750 | 30 coins | 6 crystals |
+| 30 | 23750 | `frame.s1_rope` (`common`) | 6 crystals + `frame.s1_wave` (`rare`) |
+| 31 | 24750 | 30 coins | 6 crystals |
+| 32 | 25750 | - | 6 crystals |
+| 33 | 26750 | 30 coins | 6 crystals |
+| 34 | 27750 | - | 6 crystals |
+| 35 | 28750 | 30 coins | 6 crystals |
+| 36 | 29750 | - | 6 crystals |
+| 37 | 30750 | 30 coins | 6 crystals |
+| 38 | 31750 | - | 6 crystals |
+| 39 | 32750 | 30 coins | 6 crystals |
+| 40 | 33750 | `emoji.s1_thumbs` (`rare`) | 6 crystals + `table.s1_reef` (`rare`) |
+| 41 | 34750 | 30 coins | 6 crystals |
+| 42 | 35750 | - | 6 crystals |
+| 43 | 36750 | 30 coins | 6 crystals |
+| 44 | 37750 | - | 6 crystals |
+| 45 | 38750 | 30 coins | 6 crystals |
+| 46 | 39750 | - | 6 crystals |
+| 47 | 40750 | 30 coins | 6 crystals |
+| 48 | 41750 | - | 6 crystals |
+| 49 | 42750 | 30 coins | 6 crystals |
+| 50 | 43750 | `avatar.s1_captain` (`rare`) | 6 crystals + `avatar.s1_admiral` (`epic`) |
+| 51 | 44750 | 30 coins | 6 crystals |
+| 52 | 45750 | - | 6 crystals |
+| 53 | 46750 | 30 coins | 6 crystals |
+| 54 | 47750 | - | 6 crystals |
+| 55 | 48750 | 30 coins | 6 crystals |
+| 56 | 49750 | - | 6 crystals |
+| 57 | 50750 | 30 coins | 6 crystals |
+| 58 | 51750 | - | 6 crystals |
+| 59 | 52750 | 30 coins | 6 crystals |
+| 60 | 53750 | `table.s1_harbor` (`common`) | 6 crystals + `emoji.s1_storm` (`epic`) |
+| 61 | 54750 | 30 coins | 6 crystals |
+| 62 | 55750 | - | 6 crystals |
+| 63 | 56750 | 30 coins | 6 crystals |
+| 64 | 57750 | - | 6 crystals |
+| 65 | 58750 | 30 coins | 6 crystals |
+| 66 | 59750 | - | 6 crystals |
+| 67 | 60750 | 30 coins | 6 crystals |
+| 68 | 61750 | - | 6 crystals |
+| 69 | 62750 | 30 coins | 6 crystals |
+| 70 | 63750 | `frame.s1_anchor` (`rare`) | 6 crystals + `frame.s1_kraken` (`epic`) |
+| 71 | 64750 | 30 coins | 6 crystals |
+| 72 | 65750 | - | 6 crystals |
+| 73 | 66750 | 30 coins | 6 crystals |
+| 74 | 67750 | - | 6 crystals |
+| 75 | 68750 | 30 coins | 6 crystals |
+| 76 | 69750 | - | 6 crystals |
+| 77 | 70750 | 30 coins | 6 crystals |
+| 78 | 71750 | - | 6 crystals |
+| 79 | 72750 | 30 coins | 6 crystals |
+| 80 | 73750 | `emoji.s1_cheer` (`rare`) | 6 crystals + `table.s1_deep_sea` (`epic`) |
+| 81 | 74750 | 30 coins | 6 crystals |
+| 82 | 75750 | - | 6 crystals |
+| 83 | 76750 | 30 coins | 6 crystals |
+| 84 | 77750 | - | 6 crystals |
+| 85 | 78750 | 30 coins | 6 crystals |
+| 86 | 79750 | - | 6 crystals |
+| 87 | 80750 | 30 coins | 6 crystals |
+| 88 | 81750 | - | 6 crystals |
+| 89 | 82750 | 30 coins | 6 crystals |
+| 90 | 83750 | `table.s1_lighthouse` (`rare`) | 6 crystals + `emoji.s1_treasure_map` (`epic`) |
+| 91 | 84750 | 30 coins | 6 crystals |
+| 92 | 85750 | - | 6 crystals |
+| 93 | 86750 | 30 coins | 6 crystals |
+| 94 | 87750 | - | 6 crystals |
+| 95 | 88750 | 30 coins | 6 crystals |
+| 96 | 89750 | - | 6 crystals |
+| 97 | 90750 | 30 coins | 6 crystals |
+| 98 | 91750 | - | 6 crystals |
+| 99 | 92750 | 30 coins | 6 crystals |
+| 100 | 93750 | `frame.s1_compass` (`epic`) | 6 crystals + `avatar.s1_sea_queen` (`legendary`) |
 
 ### 8.3 Missions
 
@@ -482,7 +505,7 @@ Achievements, one chain per line; together they pay 7900 coins once per account:
 | `medal.points_100k` | `mission.points_100000` | `legendary` |
 | `medal.season1_gold` | Rank reward of `season_1`, Gold (#120, `docs/economy.md` section 4 example) | Set by #120 |
 
-Rarities are first estimates for 5.3, checked against measured earn shares after closed beta.
+Rarities are first estimates for 5.3, checked against measured earn shares after closed beta. The example catalog `docs/pass/examples/medals.json` leaves out `medal.season1_gold` until its rarity is set.
 
 ## 9. Config
 
@@ -502,13 +525,15 @@ Rarities are first estimates for 5.3, checked against measured earn shares after
 | `ProfileMedalSlots` | 3 | This document | 5.4 |
 | `ProfileEmblemSlots` | 3 | `docs/ranking.md` | 5.5 |
 | Medal rarity shares | Section 5.3 | This document, guidance for admins | 5.3 |
-| `PassFreeTrackCoins`, `PassPremiumTrackCoins` | 1500, 3000 | `docs/economy.md` | 2.4 |
-| `PassLevelCoinPrice` | 200 | `docs/economy.md` | 2.5, 2.6 |
+| `PassFreeTrackCoins`, `PassPremiumTrackCrystals` | 1500, 600 | `docs/economy.md` | 2.4 |
+| `PassLevelCoinPrice`, `PassLevelCrystalPrice` | 200, 40 | `docs/economy.md` | 2.5, 2.6 |
 | `PassPremiumUsd`, `PassPremiumPlusUsd`, `PassPremiumPlusLevels` | 4.99, 9.99, 20 | `docs/economy.md` | 2.5 |
 | `DailyMissionCoinBudget`, `WeeklyMissionCoinBudget` | 120, 600 | `docs/economy.md` | 4.4 |
 | `BotSeatRewardPercent` | 50 | `docs/economy.md` | 3 |
 
 Season windows are records, not keys: they default to the ranked season's window (2.1).
+
+Pass seasons are published as the `pass` config domain: `docs/pass/examples/pass.json` is the sample season of section 8.2 in that format (schema 1, one bundle per level and track, the curve of 2.2 per season). The same domain carries the XP values of 2.3 that may change mid-season: `matchXp1v1` and `matchXp2v2` (`win`, `loss`), `dailyMatchXpCap` and `botSeatRewardPercent`, and the `levelCoinPrice` and `levelCrystalPrice` of 2.6 (`PassLevelCoinPrice`, `PassLevelCrystalPrice`). The track budgets are `freeTrackCoins` and `premiumTrackCrystals`; a free bundle grants no crystals and a premium bundle no coins.
 
 ### 9.1 Publish validation
 
@@ -516,7 +541,7 @@ Admin publish (#140, #141) rejects:
 
 | Id | Rule |
 |---|---|
-| PV-1 | A track whose coins exceed `PassFreeTrackCoins` or `PassPremiumTrackCoins` |
+| PV-1 | A free track whose coins exceed `PassFreeTrackCoins`, a premium track whose crystals exceed `PassPremiumTrackCrystals`, or a premium reward with coins |
 | PV-2 | A premium level without a bundle, a level outside 1 to `PassLevels`, or a track bundle with `medals` or `passXp` |
 | PV-3 | `PassLevels` <= `PassPremiumPlusLevels`, or a curve value < 1, or `PassXpMax` < `PassXpBase` |
 | PV-4 | Overlapping pass seasons; a change to a frozen field of a running season (2.1) |
@@ -539,7 +564,7 @@ Admin publish (#140, #141) rejects:
 | #128 | Mission UI |
 | #129 | Medal system: definition, grant, showcase (5) |
 | #130 | Medal UI: collection, emblem section, profile (5.4, 5.5) |
-| #131 | Daily login, economy day and reset time zone (`docs/economy.md` 2.3) |
+| #131 | Daily login and the 00:00 UTC economy day (`docs/economy.md` 2.3) |
 | #132 | Push notifications; this spec requires none |
 
 Elsewhere: admin #138 (bundles), #140 (pass seasons), #141 (missions and medals); grants #102, ledger #101, purchases #106; rank rewards #120 and season end #115; live events #146; analytics #147; medal art #178; anti-farm #110, #183, #209, #211; server time #208.
@@ -560,3 +585,4 @@ Decided by the owner on 2026-10-26. Values stay admin config and are tuned with 
 | OQ-8 | Medals and emblems | Separate systems with their own profile showcase: `ProfileEmblemSlots` (3) emblems and `ProfileMedalSlots` (3) medals; emblems have their own section of the medal collection (5.4, 5.5) |
 | OQ-9 | Catch-up for players who join late in a season | None at launch; level purchase and premium plus cover it |
 | OQ-10 | `mythic` items on pass tracks | None; the sample tops out at one `legendary` per track season (8.2) |
+| OQ-11 | Name of the pass (2026-11-12) | **Hype Pass** in every language and every player-facing text, never translated. Code, config keys, ledger reasons and store product ids keep `pass` |

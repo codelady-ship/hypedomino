@@ -90,7 +90,13 @@ func TestPresenceReportKeepsTheHistoryAcrossReconnects(t *testing.T) {
 	}
 	p.Timeout(SeatSouth)
 	p.Timeout(SeatSouth)
+	if n := p.ConsecutiveTimeouts(SeatSouth); n != 2 {
+		t.Fatalf("consecutive timeouts before a move: %d", n)
+	}
 	p.Move(SeatSouth)
+	if n := p.ConsecutiveTimeouts(SeatSouth); n != 0 {
+		t.Fatalf("consecutive timeouts after a move: %d", n)
+	}
 	if r := p.Report(SeatSouth); r != (PresenceReport{Timeouts: 2}) {
 		t.Fatalf("after two timeouts and a move: %+v", r)
 	}

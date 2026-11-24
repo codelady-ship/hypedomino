@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "emblemBrackets": [1, 50, 100, 200],
+  "modes": {
+    "1v1": {
+      "rankRewards": {
+        "Gold": {
+          "id": "bundle.rank_season_1_gold",
+          "revision": 1,
+          "cosmetics": ["frame.season_1_top"]
+        }
+      },
+      "divisionLp": 100,
+      "demotionLp": 75,
+      "apexRecalcHourUtc": 0,
+      "challengerSlots": 50,
+      "challengerMinLp": 500,
+      "grandmasterSlots": 200,
+      "grandmasterMinLp": 200,
+      "initialMmr": 1200,
+      "mmrScale": 400,
+      "mmrK": 20,
+      "mmrKProvisional": 40,
+      "mmrProvisionalMatches": 20,
+      "rankMmrBase": 800,
+      "rankMmrStep": 40,
+      "lpBase": 20,
+      "lpGapScale": 200,
+      "lpFactorMin": 0.5,
+      "lpFactorMax": 1.5,
+      "lpChangeMin": 5,
+      "lpChangeMax": 40,
+      "placementMatches": 5,
+      "placementMaxDropDivisions": 4,
+      "placementMaxClimbDivisions": 4,
+      "seasonLengthMonths": 3,
+      "resetTierDrop": 1,
+      "resetFloor": "Bronze IV",
+      "resetCeiling": "Diamond IV",
+      "newPlayerPlacementCap": "Gold IV"
+    },
+    "2v2": {
+      "divisionLp": 100,
+      "demotionLp": 75,
+      "apexRecalcHourUtc": 0,
+      "challengerSlots": 50,
+      "challengerMinLp": 500,
+      "grandmasterSlots": 200,
+      "grandmasterMinLp": 200,
+      "initialMmr": 1200,
+      "mmrScale": 400,
+      "mmrK": 20,
+      "mmrKProvisional": 40,
+      "mmrProvisionalMatches": 20,
+      "rankMmrBase": 800,
+      "rankMmrStep": 40,
+      "lpBase": 20,
+      "lpGapScale": 200,
+      "lpFactorMin": 0.5,
+      "lpFactorMax": 1.5,
+      "lpChangeMin": 5,
+      "lpChangeMax": 40,
+      "placementMatches": 5,
+      "placementMaxDropDivisions": 4,
+      "placementMaxClimbDivisions": 4,
+      "seasonLengthMonths": 3,
+      "resetTierDrop": 1,
+      "resetFloor": "Bronze IV",
+      "resetCeiling": "Diamond IV",
+      "newPlayerPlacementCap": "Gold IV"
+    }
+  }
+}

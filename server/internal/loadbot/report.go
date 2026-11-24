@@ -15,32 +15,37 @@ type WindowReport struct {
 }
 
 type Report struct {
-	Duration        time.Duration
-	Rooms           int
-	PeakConnections int64
-	Matches         uint64
-	Moves           uint64
-	Mean            time.Duration
-	P50             time.Duration
-	P95             time.Duration
-	P99             time.Duration
-	Max             time.Duration
-	SteadyMoves     uint64
-	SteadyP99       time.Duration
-	WorstWindowP99  time.Duration
-	Windows         []WindowReport
-	Rejected        uint64
-	DialFailures    uint64
-	ReadFailures    uint64
-	Drops           uint64
-	Reconnects      uint64
-	ErrorRate       float64
-	BytesPerIntent  float64
-	Heap            []HeapSample
-	HeapDriftPct    float64
-	Budget          time.Duration
-	Pass            bool
-	Failures        []string
+	Duration          time.Duration
+	Rooms             int
+	PeakConnections   int64
+	Matches           uint64
+	Moves             uint64
+	Mean              time.Duration
+	P50               time.Duration
+	P95               time.Duration
+	P99               time.Duration
+	Max               time.Duration
+	SteadyMoves       uint64
+	SteadyP99         time.Duration
+	WorstWindowP99    time.Duration
+	Windows           []WindowReport
+	Rejected          uint64
+	DialFailures      uint64
+	ReadFailures      uint64
+	Drops             uint64
+	Reconnects        uint64
+	StormAt           time.Duration
+	StormDrops        uint64
+	StormRecovered    uint64
+	StormRecovery     time.Duration
+	ErrorRate         float64
+	BytesPerIntent    float64
+	Node              []NodeSample
+	HeapDriftPct      float64
+	GoroutineDriftPct float64
+	Budget            time.Duration
+	Pass              bool
+	Failures          []string
 }
 
 func (r *Runner) report() *Report {
@@ -62,6 +67,10 @@ func (r *Runner) report() *Report {
 		ReadFailures:    r.counters.ReadFailures.Load(),
 		Drops:           r.counters.Drops.Load(),
 		Reconnects:      r.counters.Reconnects.Load(),
+		StormAt:         r.config.StormAt,
+		StormDrops:      r.counters.StormDrops.Load(),
+		StormRecovered:  r.counters.Recovered.Load(),
+		StormRecovery:   time.Duration(r.recovery.Load()),
 		Budget:          r.config.Budget,
 	}
 	warmupWindows := int(r.config.Warmup / r.config.Window)
@@ -82,25 +91,29 @@ func (r *Runner) report() *Report {
 	if sent := r.counters.Sent.Load(); sent > 0 {
 		rep.BytesPerIntent = float64(r.counters.SentBytes.Load()) / float64(sent)
 	}
-	r.heapMu.Lock()
-	rep.Heap = append([]HeapSample(nil), r.heap...)
-	r.heapMu.Unlock()
-	rep.HeapDriftPct = heapDrift(rep.Heap, r.config.Warmup)
+	r.nodeMu.Lock()
+	rep.Node = append([]NodeSample(nil), r.node...)
+	r.nodeMu.Unlock()
+	rep.HeapDriftPct = drift(rep.Node, r.config.Ramp+r.config.Warmup, heapOf)
+	rep.GoroutineDriftPct = drift(rep.Node, r.config.Ramp+r.config.Warmup, goroutinesOf)
 	rep.judge()
 	return rep
 }
 
-func heapDrift(samples []HeapSample, warmup time.Duration) float64 {
-	var steady []HeapSample
+func heapOf(sample NodeSample) uint64       { return sample.HeapBytes }
+func goroutinesOf(sample NodeSample) uint64 { return sample.Goroutines }
+
+func drift(samples []NodeSample, warmup time.Duration, value func(NodeSample) uint64) float64 {
+	var steady []uint64
 	for _, sample := range samples {
-		if sample.At >= warmup && sample.Bytes > 0 {
-			steady = append(steady, sample)
+		if sample.At >= warmup && value(sample) > 0 {
+			steady = append(steady, value(sample))
 		}
 	}
 	if len(steady) < 2 {
 		return 0
 	}
-	first, last := steady[0].Bytes, steady[len(steady)-1].Bytes
+	first, last := steady[0], steady[len(steady)-1]
 	return (float64(last) - float64(first)) / float64(first) * 100
 }
 
@@ -124,6 +137,9 @@ func (rep *Report) judge() {
 	if rep.HeapDriftPct > 5 {
 		rep.Failures = append(rep.Failures, fmt.Sprintf("heap grew %.1f%% during the steady state", rep.HeapDriftPct))
 	}
+	if rep.GoroutineDriftPct > 5 {
+		rep.Failures = append(rep.Failures, fmt.Sprintf("goroutines grew %.1f%% during the steady state", rep.GoroutineDriftPct))
+	}
 	rep.Pass = len(rep.Failures) == 0
 }
 
@@ -134,8 +150,13 @@ func (rep *Report) Text() string {
 	fmt.Fprintf(b, "steady state: moves %d p99 %s, worst window p99 %s, budget %s\n", rep.SteadyMoves, rep.SteadyP99, rep.WorstWindowP99, rep.Budget)
 	fmt.Fprintf(b, "drops %d reconnects %d rejected %d dial failures %d read failures %d, error rate %.4f%%\n", rep.Drops, rep.Reconnects, rep.Rejected, rep.DialFailures, rep.ReadFailures, rep.ErrorRate*100)
 	fmt.Fprintf(b, "bytes per intent %.1f\n", rep.BytesPerIntent)
-	if len(rep.Heap) > 0 {
-		fmt.Fprintf(b, "heap: first %d bytes, last %d bytes, steady drift %.1f%%\n", rep.Heap[0].Bytes, rep.Heap[len(rep.Heap)-1].Bytes, rep.HeapDriftPct)
+	if rep.StormAt > 0 {
+		fmt.Fprintf(b, "storm at %s: dropped %d, back in their match %d, slowest return %s\n", rep.StormAt, rep.StormDrops, rep.StormRecovered, rep.StormRecovery.Round(time.Millisecond))
+	}
+	if len(rep.Node) > 0 {
+		first, last := rep.Node[0], rep.Node[len(rep.Node)-1]
+		fmt.Fprintf(b, "heap: first %d bytes, last %d bytes, steady drift %.1f%%\n", first.HeapBytes, last.HeapBytes, rep.HeapDriftPct)
+		fmt.Fprintf(b, "goroutines: first %d, last %d, steady drift %.1f%%\n", first.Goroutines, last.Goroutines, rep.GoroutineDriftPct)
 	}
 	fmt.Fprintln(b, "window  moves  p50  p99  max")
 	for _, window := range rep.Windows {

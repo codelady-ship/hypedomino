@@ -91,10 +91,11 @@ Unity Test Framework, one test assembly per runtime assembly (#65 assembly defin
 |---|---|---|
 | Edit-mode | Pure C# logic: chain layout geometry for line, spinner arms and auto-scale (#80); applying a server snapshot or event to the view state; reconnect state machine (#67); localization key coverage (#70); golden frame decoding (section 2.4) | #65, #67, #80 |
 | Play-mode | Scene flows driven by a fake transport replaying recorded server frames (section 7.3): deal, place, draw, pass, hand end, match end, reconnect, `UPDATE_REQUIRED` screen. Asserts what is shown equals what the frames say; the client never shows a value it did not receive | #66, #78 to #87, #73 |
-| Allocation, per call | `Assert.That(() => step(), Is.Not.AllocatingGCMemory())` on every per-frame and per-input method after warm-up | #72 |
+| Allocation, per call | `Assert.That(() => step(), Allocates.Nothing)` on every per-frame and per-input method after warm-up. `Allocates.Nothing` (`client/Assets/HypeDomino/Tests/Support`) counts `GC.Alloc` samples with a `ProfilerRecorder` that collects only on the calling thread and requires 0. The engine's `Is.Not.AllocatingGCMemory()` is not used: its shared recorder sometimes reports one allocation for an empty step (#593); `tools/allocation-constraint` fails `npm run test:tools` if a client file uses it | #72, #593 |
 | Allocation, per frame | Play-mode replay of a recorded 2v2 match reads `ProfilerRecorder` "GC Allocated In Frame" each frame from first deal to result screen and requires 0 B, with `GC.CollectionCount(0)` unchanged | #72 |
 | Performance capture | Unity Performance Testing package records frame time and markers during the same replay; results are trend data only | #72, #161 |
 | Build checks | Build size report per PR with a warning when the budget would be exceeded | #76 |
+| Assembly layout | Every asmdef is in the Layout table of `client/README.md` with exactly the project references it lists, references point only up the table, and Core references nothing. Runs in the `lint` job (section 2.7), so it needs no Unity license | #76 |
 
 Editor numbers do not represent devices (ADR 0008). The CI allocation test catches code-path regressions early; the gates in `docs/performance.md` section 3 are passed only by device runs (#191, #161).
 
@@ -109,11 +110,11 @@ Unit and component tests run with `pnpm test`, browser e2e as a separate suite. 
 | Audit | Every write produces an audit entry with who, what, before, after and reason | #134 |
 | Config publish e2e | Create a value, publish, see a new version id; publish an earlier version; the game server loads it (section 2.3) | #145 |
 | Catalog e2e | Cosmetic CRUD produces a manifest that passes the cosmetics schema (`tools/cosmetics-schema`) | #136 |
-| Hardening | Lighthouse above 90, no critical vulnerability (#148 acceptance) | #148 |
+| Hardening | Lighthouse above 90 in performance, accessibility and best practices (SEO excluded, the pages are `noindex`: `docs/admin.md` O-9), no critical vulnerability (#148 acceptance); procedure and last result in `admin/README.md`; the vulnerability half runs in CI (section 10.1) | #148 |
 
 ### 2.7 Spec tooling (exists)
 
-`npm run lint` runs the comment lint; `npm run test:tools` runs `node --test "tools/**/*.test.mjs"`: comment lint, rules vectors, economy balance sheet, pass sample season, design tokens, art direction and cosmetics schema validators. They run in the `lint` CI job on every PR and keep the spec fixtures that server tests consume (vectors, balance CSV, manifests) valid before the code exists.
+`npm run lint` runs the comment lint; `npm run test:tools` runs `node --test "tools/**/*.test.mjs"`: comment lint, rules vectors, economy balance sheet, pass sample season, design tokens, art direction and cosmetics schema validators, and the client assembly layout (`tools/assembly-layout`: every asmdef under `client/Assets` matches the Layout table of `client/README.md`, and references point only up it). They run in the `lint` CI job on every PR and keep the spec fixtures that server tests consume (vectors, balance CSV, manifests) valid before the code exists.
 
 ## 3. End-to-end bot clients
 
@@ -141,6 +142,7 @@ Goal (#190 acceptance): bot clients play a full match on the real server automat
 | E-4 | Exactly one match result row; exactly one `match_reward` ledger entry per rewarded player with key `match:<matchId>`; ranked MMR and LP applied once | #50, `docs/economy.md` section 5, `docs/ranking.md` section 1 |
 | E-5 | Every refused intent leaves server state unchanged and increments the illegal intent counter | NT-2, V-1 |
 | E-6 | No server error log line and no goroutine left after the room closes | #46 |
+| E-7 | Every seat sends and receives under 200 KB of frame payload in a whole match (`docs/performance.md` 6.2) | #163 |
 
 ### 3.3 Scenarios
 
@@ -163,7 +165,7 @@ Seed counts are *proposals*.
 
 #190 is closed when S-1 and S-2 run green in the `server` job on `main`.
 
-S-1 and S-2 live in `server/internal/e2e/match_test.go` (`TestS1OneVersusOneFullMatch`, `TestS2TwoVersusTwoFullMatch`). Each seat is a `botclient.Brain`: the #40 bot at the hard level deciding on a `rules.Board` rebuilt from the seat's own view. The room clock never fires, so no turn times out and every intent in the record comes from a bot client. They assert E-1, E-2, E-3, E-6 and that no intent is refused (E-5). E-4 joins when match results are stored from the room (#50).
+S-1 and S-2 live in `server/internal/e2e/match_test.go` (`TestS1OneVersusOneFullMatch`, `TestS2TwoVersusTwoFullMatch`). Each seat is a `botclient.Brain`: the #40 bot at the hard level deciding on a `rules.Board` rebuilt from the seat's own view. The room clock never fires, so no turn times out and every intent in the record comes from a bot client. They assert E-1, E-2, E-3, E-6, E-7 and that no intent is refused (E-5). E-4 joins when match results are stored from the room (#50).
 
 ## 4. Device farm smoke
 
@@ -200,7 +202,7 @@ Load runs on staging sized like production, never on CI runners. It is re-run at
 
 ## 6. Security regression
 
-The red team (#212) attacks the release candidate with the `docs/anti-cheat.md` vectors V-1 to V-11. Its automatable part becomes permanent tests:
+The red team (#212) attacks the release candidate with the `docs/anti-cheat.md` vectors V-1 to V-11; the plan, results and findings are `docs/red-team.md`. Its automatable part becomes permanent tests, among them the red team harness `server/cmd/server/redteam_*_test.go`, which attacks the server as `cmd/server` wires it over real frames and requests in the `server` job:
 
 | Vector | Permanent test |
 |---|---|
@@ -280,9 +282,9 @@ A test that fails and then passes on the same commit is flaky. A flaky test is a
 | `lint` | `npm run lint` (comment lint), `npm run test:tools` (spec validators) | Always |
 | `secret-scan` | Pinned gitleaks over the PR's commits, or the full history on `main` (`docs/environments.md` section 4) | Always |
 | `pr-meta` | One `type:`, `area:` and `priority:` label; `Closes #N` or `Part of #N` in the body | PRs |
-| `server` | `gofmt`, `go vet`, `go build`, `go test -race ./...` | Server changed |
-| `image` | Builds `server/Dockerfile`; `tools/deploy/container-smoke.sh` (non-root user, bad config exits 2, health, drain on `SIGTERM`); `tools/deploy/kind-rollout.sh` on a kind cluster (rolling deploy keeps every replica available, old pods drain and stop, rollback under 5 minutes, ADR 0010) | Server, `deploy/` or `tools/deploy/` changed |
-| `admin` | `pnpm install --frozen-lockfile`, `typecheck`, `test`, `build` (scripts if present) | Admin changed |
+| `server` | `gofmt`, `go vet`, `go build`, `go test -race ./...`, `govulncheck` (pinned) over `./cmd/admin-api/...`, failing on every reachable vulnerability (#148, `docs/admin.md` O-10) | Server changed |
+| `image` | Builds `server/Dockerfile`; `tools/deploy/container-smoke.sh` (non-root user, bad config exits 2, health, drain on `SIGTERM`); `deploy/k8s/base`, `deploy/k8s/overlays/ci` and `deploy/k8s/monitoring` render and pass kubeconform; `promtool check rules` and `promtool test rules` on the alert rules of `deploy/k8s/monitoring` (the latency alert of ADR 0014 fires after 15 minutes over budget and stays quiet within budget or at low traffic); `tools/deploy/kind-rollout.sh` on a kind cluster (the release through `tools/deploy/apply-release.sh`: the `migrate` Job migrates a throwaway PostgreSQL to the newest migration before the rollout, a second release applies nothing, a failed job leaves the server untouched; rolling deploy keeps every replica available, old pods drain and stop, rollback under 5 minutes, ADR 0010); `tools/deploy/kind-metrics.sh` (the debug port `6060` answers the `monitoring` namespace, is refused from another namespace, is not in the `server` Service and answers pprof with 404; the loopback pprof listener `6061` is refused from the pod network and reached through `kubectl port-forward`) | Server, `deploy/` or `tools/deploy/` changed |
+| `admin` | `pnpm install --frozen-lockfile`, `typecheck`, `test`, `build` (scripts if present), `pnpm audit --audit-level=critical` (#148) | Admin changed |
 | `client` | Unity test runner, `testMode: all` (edit-mode and play-mode) | Client changed |
 | `proto` | `buf lint`, `buf format --diff --exit-code`, `buf breaking` against the PR base | Proto changed |
 | `CI complete` | Fails if any needed job is neither `success` nor `skipped`, or if `changes`, `lint` or `secret-scan` did not succeed | Always |

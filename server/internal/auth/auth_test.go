@@ -4,16 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/account"
+	"github.com/Alievs-corp/hypedomino/server/internal/appeal"
 	"github.com/Alievs-corp/hypedomino/server/internal/auth"
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
+	"github.com/Alievs-corp/hypedomino/server/internal/liveops"
 	"github.com/Alievs-corp/hypedomino/server/internal/token"
 )
 
@@ -43,9 +48,11 @@ func (v *fakeVerifier) Verify(_ context.Context, provider idtoken.Provider, toke
 }
 
 type fakeAccounts struct {
-	states map[string]error
-	known  map[string]bool
-	calls  int
+	adopted []string
+	states  map[string]error
+	known   map[string]bool
+	pending map[string]time.Time
+	calls   int
 }
 
 func (a *fakeAccounts) SignIn(_ context.Context, identity idtoken.Identity) (account.Account, bool, error) {
@@ -53,6 +60,9 @@ func (a *fakeAccounts) SignIn(_ context.Context, identity idtoken.Identity) (acc
 	id := identity.Provider.String() + "-" + identity.Subject
 	if err := a.states[id]; err != nil {
 		return account.Account{}, false, err
+	}
+	if at, pending := a.pending[id]; pending {
+		return account.Account{ID: id, State: account.StateDeleting, DeletionAt: &at}, false, account.ErrDeletionPending
 	}
 	created := !a.known[id]
 	a.known[id] = true
@@ -68,7 +78,7 @@ type fakeTokens struct {
 
 func (f *fakeTokens) Issue(_ context.Context, account, device string) (token.Pair, error) {
 	f.issued = append(f.issued, account+"@"+device)
-	return token.Pair{AccessToken: "access:" + account + ":" + device, RefreshToken: "refresh:" + account + ":1", ExpiresIn: 900, Session: "sid-" + account}, nil
+	return token.Pair{AccessToken: "access:" + account + ":" + device, RefreshToken: "refresh:" + account + ":1", ExpiresIn: 900, Session: "sid-" + account, RequestKey: []byte("key-" + account)}, nil
 }
 
 func (f *fakeTokens) Refresh(_ context.Context, refresh, device string) (token.Pair, error) {
@@ -76,7 +86,7 @@ func (f *fakeTokens) Refresh(_ context.Context, refresh, device string) (token.P
 		return token.Pair{}, err
 	}
 	account, _, _ := strings.Cut(strings.TrimPrefix(refresh, "refresh:"), ":")
-	return token.Pair{AccessToken: "access:" + account + ":" + device, RefreshToken: "refresh:" + account + ":2", ExpiresIn: 900, Session: "sid-" + account}, nil
+	return token.Pair{AccessToken: "access:" + account + ":" + device, RefreshToken: "refresh:" + account + ":2", ExpiresIn: 900, Session: "sid-" + account, RequestKey: []byte("key-" + account)}, nil
 }
 
 func (f *fakeTokens) Logout(_ context.Context, refresh string) error {
@@ -113,6 +123,7 @@ type fixture struct {
 	accounts    *fakeAccounts
 	tokens      *fakeTokens
 	connections *fakeConnections
+	handler     *auth.Handler
 }
 
 func newFixture(t *testing.T) *fixture {
@@ -124,9 +135,9 @@ func newFixture(t *testing.T) *fixture {
 		tokens:      &fakeTokens{refreshes: map[string]error{}},
 		connections: &fakeConnections{},
 	}
-	handler := auth.New(f.verifier, f.accounts, f.tokens, f.connections, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	f.handler = auth.New(f.verifier, f.accounts, f.tokens, f.connections, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	mux := http.NewServeMux()
-	mux.Handle("POST /auth/", handler)
+	mux.Handle("POST /auth/", f.handler)
 	f.server = httptest.NewServer(mux)
 	t.Cleanup(f.server.Close)
 	return f
@@ -179,7 +190,7 @@ func TestNonceIsIssuedByTheVerifier(t *testing.T) {
 func TestSignInVerifiesTheTokenFindsTheAccountAndIssuesTokens(t *testing.T) {
 	f := newFixture(t)
 	status, body := f.post("/auth/signin", `{"provider":"google","id_token":"good","nonce":"nonce-1","device_id":"install-1"}`)
-	if status != http.StatusOK || body["access_token"] != "access:google-sub-1:install-1" || body["refresh_token"] != "refresh:google-sub-1:1" || body["expires_in"] != float64(900) || body["account_id"] != "google-sub-1" || body["created"] != true {
+	if status != http.StatusOK || body["access_token"] != "access:google-sub-1:install-1" || body["refresh_token"] != "refresh:google-sub-1:1" || body["expires_in"] != float64(900) || body["request_key"] != "a2V5LWdvb2dsZS1zdWItMQ==" || body["account_id"] != "google-sub-1" || body["created"] != true {
 		t.Fatalf("first sign-in answered %d %v", status, body)
 	}
 	status, body = f.post("/auth/signin", `{"provider":"apple","id_token":"good","nonce":"nonce-2","device_id":"install-1"}`)
@@ -235,10 +246,95 @@ func TestSignInRefusalsCarryAStatusAndAReason(t *testing.T) {
 	}
 }
 
+func TestABannedSignInCarriesTheBanCategoryOnly(t *testing.T) {
+	f := newFixture(t)
+	f.verifier.identities["cheater"] = idtoken.Identity{Subject: "cheater"}
+	f.accounts.states["google-cheater"] = &account.BannedError{Category: "cheating"}
+	f.verifier.identities["deleted"] = idtoken.Identity{Subject: "deleted"}
+	f.accounts.states["google-deleted"] = account.ErrDeleted
+	cases := []struct {
+		token    string
+		status   int
+		category any
+	}{
+		{"cheater", http.StatusForbidden, "cheating"},
+		{"deleted", http.StatusGone, nil},
+	}
+	for _, c := range cases {
+		status, body := f.post("/auth/signin", `{"provider":"google","id_token":"`+c.token+`","nonce":"n","device_id":"d"}`)
+		if status != c.status || body["category"] != c.category {
+			t.Fatalf("%s answered %d %v", c.token, status, body)
+		}
+	}
+}
+
+type fakeAppealSigner struct {
+	expires time.Time
+}
+
+func (s fakeAppealSigner) IssueAppeal(account string, sanction int64, ttl time.Duration) (string, time.Time, error) {
+	return fmt.Sprintf("appeal:%s:%d:%s", account, sanction, ttl), s.expires, nil
+}
+
+func TestABannedSignInCarriesAnAppealGrantForItsSanction(t *testing.T) {
+	f := newFixture(t)
+	expires := time.Date(2026, 11, 22, 13, 0, 0, 0, time.UTC)
+	f.handler.EnableAppeals(appeal.NewGranter(fakeAppealSigner{expires: expires}, func() liveops.Appeals { return liveops.Values{}.Appeals() }))
+	f.verifier.identities["cheater"] = idtoken.Identity{Subject: "cheater"}
+	until := time.Date(2026, 11, 25, 12, 0, 0, 0, time.UTC)
+	f.accounts.states["google-cheater"] = &account.BannedError{Account: "acc-cheater", Category: "cheating", SanctionID: 41, Until: &until}
+	f.verifier.identities["legacy"] = idtoken.Identity{Subject: "legacy"}
+	f.accounts.states["google-legacy"] = &account.BannedError{Account: "acc-legacy", Category: "other"}
+	f.verifier.identities["deleted"] = idtoken.Identity{Subject: "deleted"}
+	f.accounts.states["google-deleted"] = account.ErrDeleted
+	cases := []struct {
+		token  string
+		status int
+		until  any
+		appeal any
+	}{
+		{"cheater", http.StatusForbidden, "2026-11-25T12:00:00Z", map[string]any{"sanction_id": float64(41), "token": "appeal:acc-cheater:41:30m0s", "expires_at": "2026-11-22T13:00:00Z"}},
+		{"legacy", http.StatusForbidden, nil, nil},
+		{"deleted", http.StatusGone, nil, nil},
+	}
+	for _, c := range cases {
+		status, body := f.post("/auth/signin", `{"provider":"google","id_token":"`+c.token+`","nonce":"n","device_id":"d"}`)
+		if status != c.status || body["banned_until"] != c.until || !reflect.DeepEqual(body["appeal"], c.appeal) {
+			t.Fatalf("%s answered %d %v", c.token, status, body)
+		}
+	}
+}
+
+func TestSignInsAreCountedByProviderAndResult(t *testing.T) {
+	f := newFixture(t)
+	f.verifier.errs["expired"] = idtoken.ErrExpired
+	for _, body := range []string{
+		`{"provider":"google","id_token":"good","nonce":"n","device_id":"d"}`,
+		`{"provider":"google","id_token":"good","nonce":"n","device_id":"d"}`,
+		`{"provider":"apple","id_token":"expired","nonce":"n","device_id":"d"}`,
+		`{"provider":"facebook","id_token":"good","nonce":"n","device_id":"d"}`,
+		`{"provider":"google"`,
+	} {
+		f.post("/auth/signin", body)
+	}
+	var out strings.Builder
+	f.handler.SignIns().WriteTo(&out)
+	want := `# HELP hd_signins_total Sign-in attempts by identity provider and result: ok or the refusal reason sent to the client.
+# TYPE hd_signins_total counter
+hd_signins_total{provider="apple",result="token_expired"} 1
+hd_signins_total{provider="google",result="ok"} 2
+hd_signins_total{provider="unknown",result="malformed"} 1
+hd_signins_total{provider="unknown",result="unknown_provider"} 1
+`
+	if out.String() != want {
+		t.Fatalf("got\n%s", out.String())
+	}
+}
+
 func TestRefreshRotatesThePairAndReportsTheft(t *testing.T) {
 	f := newFixture(t)
 	status, body := f.post("/auth/refresh", `{"refresh_token":"refresh:google-sub-1:1","device_id":"install-1"}`)
-	if status != http.StatusOK || body["access_token"] != "access:google-sub-1:install-1" || body["refresh_token"] != "refresh:google-sub-1:2" || body["account_id"] != "google-sub-1" || body["created"] != nil {
+	if status != http.StatusOK || body["access_token"] != "access:google-sub-1:install-1" || body["refresh_token"] != "refresh:google-sub-1:2" || body["request_key"] != "a2V5LWdvb2dsZS1zdWItMQ==" || body["account_id"] != "google-sub-1" || body["created"] != nil {
 		t.Fatalf("refresh answered %d %v", status, body)
 	}
 	f.tokens.refreshes["stolen"] = token.ErrReused
@@ -304,5 +400,46 @@ func TestOversizedBodiesAndOtherMethodsAreRefused(t *testing.T) {
 	}
 	if f.accounts.calls != 0 {
 		t.Fatalf("accounts were consulted %d times", f.accounts.calls)
+	}
+}
+
+func (a *fakeAccounts) AdoptCountry(_ context.Context, id, code string) error {
+	a.adopted = append(a.adopted, id+"="+code)
+	return nil
+}
+
+func TestSignInAdoptsTheCountryHeaderOnce(t *testing.T) {
+	f := newFixture(t)
+	handler := auth.New(f.verifier, f.accounts, f.tokens, f.connections, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	handler.SetCountryHeader("CF-IPCountry")
+	server := httptest.NewServer(handler)
+	defer server.Close()
+	post := func(nonce, country string) int {
+		t.Helper()
+		f.verifier.nonce = nonce
+		request, _ := http.NewRequest(http.MethodPost, server.URL+"/auth/signin", strings.NewReader(`{"provider":"google","id_token":"good","nonce":"`+nonce+`","device_id":"install-1"}`))
+		request.Header.Set("Content-Type", "application/json")
+		if country != "" {
+			request.Header.Set("CF-IPCountry", country)
+		}
+		resp, err := http.DefaultClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	if status := post("n1", " az "); status != http.StatusOK {
+		t.Fatalf("sign-in %d", status)
+	}
+	if status := post("n2", ""); status != http.StatusOK {
+		t.Fatalf("sign-in without header %d", status)
+	}
+	if want := []string{"google-sub-1=AZ", "google-sub-1="}; strings.Join(f.accounts.adopted, " ") != strings.Join(want, " ") {
+		t.Fatalf("adopted %v", f.accounts.adopted)
+	}
+	f.accounts.adopted = nil
+	if status, _ := f.post("/auth/signin", `{"provider":"google","id_token":"good","nonce":"n3","device_id":"install-1"}`); status != http.StatusOK || len(f.accounts.adopted) != 0 {
+		t.Fatalf("without a configured header: %d %v", status, f.accounts.adopted)
 	}
 }

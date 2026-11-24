@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -31,6 +32,7 @@ const (
 	ReasonReuse     = "reuse"
 	ReasonDevice    = "device"
 	ReasonExpired   = "expired"
+	ReasonBanned    = "banned"
 )
 
 const (
@@ -137,7 +139,27 @@ func (s *Store) Revoke(ctx context.Context, refresh string, now time.Time) error
 }
 
 func (s *Store) RevokeAccount(ctx context.Context, account string, now time.Time) (int, error) {
-	tag, err := s.pool.Exec(ctx, `update auth_sessions set revoked_at = $2, revoke_reason = $3 where account_id = $1 and revoked_at is null`, account, now, ReasonLogoutAll)
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx)
+	revoked, err := RevokeAccountIn(ctx, tx, account, ReasonLogoutAll, now)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := tx.Exec(ctx, `delete from push_devices where account_id = $1`, account); err != nil {
+		return 0, err
+	}
+	return revoked, tx.Commit(ctx)
+}
+
+type Execer interface {
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+}
+
+func RevokeAccountIn(ctx context.Context, db Execer, account, reason string, now time.Time) (int, error) {
+	tag, err := db.Exec(ctx, `update auth_sessions set revoked_at = $2, revoke_reason = $3 where account_id = $1 and revoked_at is null`, account, now, reason)
 	if err != nil {
 		return 0, err
 	}

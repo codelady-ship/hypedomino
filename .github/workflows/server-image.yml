@@ -1,0 +1,72 @@
+name: Server image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'tools/deploy/container-smoke.sh'
+      - '.github/workflows/server-image.yml'
+  pull_request:
+    paths:
+      - 'server/Dockerfile'
+      - '.github/workflows/server-image.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-image-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/alievs-corp/hypedomino-server
+  STABLE_TAG: main
+  IMAGE_PLATFORMS: linux/amd64,linux/arm64
+  DESCRIPTION: hypedomino game server, docs/launch-runbook.md 5.1
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@v3
+      - name: Build every platform
+        run: |
+          for platform in ${IMAGE_PLATFORMS//,/ }; do
+            docker buildx build --pull --load --platform "$platform" \
+              --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+              --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+              --label "org.opencontainers.image.description=$DESCRIPTION" \
+              -t "hypedomino-server:${platform#linux/}" server
+          done
+      - name: Container health, bad config exit and SIGTERM drain on every platform
+        run: |
+          for platform in ${IMAGE_PLATFORMS//,/ }; do
+            echo "::group::$platform"
+            docker image inspect -f "{{.Os}}/{{.Architecture}}" "hypedomino-server:${platform#linux/}" | grep -qx "$platform"
+            bash tools/deploy/container-smoke.sh "hypedomino-server:${platform#linux/}"
+            echo "::endgroup::"
+          done
+      - name: Push
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker buildx build --push --platform "$IMAGE_PLATFORMS" --metadata-file "$RUNNER_TEMP/image.json" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.description=$DESCRIPTION" \
+            -t "$IMAGE:$GITHUB_SHA" -t "$IMAGE:$STABLE_TAG" server
+          digest=$(jq -r '."containerimage.digest"' "$RUNNER_TEMP/image.json")
+          docker buildx imagetools inspect "$IMAGE:$GITHUB_SHA"
+          echo "Pushed $IMAGE@$digest ($IMAGE_PLATFORMS), tags $GITHUB_SHA and $STABLE_TAG" | tee -a "$GITHUB_STEP_SUMMARY"

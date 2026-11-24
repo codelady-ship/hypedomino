@@ -1,0 +1,66 @@
+{
+  "diamondMinSize": 72,
+  "flowPeriodMs": 2400,
+  "tiers": [
+    {
+      "id": "common",
+      "ordinal": 1,
+      "nameKey": "rarity.common.name",
+      "fill": "#A3A6BF",
+      "on": "#0B0605",
+      "text": "#C9CBDB",
+      "pips": 1,
+      "glowAlpha": 0,
+      "glowScale": 1,
+      "flow": false
+    },
+    {
+      "id": "rare",
+      "ordinal": 2,
+      "nameKey": "rarity.rare.name",
+      "fill": "#5C78FF",
+      "on": "#0B0605",
+      "text": "#A3B3FF",
+      "pips": 2,
+      "glowAlpha": 0.35,
+      "glowScale": 1.15,
+      "flow": false
+    },
+    {
+      "id": "epic",
+      "ordinal": 3,
+      "nameKey": "rarity.epic.name",
+      "fill": "#B45CFF",
+      "on": "#0B0605",
+      "text": "#D3A3FF",
+      "pips": 3,
+      "glowAlpha": 0.55,
+      "glowScale": 1.3,
+      "flow": false
+    },
+    {
+      "id": "legendary",
+      "ordinal": 4,
+      "nameKey": "rarity.legendary.name",
+      "fill": "#FFC23D",
+      "on": "#0B0605",
+      "text": "#FFD98A",
+      "pips": 4,
+      "glowAlpha": 0.8,
+      "glowScale": 1.5,
+      "flow": false
+    },
+    {
+      "id": "mythic",
+      "ordinal": 5,
+      "nameKey": "rarity.mythic.name",
+      "fill": "#FF4530",
+      "on": "#0B0605",
+      "text": "#FF9C8F",
+      "pips": 5,
+      "glowAlpha": 0.8,
+      "glowScale": 1.5,
+      "flow": true
+    }
+  ]
+}

@@ -30,98 +30,128 @@ namespace Hypedomino.V1 {
             "djEuVGlsZVIEdGlsZRIpCgNlbmQYAiABKA4yFy5oeXBlZG9taW5vLnYxLkJv",
             "YXJkRW5kUgNlbmQiDAoKUGFzc0ludGVudCIMCgpEcmF3SW50ZW50Ig8KDUVu",
             "ZFR1cm5JbnRlbnQiQQoNTG9hZGluZ0ludGVudBIaCghwcm9ncmVzcxgBIAEo",
-            "DVIIcHJvZ3Jlc3MSFAoFcmVhZHkYAiABKAhSBXJlYWR5IjwKDE9yaWVudGVk",
-            "VGlsZRIUCgVmaXJzdBgBIAEoDVIFZmlyc3QSFgoGc2Vjb25kGAIgASgNUgZz",
-            "ZWNvbmQiSgoHT3BlbkVuZBIpCgNlbmQYASABKA4yFy5oeXBlZG9taW5vLnYx",
-            "LkJvYXJkRW5kUgNlbmQSFAoFdmFsdWUYAiABKA1SBXZhbHVlIoQCCglCb2Fy",
-            "ZFZpZXcSLwoEbGluZRgBIAMoCzIbLmh5cGVkb21pbm8udjEuT3JpZW50ZWRU",
-            "aWxlUgRsaW5lEi0KB3NwaW5uZXIYAiABKAsyEy5oeXBlZG9taW5vLnYxLlRp",
-            "bGVSB3NwaW5uZXISLQoDdG9wGAMgAygLMhsuaHlwZWRvbWluby52MS5Pcmll",
-            "bnRlZFRpbGVSA3RvcBIzCgZib3R0b20YBCADKAsyGy5oeXBlZG9taW5vLnYx",
-            "Lk9yaWVudGVkVGlsZVIGYm90dG9tEjMKCW9wZW5fZW5kcxgFIAMoCzIWLmh5",
-            "cGVkb21pbm8udjEuT3BlbkVuZFIIb3BlbkVuZHMizAEKCFNlYXRWaWV3EicK",
-            "BHNlYXQYASABKA4yEy5oeXBlZG9taW5vLnYxLlNlYXRSBHNlYXQSGwoJaGFu",
-            "ZF9zaXplGAIgASgNUghoYW5kU2l6ZRI5Cgpjb250cm9sbGVyGAMgASgOMhku",
-            "aHlwZWRvbWluby52MS5Db250cm9sbGVyUgpjb250cm9sbGVyEikKEGxvYWRp",
-            "bmdfcHJvZ3Jlc3MYBCABKA1SD2xvYWRpbmdQcm9ncmVzcxIUCgVyZWFkeRgF",
-            "IAEoCFIFcmVhZHkiXwoJTGVnYWxNb3ZlEicKBHRpbGUYASABKAsyEy5oeXBl",
-            "ZG9taW5vLnYxLlRpbGVSBHRpbGUSKQoDZW5kGAIgASgOMhcuaHlwZWRvbWlu",
-            "by52MS5Cb2FyZEVuZFIDZW5kIlsKB09wZW5pbmcSJwoEc2VhdBgBIAEoDjIT",
-            "Lmh5cGVkb21pbm8udjEuU2VhdFIEc2VhdBInCgR0aWxlGAIgASgLMhMuaHlw",
-            "ZWRvbWluby52MS5UaWxlUgR0aWxlIjoKClRlYW1Qb2ludHMSFQoGdGVhbV9h",
-            "GAEgASgNUgV0ZWFtQRIVCgZ0ZWFtX2IYAiABKA1SBXRlYW1CIqUCCgpIYW5k",
-            "UmVzdWx0Ei0KBHBpcHMYASABKAsyGS5oeXBlZG9taW5vLnYxLlRlYW1Qb2lu",
-            "dHNSBHBpcHMSKwoGd2lubmVyGAIgASgOMhMuaHlwZWRvbWluby52MS5UZWFt",
-            "UgZ3aW5uZXISMwoHYXdhcmRlZBgDIAEoCzIZLmh5cGVkb21pbm8udjEuVGVh",
-            "bVBvaW50c1IHYXdhcmRlZBIdCgpjYXJyeV9vdmVyGAQgASgNUgljYXJyeU92",
-            "ZXISMQoGc2NvcmVzGAUgASgLMhkuaHlwZWRvbWluby52MS5UZWFtUG9pbnRz",
-            "UgZzY29yZXMSNAoLbmV4dF9vcGVuZXIYBiABKA4yEy5oeXBlZG9taW5vLnYx",
-            "LlRlYW1SCm5leHRPcGVuZXIikgIKC1Jvc3RlckVudHJ5EicKBHNlYXQYASAB",
-            "KA4yEy5oeXBlZG9taW5vLnYxLlNlYXRSBHNlYXQSJwoEdGVhbRgCIAEoDjIT",
-            "Lmh5cGVkb21pbm8udjEuVGVhbVIEdGVhbRIaCghuaWNrbmFtZRgDIAEoCVII",
-            "bmlja25hbWUSHAoJY2hhcmFjdGVyGAQgASgJUgljaGFyYWN0ZXISFAoFZnJh",
-            "bWUYBSABKAlSBWZyYW1lEhYKBmF2YXRhchgGIAEoCVIGYXZhdGFyEh0KCnJh",
-            "bmtfbGFiZWwYByABKAlSCXJhbmtMYWJlbBIYCgdlbWJsZW1zGAggAygJUgdl",
-            "bWJsZW1zEhAKA2JvdBgJIAEoCFIDYm90ItkHCglNYXRjaFZpZXcSLwoFc3Rh",
-            "dGUYASABKA4yGS5oeXBlZG9taW5vLnYxLk1hdGNoU3RhdGVSBXN0YXRlEicK",
-            "BHNlYXQYAiABKA4yEy5oeXBlZG9taW5vLnYxLlNlYXRSBHNlYXQSJwoEbW9k",
-            "ZRgDIAEoDjITLmh5cGVkb21pbm8udjEuTW9kZVIEbW9kZRIhCgxoYW5kc19w",
-            "bGF5ZWQYBCABKA1SC2hhbmRzUGxheWVkEjEKBnNjb3JlcxgFIAEoCzIZLmh5",
-            "cGVkb21pbm8udjEuVGVhbVBvaW50c1IGc2NvcmVzEh0KCmNhcnJ5X292ZXIY",
-            "BiABKA1SCWNhcnJ5T3ZlchInCgRoYW5kGAcgAygLMhMuaHlwZWRvbWluby52",
-            "MS5UaWxlUgRoYW5kEi0KBXNlYXRzGAggAygLMhcuaHlwZWRvbWluby52MS5T",
-            "ZWF0Vmlld1IFc2VhdHMSIwoNYm9uZXlhcmRfc2l6ZRgJIAEoDVIMYm9uZXlh",
-            "cmRTaXplEi4KBWJvYXJkGAogASgLMhguaHlwZWRvbWluby52MS5Cb2FyZFZp",
-            "ZXdSBWJvYXJkEi0KB2N1cnJlbnQYCyABKA4yEy5oeXBlZG9taW5vLnYxLlNl",
-            "YXRSB2N1cnJlbnQSNgoMb3BlbmluZ190ZWFtGAwgASgOMhMuaHlwZWRvbWlu",
-            "by52MS5UZWFtUgtvcGVuaW5nVGVhbRI9Cg5mb3JjZWRfb3BlbmluZxgNIAEo",
-            "CzIWLmh5cGVkb21pbm8udjEuT3BlbmluZ1INZm9yY2VkT3BlbmluZxInCg90",
-            "dXJuX3BsYWNlbWVudHMYDiABKA1SDnR1cm5QbGFjZW1lbnRzEjEKFXR1cm5f",
-            "ZGVhZGxpbmVfdW5peF9tcxgPIAEoBFISdHVybkRlYWRsaW5lVW5peE1zEjkK",
-            "C2xlZ2FsX21vdmVzGBAgAygLMhguaHlwZWRvbWluby52MS5MZWdhbE1vdmVS",
-            "CmxlZ2FsTW92ZXMSOgoLbGFzdF9yZXN1bHQYESABKAsyGS5oeXBlZG9taW5v",
-            "LnYxLkhhbmRSZXN1bHRSCmxhc3RSZXN1bHQSKwoGd2lubmVyGBIgASgOMhMu",
-            "aHlwZWRvbWluby52MS5UZWFtUgZ3aW5uZXISMgoGcm9zdGVyGBMgAygLMhou",
-            "aHlwZWRvbWluby52MS5Sb3N0ZXJFbnRyeVIGcm9zdGVyEjcKGGxvYWRpbmdf",
-            "ZGVhZGxpbmVfdW5peF9tcxgUIAEoBFIVbG9hZGluZ0RlYWRsaW5lVW5peE1z",
-            "EhQKBXRhYmxlGBUgASgJUgV0YWJsZSp3CghCb2FyZEVuZBIZChVCT0FSRF9F",
-            "TkRfVU5TUEVDSUZJRUQQABISCg5CT0FSRF9FTkRfTEVGVBABEhMKD0JPQVJE",
-            "X0VORF9SSUdIVBACEhEKDUJPQVJEX0VORF9UT1AQAxIUChBCT0FSRF9FTkRf",
-            "Qk9UVE9NEAQqcgoEU2VhdBIUChBTRUFUX1VOU1BFQ0lGSUVEEAASDgoKU0VB",
-            "VF9OT1JUSBABEg0KCVNFQVRfRUFTVBACEg4KClNFQVRfU09VVEgQAxINCglT",
-            "RUFUX1dFU1QQBBIKCgZTRUFUX1gQBRIKCgZTRUFUX1kQBio0CgRUZWFtEhQK",
-            "EFRFQU1fVU5TUEVDSUZJRUQQABIKCgZURUFNX0EQARIKCgZURUFNX0IQAio4",
-            "CgRNb2RlEhQKEE1PREVfVU5TUEVDSUZJRUQQABIMCghNT0RFXzFWMRABEgwK",
-            "CE1PREVfMlYyEAIqUwoKQ29udHJvbGxlchIaChZDT05UUk9MTEVSX1VOU1BF",
-            "Q0lGSUVEEAASFQoRQ09OVFJPTExFUl9QTEFZRVIQARISCg5DT05UUk9MTEVS",
-            "X0JPVBACKqcBCgpNYXRjaFN0YXRlEhsKF01BVENIX1NUQVRFX1VOU1BFQ0lG",
-            "SUVEEAASFwoTTUFUQ0hfU1RBVEVfV0FJVElORxABEhcKE01BVENIX1NUQVRF",
-            "X09QRU5JTkcQAhIXChNNQVRDSF9TVEFURV9QTEFZSU5HEAMSGAoUTUFUQ0hf",
-            "U1RBVEVfRklOSVNIRUQQBBIXChNNQVRDSF9TVEFURV9MT0FESU5HEAVCxQEK",
-            "EWNvbS5oeXBlZG9taW5vLnYxQgpNYXRjaFByb3RvUAFaT2dpdGh1Yi5jb20v",
-            "QWxpZXZzLWNvcnAvaHlwZWRvbWluby9zZXJ2ZXIvaW50ZXJuYWwvcGIvaHlw",
-            "ZWRvbWluby92MTtoeXBlZG9taW5vdjGiAgNIWFiqAg1IeXBlZG9taW5vLlYx",
-            "ygINSHlwZWRvbWlub1xWMeICGUh5cGVkb21pbm9cVjFcR1BCTWV0YWRhdGHq",
-            "Ag5IeXBlZG9taW5vOjpWMWIGcHJvdG8z"));
+            "DVIIcHJvZ3Jlc3MSFAoFcmVhZHkYAiABKAhSBXJlYWR5IiYKC0Vtb2ppSW50",
+            "ZW50EhcKB2l0ZW1faWQYASABKAlSBml0ZW1JZCJOCgpFbW9qaVNob3duEicK",
+            "BHNlYXQYASABKA4yEy5oeXBlZG9taW5vLnYxLlNlYXRSBHNlYXQSFwoHaXRl",
+            "bV9pZBgCIAEoCVIGaXRlbUlkIkMKElF1aWNrTWVzc2FnZUludGVudBIQCgNr",
+            "ZXkYASABKAlSA2tleRIbCgl0ZWFtX29ubHkYAiABKAhSCHRlYW1Pbmx5ImsK",
+            "EVF1aWNrTWVzc2FnZVNob3duEicKBHNlYXQYASABKA4yEy5oeXBlZG9taW5v",
+            "LnYxLlNlYXRSBHNlYXQSEAoDa2V5GAIgASgJUgNrZXkSGwoJdGVhbV9vbmx5",
+            "GAMgASgIUgh0ZWFtT25seSI8CgxPcmllbnRlZFRpbGUSFAoFZmlyc3QYASAB",
+            "KA1SBWZpcnN0EhYKBnNlY29uZBgCIAEoDVIGc2Vjb25kIkoKB09wZW5FbmQS",
+            "KQoDZW5kGAEgASgOMhcuaHlwZWRvbWluby52MS5Cb2FyZEVuZFIDZW5kEhQK",
+            "BXZhbHVlGAIgASgNUgV2YWx1ZSKpAgoJQm9hcmRWaWV3Ei8KBGxpbmUYASAD",
+            "KAsyGy5oeXBlZG9taW5vLnYxLk9yaWVudGVkVGlsZVIEbGluZRItCgdzcGlu",
+            "bmVyGAIgASgLMhMuaHlwZWRvbWluby52MS5UaWxlUgdzcGlubmVyEi0KA3Rv",
+            "cBgDIAMoCzIbLmh5cGVkb21pbm8udjEuT3JpZW50ZWRUaWxlUgN0b3ASMwoG",
+            "Ym90dG9tGAQgAygLMhsuaHlwZWRvbWluby52MS5PcmllbnRlZFRpbGVSBmJv",
+            "dHRvbRIzCglvcGVuX2VuZHMYBSADKAsyFi5oeXBlZG9taW5vLnYxLk9wZW5F",
+            "bmRSCG9wZW5FbmRzEiMKDW9wZW5pbmdfaW5kZXgYBiABKA1SDG9wZW5pbmdJ",
+            "bmRleCKjAgoIU2VhdFZpZXcSJwoEc2VhdBgBIAEoDjITLmh5cGVkb21pbm8u",
+            "djEuU2VhdFIEc2VhdBIbCgloYW5kX3NpemUYAiABKA1SCGhhbmRTaXplEjkK",
+            "CmNvbnRyb2xsZXIYAyABKA4yGS5oeXBlZG9taW5vLnYxLkNvbnRyb2xsZXJS",
+            "CmNvbnRyb2xsZXISKQoQbG9hZGluZ19wcm9ncmVzcxgEIAEoDVIPbG9hZGlu",
+            "Z1Byb2dyZXNzEhQKBXJlYWR5GAUgASgIUgVyZWFkeRIiCgxkaXNjb25uZWN0",
+            "ZWQYBiABKAhSDGRpc2Nvbm5lY3RlZBIxChRjb25zZWN1dGl2ZV90aW1lb3V0",
+            "cxgHIAEoDVITY29uc2VjdXRpdmVUaW1lb3V0cyJfCglMZWdhbE1vdmUSJwoE",
+            "dGlsZRgBIAEoCzITLmh5cGVkb21pbm8udjEuVGlsZVIEdGlsZRIpCgNlbmQY",
+            "AiABKA4yFy5oeXBlZG9taW5vLnYxLkJvYXJkRW5kUgNlbmQiWwoHT3Blbmlu",
+            "ZxInCgRzZWF0GAEgASgOMhMuaHlwZWRvbWluby52MS5TZWF0UgRzZWF0EicK",
+            "BHRpbGUYAiABKAsyEy5oeXBlZG9taW5vLnYxLlRpbGVSBHRpbGUiOgoKVGVh",
+            "bVBvaW50cxIVCgZ0ZWFtX2EYASABKA1SBXRlYW1BEhUKBnRlYW1fYhgCIAEo",
+            "DVIFdGVhbUIiXwoJU2VhdFRpbGVzEicKBHNlYXQYASABKA4yEy5oeXBlZG9t",
+            "aW5vLnYxLlNlYXRSBHNlYXQSKQoFdGlsZXMYAiADKAsyEy5oeXBlZG9taW5v",
+            "LnYxLlRpbGVSBXRpbGVzItMDCgpIYW5kUmVzdWx0Ei0KBHBpcHMYASABKAsy",
+            "GS5oeXBlZG9taW5vLnYxLlRlYW1Qb2ludHNSBHBpcHMSKwoGd2lubmVyGAIg",
+            "ASgOMhMuaHlwZWRvbWluby52MS5UZWFtUgZ3aW5uZXISMwoHYXdhcmRlZBgD",
+            "IAEoCzIZLmh5cGVkb21pbm8udjEuVGVhbVBvaW50c1IHYXdhcmRlZBIdCgpj",
+            "YXJyeV9vdmVyGAQgASgNUgljYXJyeU92ZXISMQoGc2NvcmVzGAUgASgLMhku",
+            "aHlwZWRvbWluby52MS5UZWFtUG9pbnRzUgZzY29yZXMSNAoLbmV4dF9vcGVu",
+            "ZXIYBiABKA4yEy5oeXBlZG9taW5vLnYxLlRlYW1SCm5leHRPcGVuZXISMQoG",
+            "ZW5kaW5nGAcgASgOMhkuaHlwZWRvbWluby52MS5IYW5kRW5kaW5nUgZlbmRp",
+            "bmcSLAoSaGFuZF9wb2ludHNfbG9ja2VkGAggASgIUhBoYW5kUG9pbnRzTG9j",
+            "a2VkEh0KCmNhcnJpZWRfaW4YCSABKA1SCWNhcnJpZWRJbhIsCgRsZWZ0GAog",
+            "AygLMhguaHlwZWRvbWluby52MS5TZWF0VGlsZXNSBGxlZnQiqgIKC1Jvc3Rl",
+            "ckVudHJ5EicKBHNlYXQYASABKA4yEy5oeXBlZG9taW5vLnYxLlNlYXRSBHNl",
+            "YXQSJwoEdGVhbRgCIAEoDjITLmh5cGVkb21pbm8udjEuVGVhbVIEdGVhbRIa",
+            "CghuaWNrbmFtZRgDIAEoCVIIbmlja25hbWUSIAoJY2hhcmFjdGVyGAQgASgJ",
+            "QgIYAVIJY2hhcmFjdGVyEhQKBWZyYW1lGAUgASgJUgVmcmFtZRIWCgZhdmF0",
+            "YXIYBiABKAlSBmF2YXRhchIdCgpyYW5rX2xhYmVsGAcgASgJUglyYW5rTGFi",
+            "ZWwSGAoHZW1ibGVtcxgIIAMoCVIHZW1ibGVtcxIQCgNib3QYCSABKAhSA2Jv",
+            "dBISCgR0aWxlGAogASgJUgR0aWxlIoAKCglNYXRjaFZpZXcSLwoFc3RhdGUY",
+            "ASABKA4yGS5oeXBlZG9taW5vLnYxLk1hdGNoU3RhdGVSBXN0YXRlEicKBHNl",
+            "YXQYAiABKA4yEy5oeXBlZG9taW5vLnYxLlNlYXRSBHNlYXQSJwoEbW9kZRgD",
+            "IAEoDjITLmh5cGVkb21pbm8udjEuTW9kZVIEbW9kZRIhCgxoYW5kc19wbGF5",
+            "ZWQYBCABKA1SC2hhbmRzUGxheWVkEjEKBnNjb3JlcxgFIAEoCzIZLmh5cGVk",
+            "b21pbm8udjEuVGVhbVBvaW50c1IGc2NvcmVzEh0KCmNhcnJ5X292ZXIYBiAB",
+            "KA1SCWNhcnJ5T3ZlchInCgRoYW5kGAcgAygLMhMuaHlwZWRvbWluby52MS5U",
+            "aWxlUgRoYW5kEi0KBXNlYXRzGAggAygLMhcuaHlwZWRvbWluby52MS5TZWF0",
+            "Vmlld1IFc2VhdHMSIwoNYm9uZXlhcmRfc2l6ZRgJIAEoDVIMYm9uZXlhcmRT",
+            "aXplEi4KBWJvYXJkGAogASgLMhguaHlwZWRvbWluby52MS5Cb2FyZFZpZXdS",
+            "BWJvYXJkEi0KB2N1cnJlbnQYCyABKA4yEy5oeXBlZG9taW5vLnYxLlNlYXRS",
+            "B2N1cnJlbnQSNgoMb3BlbmluZ190ZWFtGAwgASgOMhMuaHlwZWRvbWluby52",
+            "MS5UZWFtUgtvcGVuaW5nVGVhbRI9Cg5mb3JjZWRfb3BlbmluZxgNIAEoCzIW",
+            "Lmh5cGVkb21pbm8udjEuT3BlbmluZ1INZm9yY2VkT3BlbmluZxInCg90dXJu",
+            "X3BsYWNlbWVudHMYDiABKA1SDnR1cm5QbGFjZW1lbnRzEjEKFXR1cm5fZGVh",
+            "ZGxpbmVfdW5peF9tcxgPIAEoBFISdHVybkRlYWRsaW5lVW5peE1zEjkKC2xl",
+            "Z2FsX21vdmVzGBAgAygLMhguaHlwZWRvbWluby52MS5MZWdhbE1vdmVSCmxl",
+            "Z2FsTW92ZXMSOgoLbGFzdF9yZXN1bHQYESABKAsyGS5oeXBlZG9taW5vLnYx",
+            "LkhhbmRSZXN1bHRSCmxhc3RSZXN1bHQSKwoGd2lubmVyGBIgASgOMhMuaHlw",
+            "ZWRvbWluby52MS5UZWFtUgZ3aW5uZXISMgoGcm9zdGVyGBMgAygLMhouaHlw",
+            "ZWRvbWluby52MS5Sb3N0ZXJFbnRyeVIGcm9zdGVyEjcKGGxvYWRpbmdfZGVh",
+            "ZGxpbmVfdW5peF9tcxgUIAEoBFIVbG9hZGluZ0RlYWRsaW5lVW5peE1zEhQK",
+            "BXRhYmxlGBUgASgJUgV0YWJsZRI4ChhhZmtfY29uc2VjdXRpdmVfdGltZW91",
+            "dHMYFiABKA1SFmFma0NvbnNlY3V0aXZlVGltZW91dHMSIQoMdGFyZ2V0X3Nj",
+            "b3JlGBcgASgNUgt0YXJnZXRTY29yZRI7ChpoYW5kX3BvaW50c19sb2NrX3Ro",
+            "cmVzaG9sZBgYIAEoDVIXaGFuZFBvaW50c0xvY2tUaHJlc2hvbGQSNgoMbG9j",
+            "a2VkX3RlYW1zGBkgAygOMhMuaHlwZWRvbWluby52MS5UZWFtUgtsb2NrZWRU",
+            "ZWFtcxIhCgx0dXJuX3NlY29uZHMYGiABKA1SC3R1cm5TZWNvbmRzEjAKFHR1",
+            "cm5fd2FybmluZ19zZWNvbmRzGBsgASgNUhJ0dXJuV2FybmluZ1NlY29uZHMq",
+            "dwoIQm9hcmRFbmQSGQoVQk9BUkRfRU5EX1VOU1BFQ0lGSUVEEAASEgoOQk9B",
+            "UkRfRU5EX0xFRlQQARITCg9CT0FSRF9FTkRfUklHSFQQAhIRCg1CT0FSRF9F",
+            "TkRfVE9QEAMSFAoQQk9BUkRfRU5EX0JPVFRPTRAEKnIKBFNlYXQSFAoQU0VB",
+            "VF9VTlNQRUNJRklFRBAAEg4KClNFQVRfTk9SVEgQARINCglTRUFUX0VBU1QQ",
+            "AhIOCgpTRUFUX1NPVVRIEAMSDQoJU0VBVF9XRVNUEAQSCgoGU0VBVF9YEAUS",
+            "CgoGU0VBVF9ZEAYqNAoEVGVhbRIUChBURUFNX1VOU1BFQ0lGSUVEEAASCgoG",
+            "VEVBTV9BEAESCgoGVEVBTV9CEAIqOAoETW9kZRIUChBNT0RFX1VOU1BFQ0lG",
+            "SUVEEAASDAoITU9ERV8xVjEQARIMCghNT0RFXzJWMhACKlMKCkNvbnRyb2xs",
+            "ZXISGgoWQ09OVFJPTExFUl9VTlNQRUNJRklFRBAAEhUKEUNPTlRST0xMRVJf",
+            "UExBWUVSEAESEgoOQ09OVFJPTExFUl9CT1QQAiqnAQoKTWF0Y2hTdGF0ZRIb",
+            "ChdNQVRDSF9TVEFURV9VTlNQRUNJRklFRBAAEhcKE01BVENIX1NUQVRFX1dB",
+            "SVRJTkcQARIXChNNQVRDSF9TVEFURV9PUEVOSU5HEAISFwoTTUFUQ0hfU1RB",
+            "VEVfUExBWUlORxADEhgKFE1BVENIX1NUQVRFX0ZJTklTSEVEEAQSFwoTTUFU",
+            "Q0hfU1RBVEVfTE9BRElORxAFKlgKCkhhbmRFbmRpbmcSGwoXSEFORF9FTkRJ",
+            "TkdfVU5TUEVDSUZJRUQQABIWChJIQU5EX0VORElOR19ET01JTk8QARIVChFI",
+            "QU5EX0VORElOR19CTE9DSxACQsUBChFjb20uaHlwZWRvbWluby52MUIKTWF0",
+            "Y2hQcm90b1ABWk9naXRodWIuY29tL0FsaWV2cy1jb3JwL2h5cGVkb21pbm8v",
+            "c2VydmVyL2ludGVybmFsL3BiL2h5cGVkb21pbm8vdjE7aHlwZWRvbWlub3Yx",
+            "ogIDSFhYqgINSHlwZWRvbWluby5WMcoCDUh5cGVkb21pbm9cVjHiAhlIeXBl",
+            "ZG9taW5vXFYxXEdQQk1ldGFkYXRh6gIOSHlwZWRvbWlubzo6VjFiBnByb3Rv",
+            "Mw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
-          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Hypedomino.V1.BoardEnd), typeof(global::Hypedomino.V1.Seat), typeof(global::Hypedomino.V1.Team), typeof(global::Hypedomino.V1.Mode), typeof(global::Hypedomino.V1.Controller), typeof(global::Hypedomino.V1.MatchState), }, null, new pbr::GeneratedClrTypeInfo[] {
+          new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Hypedomino.V1.BoardEnd), typeof(global::Hypedomino.V1.Seat), typeof(global::Hypedomino.V1.Team), typeof(global::Hypedomino.V1.Mode), typeof(global::Hypedomino.V1.Controller), typeof(global::Hypedomino.V1.MatchState), typeof(global::Hypedomino.V1.HandEnding), }, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.Tile), global::Hypedomino.V1.Tile.Parser, new[]{ "Low", "High" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.PlaceTileIntent), global::Hypedomino.V1.PlaceTileIntent.Parser, new[]{ "Tile", "End" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.PassIntent), global::Hypedomino.V1.PassIntent.Parser, null, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.DrawIntent), global::Hypedomino.V1.DrawIntent.Parser, null, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.EndTurnIntent), global::Hypedomino.V1.EndTurnIntent.Parser, null, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.LoadingIntent), global::Hypedomino.V1.LoadingIntent.Parser, new[]{ "Progress", "Ready" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.EmojiIntent), global::Hypedomino.V1.EmojiIntent.Parser, new[]{ "ItemId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.EmojiShown), global::Hypedomino.V1.EmojiShown.Parser, new[]{ "Seat", "ItemId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.QuickMessageIntent), global::Hypedomino.V1.QuickMessageIntent.Parser, new[]{ "Key", "TeamOnly" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.QuickMessageShown), global::Hypedomino.V1.QuickMessageShown.Parser, new[]{ "Seat", "Key", "TeamOnly" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.OrientedTile), global::Hypedomino.V1.OrientedTile.Parser, new[]{ "First", "Second" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.OpenEnd), global::Hypedomino.V1.OpenEnd.Parser, new[]{ "End", "Value" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.BoardView), global::Hypedomino.V1.BoardView.Parser, new[]{ "Line", "Spinner", "Top", "Bottom", "OpenEnds" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.SeatView), global::Hypedomino.V1.SeatView.Parser, new[]{ "Seat", "HandSize", "Controller", "LoadingProgress", "Ready" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.BoardView), global::Hypedomino.V1.BoardView.Parser, new[]{ "Line", "Spinner", "Top", "Bottom", "OpenEnds", "OpeningIndex" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.SeatView), global::Hypedomino.V1.SeatView.Parser, new[]{ "Seat", "HandSize", "Controller", "LoadingProgress", "Ready", "Disconnected", "ConsecutiveTimeouts" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.LegalMove), global::Hypedomino.V1.LegalMove.Parser, new[]{ "Tile", "End" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.Opening), global::Hypedomino.V1.Opening.Parser, new[]{ "Seat", "Tile" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.TeamPoints), global::Hypedomino.V1.TeamPoints.Parser, new[]{ "TeamA", "TeamB" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.HandResult), global::Hypedomino.V1.HandResult.Parser, new[]{ "Pips", "Winner", "Awarded", "CarryOver", "Scores", "NextOpener" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.RosterEntry), global::Hypedomino.V1.RosterEntry.Parser, new[]{ "Seat", "Team", "Nickname", "Character", "Frame", "Avatar", "RankLabel", "Emblems", "Bot" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.MatchView), global::Hypedomino.V1.MatchView.Parser, new[]{ "State", "Seat", "Mode", "HandsPlayed", "Scores", "CarryOver", "Hand", "Seats", "BoneyardSize", "Board", "Current", "OpeningTeam", "ForcedOpening", "TurnPlacements", "TurnDeadlineUnixMs", "LegalMoves", "LastResult", "Winner", "Roster", "LoadingDeadlineUnixMs", "Table" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.SeatTiles), global::Hypedomino.V1.SeatTiles.Parser, new[]{ "Seat", "Tiles" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.HandResult), global::Hypedomino.V1.HandResult.Parser, new[]{ "Pips", "Winner", "Awarded", "CarryOver", "Scores", "NextOpener", "Ending", "HandPointsLocked", "CarriedIn", "Left" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.RosterEntry), global::Hypedomino.V1.RosterEntry.Parser, new[]{ "Seat", "Team", "Nickname", "Character", "Frame", "Avatar", "RankLabel", "Emblems", "Bot", "Tile" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hypedomino.V1.MatchView), global::Hypedomino.V1.MatchView.Parser, new[]{ "State", "Seat", "Mode", "HandsPlayed", "Scores", "CarryOver", "Hand", "Seats", "BoneyardSize", "Board", "Current", "OpeningTeam", "ForcedOpening", "TurnPlacements", "TurnDeadlineUnixMs", "LegalMoves", "LastResult", "Winner", "Roster", "LoadingDeadlineUnixMs", "Table", "AfkConsecutiveTimeouts", "TargetScore", "HandPointsLockThreshold", "LockedTeams", "TurnSeconds", "TurnWarningSeconds" }, null, null, null, null)
           }));
     }
     #endregion
@@ -171,6 +201,12 @@ namespace Hypedomino.V1 {
     [pbr::OriginalName("MATCH_STATE_PLAYING")] Playing = 3,
     [pbr::OriginalName("MATCH_STATE_FINISHED")] Finished = 4,
     [pbr::OriginalName("MATCH_STATE_LOADING")] Loading = 5,
+  }
+
+  public enum HandEnding {
+    [pbr::OriginalName("HAND_ENDING_UNSPECIFIED")] Unspecified = 0,
+    [pbr::OriginalName("HAND_ENDING_DOMINO")] Domino = 1,
+    [pbr::OriginalName("HAND_ENDING_BLOCK")] Block = 2,
   }
 
   #endregion
@@ -1374,6 +1410,946 @@ namespace Hypedomino.V1 {
   }
 
   [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class EmojiIntent : pb::IMessage<EmojiIntent>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<EmojiIntent> _parser = new pb::MessageParser<EmojiIntent>(() => new EmojiIntent());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<EmojiIntent> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[6]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public EmojiIntent() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public EmojiIntent(EmojiIntent other) : this() {
+      itemId_ = other.itemId_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public EmojiIntent Clone() {
+      return new EmojiIntent(this);
+    }
+
+    /// <summary>Field number for the "item_id" field.</summary>
+    public const int ItemIdFieldNumber = 1;
+    private string itemId_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string ItemId {
+      get { return itemId_; }
+      set {
+        itemId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as EmojiIntent);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(EmojiIntent other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (ItemId != other.ItemId) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (ItemId.Length != 0) hash ^= ItemId.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (ItemId.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(ItemId);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (ItemId.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(ItemId);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (ItemId.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(ItemId);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(EmojiIntent other) {
+      if (other == null) {
+        return;
+      }
+      if (other.ItemId.Length != 0) {
+        ItemId = other.ItemId;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            ItemId = input.ReadString();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            ItemId = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class EmojiShown : pb::IMessage<EmojiShown>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<EmojiShown> _parser = new pb::MessageParser<EmojiShown>(() => new EmojiShown());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<EmojiShown> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[7]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public EmojiShown() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public EmojiShown(EmojiShown other) : this() {
+      seat_ = other.seat_;
+      itemId_ = other.itemId_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public EmojiShown Clone() {
+      return new EmojiShown(this);
+    }
+
+    /// <summary>Field number for the "seat" field.</summary>
+    public const int SeatFieldNumber = 1;
+    private global::Hypedomino.V1.Seat seat_ = global::Hypedomino.V1.Seat.Unspecified;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.Seat Seat {
+      get { return seat_; }
+      set {
+        seat_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "item_id" field.</summary>
+    public const int ItemIdFieldNumber = 2;
+    private string itemId_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string ItemId {
+      get { return itemId_; }
+      set {
+        itemId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as EmojiShown);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(EmojiShown other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Seat != other.Seat) return false;
+      if (ItemId != other.ItemId) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) hash ^= Seat.GetHashCode();
+      if (ItemId.Length != 0) hash ^= ItemId.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        output.WriteRawTag(8);
+        output.WriteEnum((int) Seat);
+      }
+      if (ItemId.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(ItemId);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        output.WriteRawTag(8);
+        output.WriteEnum((int) Seat);
+      }
+      if (ItemId.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(ItemId);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) Seat);
+      }
+      if (ItemId.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(ItemId);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(EmojiShown other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        Seat = other.Seat;
+      }
+      if (other.ItemId.Length != 0) {
+        ItemId = other.ItemId;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 8: {
+            Seat = (global::Hypedomino.V1.Seat) input.ReadEnum();
+            break;
+          }
+          case 18: {
+            ItemId = input.ReadString();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 8: {
+            Seat = (global::Hypedomino.V1.Seat) input.ReadEnum();
+            break;
+          }
+          case 18: {
+            ItemId = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class QuickMessageIntent : pb::IMessage<QuickMessageIntent>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<QuickMessageIntent> _parser = new pb::MessageParser<QuickMessageIntent>(() => new QuickMessageIntent());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<QuickMessageIntent> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[8]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public QuickMessageIntent() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public QuickMessageIntent(QuickMessageIntent other) : this() {
+      key_ = other.key_;
+      teamOnly_ = other.teamOnly_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public QuickMessageIntent Clone() {
+      return new QuickMessageIntent(this);
+    }
+
+    /// <summary>Field number for the "key" field.</summary>
+    public const int KeyFieldNumber = 1;
+    private string key_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Key {
+      get { return key_; }
+      set {
+        key_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "team_only" field.</summary>
+    public const int TeamOnlyFieldNumber = 2;
+    private bool teamOnly_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool TeamOnly {
+      get { return teamOnly_; }
+      set {
+        teamOnly_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as QuickMessageIntent);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(QuickMessageIntent other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Key != other.Key) return false;
+      if (TeamOnly != other.TeamOnly) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Key.Length != 0) hash ^= Key.GetHashCode();
+      if (TeamOnly != false) hash ^= TeamOnly.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Key.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Key);
+      }
+      if (TeamOnly != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(TeamOnly);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Key.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Key);
+      }
+      if (TeamOnly != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(TeamOnly);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (Key.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Key);
+      }
+      if (TeamOnly != false) {
+        size += 1 + 1;
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(QuickMessageIntent other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Key.Length != 0) {
+        Key = other.Key;
+      }
+      if (other.TeamOnly != false) {
+        TeamOnly = other.TeamOnly;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            Key = input.ReadString();
+            break;
+          }
+          case 16: {
+            TeamOnly = input.ReadBool();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            Key = input.ReadString();
+            break;
+          }
+          case 16: {
+            TeamOnly = input.ReadBool();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class QuickMessageShown : pb::IMessage<QuickMessageShown>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<QuickMessageShown> _parser = new pb::MessageParser<QuickMessageShown>(() => new QuickMessageShown());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<QuickMessageShown> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[9]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public QuickMessageShown() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public QuickMessageShown(QuickMessageShown other) : this() {
+      seat_ = other.seat_;
+      key_ = other.key_;
+      teamOnly_ = other.teamOnly_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public QuickMessageShown Clone() {
+      return new QuickMessageShown(this);
+    }
+
+    /// <summary>Field number for the "seat" field.</summary>
+    public const int SeatFieldNumber = 1;
+    private global::Hypedomino.V1.Seat seat_ = global::Hypedomino.V1.Seat.Unspecified;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.Seat Seat {
+      get { return seat_; }
+      set {
+        seat_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "key" field.</summary>
+    public const int KeyFieldNumber = 2;
+    private string key_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Key {
+      get { return key_; }
+      set {
+        key_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "team_only" field.</summary>
+    public const int TeamOnlyFieldNumber = 3;
+    private bool teamOnly_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool TeamOnly {
+      get { return teamOnly_; }
+      set {
+        teamOnly_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as QuickMessageShown);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(QuickMessageShown other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Seat != other.Seat) return false;
+      if (Key != other.Key) return false;
+      if (TeamOnly != other.TeamOnly) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) hash ^= Seat.GetHashCode();
+      if (Key.Length != 0) hash ^= Key.GetHashCode();
+      if (TeamOnly != false) hash ^= TeamOnly.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        output.WriteRawTag(8);
+        output.WriteEnum((int) Seat);
+      }
+      if (Key.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Key);
+      }
+      if (TeamOnly != false) {
+        output.WriteRawTag(24);
+        output.WriteBool(TeamOnly);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        output.WriteRawTag(8);
+        output.WriteEnum((int) Seat);
+      }
+      if (Key.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Key);
+      }
+      if (TeamOnly != false) {
+        output.WriteRawTag(24);
+        output.WriteBool(TeamOnly);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) Seat);
+      }
+      if (Key.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Key);
+      }
+      if (TeamOnly != false) {
+        size += 1 + 1;
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(QuickMessageShown other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        Seat = other.Seat;
+      }
+      if (other.Key.Length != 0) {
+        Key = other.Key;
+      }
+      if (other.TeamOnly != false) {
+        TeamOnly = other.TeamOnly;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 8: {
+            Seat = (global::Hypedomino.V1.Seat) input.ReadEnum();
+            break;
+          }
+          case 18: {
+            Key = input.ReadString();
+            break;
+          }
+          case 24: {
+            TeamOnly = input.ReadBool();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 8: {
+            Seat = (global::Hypedomino.V1.Seat) input.ReadEnum();
+            break;
+          }
+          case 18: {
+            Key = input.ReadString();
+            break;
+          }
+          case 24: {
+            TeamOnly = input.ReadBool();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class OrientedTile : pb::IMessage<OrientedTile>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
@@ -1388,7 +2364,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[6]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[10]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1623,7 +2599,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[7]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[11]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1858,7 +2834,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[8]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[12]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1883,6 +2859,7 @@ namespace Hypedomino.V1 {
       top_ = other.top_.Clone();
       bottom_ = other.bottom_.Clone();
       openEnds_ = other.openEnds_.Clone();
+      openingIndex_ = other.openingIndex_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1948,6 +2925,18 @@ namespace Hypedomino.V1 {
       get { return openEnds_; }
     }
 
+    /// <summary>Field number for the "opening_index" field.</summary>
+    public const int OpeningIndexFieldNumber = 6;
+    private uint openingIndex_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint OpeningIndex {
+      get { return openingIndex_; }
+      set {
+        openingIndex_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -1968,6 +2957,7 @@ namespace Hypedomino.V1 {
       if(!top_.Equals(other.top_)) return false;
       if(!bottom_.Equals(other.bottom_)) return false;
       if(!openEnds_.Equals(other.openEnds_)) return false;
+      if (OpeningIndex != other.OpeningIndex) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1980,6 +2970,7 @@ namespace Hypedomino.V1 {
       hash ^= top_.GetHashCode();
       hash ^= bottom_.GetHashCode();
       hash ^= openEnds_.GetHashCode();
+      if (OpeningIndex != 0) hash ^= OpeningIndex.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -2006,6 +2997,10 @@ namespace Hypedomino.V1 {
       top_.WriteTo(output, _repeated_top_codec);
       bottom_.WriteTo(output, _repeated_bottom_codec);
       openEnds_.WriteTo(output, _repeated_openEnds_codec);
+      if (OpeningIndex != 0) {
+        output.WriteRawTag(48);
+        output.WriteUInt32(OpeningIndex);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -2024,6 +3019,10 @@ namespace Hypedomino.V1 {
       top_.WriteTo(ref output, _repeated_top_codec);
       bottom_.WriteTo(ref output, _repeated_bottom_codec);
       openEnds_.WriteTo(ref output, _repeated_openEnds_codec);
+      if (OpeningIndex != 0) {
+        output.WriteRawTag(48);
+        output.WriteUInt32(OpeningIndex);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -2041,6 +3040,9 @@ namespace Hypedomino.V1 {
       size += top_.CalculateSize(_repeated_top_codec);
       size += bottom_.CalculateSize(_repeated_bottom_codec);
       size += openEnds_.CalculateSize(_repeated_openEnds_codec);
+      if (OpeningIndex != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(OpeningIndex);
+      }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -2063,6 +3065,9 @@ namespace Hypedomino.V1 {
       top_.Add(other.top_);
       bottom_.Add(other.bottom_);
       openEnds_.Add(other.openEnds_);
+      if (other.OpeningIndex != 0) {
+        OpeningIndex = other.OpeningIndex;
+      }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -2103,6 +3108,10 @@ namespace Hypedomino.V1 {
           }
           case 42: {
             openEnds_.AddEntriesFrom(input, _repeated_openEnds_codec);
+            break;
+          }
+          case 48: {
+            OpeningIndex = input.ReadUInt32();
             break;
           }
         }
@@ -2147,6 +3156,10 @@ namespace Hypedomino.V1 {
             openEnds_.AddEntriesFrom(ref input, _repeated_openEnds_codec);
             break;
           }
+          case 48: {
+            OpeningIndex = input.ReadUInt32();
+            break;
+          }
         }
       }
     }
@@ -2169,7 +3182,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[9]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[13]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2194,6 +3207,8 @@ namespace Hypedomino.V1 {
       controller_ = other.controller_;
       loadingProgress_ = other.loadingProgress_;
       ready_ = other.ready_;
+      disconnected_ = other.disconnected_;
+      consecutiveTimeouts_ = other.consecutiveTimeouts_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -2263,6 +3278,30 @@ namespace Hypedomino.V1 {
       }
     }
 
+    /// <summary>Field number for the "disconnected" field.</summary>
+    public const int DisconnectedFieldNumber = 6;
+    private bool disconnected_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Disconnected {
+      get { return disconnected_; }
+      set {
+        disconnected_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "consecutive_timeouts" field.</summary>
+    public const int ConsecutiveTimeoutsFieldNumber = 7;
+    private uint consecutiveTimeouts_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint ConsecutiveTimeouts {
+      get { return consecutiveTimeouts_; }
+      set {
+        consecutiveTimeouts_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -2283,6 +3322,8 @@ namespace Hypedomino.V1 {
       if (Controller != other.Controller) return false;
       if (LoadingProgress != other.LoadingProgress) return false;
       if (Ready != other.Ready) return false;
+      if (Disconnected != other.Disconnected) return false;
+      if (ConsecutiveTimeouts != other.ConsecutiveTimeouts) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -2295,6 +3336,8 @@ namespace Hypedomino.V1 {
       if (Controller != global::Hypedomino.V1.Controller.Unspecified) hash ^= Controller.GetHashCode();
       if (LoadingProgress != 0) hash ^= LoadingProgress.GetHashCode();
       if (Ready != false) hash ^= Ready.GetHashCode();
+      if (Disconnected != false) hash ^= Disconnected.GetHashCode();
+      if (ConsecutiveTimeouts != 0) hash ^= ConsecutiveTimeouts.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -2333,6 +3376,14 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(40);
         output.WriteBool(Ready);
       }
+      if (Disconnected != false) {
+        output.WriteRawTag(48);
+        output.WriteBool(Disconnected);
+      }
+      if (ConsecutiveTimeouts != 0) {
+        output.WriteRawTag(56);
+        output.WriteUInt32(ConsecutiveTimeouts);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -2363,6 +3414,14 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(40);
         output.WriteBool(Ready);
       }
+      if (Disconnected != false) {
+        output.WriteRawTag(48);
+        output.WriteBool(Disconnected);
+      }
+      if (ConsecutiveTimeouts != 0) {
+        output.WriteRawTag(56);
+        output.WriteUInt32(ConsecutiveTimeouts);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -2387,6 +3446,12 @@ namespace Hypedomino.V1 {
       }
       if (Ready != false) {
         size += 1 + 1;
+      }
+      if (Disconnected != false) {
+        size += 1 + 1;
+      }
+      if (ConsecutiveTimeouts != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(ConsecutiveTimeouts);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -2414,6 +3479,12 @@ namespace Hypedomino.V1 {
       }
       if (other.Ready != false) {
         Ready = other.Ready;
+      }
+      if (other.Disconnected != false) {
+        Disconnected = other.Disconnected;
+      }
+      if (other.ConsecutiveTimeouts != 0) {
+        ConsecutiveTimeouts = other.ConsecutiveTimeouts;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -2452,6 +3523,14 @@ namespace Hypedomino.V1 {
           }
           case 40: {
             Ready = input.ReadBool();
+            break;
+          }
+          case 48: {
+            Disconnected = input.ReadBool();
+            break;
+          }
+          case 56: {
+            ConsecutiveTimeouts = input.ReadUInt32();
             break;
           }
         }
@@ -2493,6 +3572,14 @@ namespace Hypedomino.V1 {
             Ready = input.ReadBool();
             break;
           }
+          case 48: {
+            Disconnected = input.ReadBool();
+            break;
+          }
+          case 56: {
+            ConsecutiveTimeouts = input.ReadUInt32();
+            break;
+          }
         }
       }
     }
@@ -2515,7 +3602,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[10]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[14]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2759,7 +3846,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[11]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[15]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3003,7 +4090,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[12]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[16]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3224,6 +4311,230 @@ namespace Hypedomino.V1 {
   }
 
   [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class SeatTiles : pb::IMessage<SeatTiles>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<SeatTiles> _parser = new pb::MessageParser<SeatTiles>(() => new SeatTiles());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<SeatTiles> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[17]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public SeatTiles() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public SeatTiles(SeatTiles other) : this() {
+      seat_ = other.seat_;
+      tiles_ = other.tiles_.Clone();
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public SeatTiles Clone() {
+      return new SeatTiles(this);
+    }
+
+    /// <summary>Field number for the "seat" field.</summary>
+    public const int SeatFieldNumber = 1;
+    private global::Hypedomino.V1.Seat seat_ = global::Hypedomino.V1.Seat.Unspecified;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.Seat Seat {
+      get { return seat_; }
+      set {
+        seat_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "tiles" field.</summary>
+    public const int TilesFieldNumber = 2;
+    private static readonly pb::FieldCodec<global::Hypedomino.V1.Tile> _repeated_tiles_codec
+        = pb::FieldCodec.ForMessage(18, global::Hypedomino.V1.Tile.Parser);
+    private readonly pbc::RepeatedField<global::Hypedomino.V1.Tile> tiles_ = new pbc::RepeatedField<global::Hypedomino.V1.Tile>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<global::Hypedomino.V1.Tile> Tiles {
+      get { return tiles_; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as SeatTiles);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(SeatTiles other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Seat != other.Seat) return false;
+      if(!tiles_.Equals(other.tiles_)) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) hash ^= Seat.GetHashCode();
+      hash ^= tiles_.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        output.WriteRawTag(8);
+        output.WriteEnum((int) Seat);
+      }
+      tiles_.WriteTo(output, _repeated_tiles_codec);
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        output.WriteRawTag(8);
+        output.WriteEnum((int) Seat);
+      }
+      tiles_.WriteTo(ref output, _repeated_tiles_codec);
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) Seat);
+      }
+      size += tiles_.CalculateSize(_repeated_tiles_codec);
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(SeatTiles other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Seat != global::Hypedomino.V1.Seat.Unspecified) {
+        Seat = other.Seat;
+      }
+      tiles_.Add(other.tiles_);
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 8: {
+            Seat = (global::Hypedomino.V1.Seat) input.ReadEnum();
+            break;
+          }
+          case 18: {
+            tiles_.AddEntriesFrom(input, _repeated_tiles_codec);
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 8: {
+            Seat = (global::Hypedomino.V1.Seat) input.ReadEnum();
+            break;
+          }
+          case 18: {
+            tiles_.AddEntriesFrom(ref input, _repeated_tiles_codec);
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class HandResult : pb::IMessage<HandResult>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
@@ -3238,7 +4549,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[13]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[18]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3264,6 +4575,10 @@ namespace Hypedomino.V1 {
       carryOver_ = other.carryOver_;
       scores_ = other.scores_ != null ? other.scores_.Clone() : null;
       nextOpener_ = other.nextOpener_;
+      ending_ = other.ending_;
+      handPointsLocked_ = other.handPointsLocked_;
+      carriedIn_ = other.carriedIn_;
+      left_ = other.left_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -3345,6 +4660,53 @@ namespace Hypedomino.V1 {
       }
     }
 
+    /// <summary>Field number for the "ending" field.</summary>
+    public const int EndingFieldNumber = 7;
+    private global::Hypedomino.V1.HandEnding ending_ = global::Hypedomino.V1.HandEnding.Unspecified;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Hypedomino.V1.HandEnding Ending {
+      get { return ending_; }
+      set {
+        ending_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "hand_points_locked" field.</summary>
+    public const int HandPointsLockedFieldNumber = 8;
+    private bool handPointsLocked_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool HandPointsLocked {
+      get { return handPointsLocked_; }
+      set {
+        handPointsLocked_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "carried_in" field.</summary>
+    public const int CarriedInFieldNumber = 9;
+    private uint carriedIn_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint CarriedIn {
+      get { return carriedIn_; }
+      set {
+        carriedIn_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "left" field.</summary>
+    public const int LeftFieldNumber = 10;
+    private static readonly pb::FieldCodec<global::Hypedomino.V1.SeatTiles> _repeated_left_codec
+        = pb::FieldCodec.ForMessage(82, global::Hypedomino.V1.SeatTiles.Parser);
+    private readonly pbc::RepeatedField<global::Hypedomino.V1.SeatTiles> left_ = new pbc::RepeatedField<global::Hypedomino.V1.SeatTiles>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<global::Hypedomino.V1.SeatTiles> Left {
+      get { return left_; }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -3366,6 +4728,10 @@ namespace Hypedomino.V1 {
       if (CarryOver != other.CarryOver) return false;
       if (!object.Equals(Scores, other.Scores)) return false;
       if (NextOpener != other.NextOpener) return false;
+      if (Ending != other.Ending) return false;
+      if (HandPointsLocked != other.HandPointsLocked) return false;
+      if (CarriedIn != other.CarriedIn) return false;
+      if(!left_.Equals(other.left_)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -3379,6 +4745,10 @@ namespace Hypedomino.V1 {
       if (CarryOver != 0) hash ^= CarryOver.GetHashCode();
       if (scores_ != null) hash ^= Scores.GetHashCode();
       if (NextOpener != global::Hypedomino.V1.Team.Unspecified) hash ^= NextOpener.GetHashCode();
+      if (Ending != global::Hypedomino.V1.HandEnding.Unspecified) hash ^= Ending.GetHashCode();
+      if (HandPointsLocked != false) hash ^= HandPointsLocked.GetHashCode();
+      if (CarriedIn != 0) hash ^= CarriedIn.GetHashCode();
+      hash ^= left_.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -3421,6 +4791,19 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(48);
         output.WriteEnum((int) NextOpener);
       }
+      if (Ending != global::Hypedomino.V1.HandEnding.Unspecified) {
+        output.WriteRawTag(56);
+        output.WriteEnum((int) Ending);
+      }
+      if (HandPointsLocked != false) {
+        output.WriteRawTag(64);
+        output.WriteBool(HandPointsLocked);
+      }
+      if (CarriedIn != 0) {
+        output.WriteRawTag(72);
+        output.WriteUInt32(CarriedIn);
+      }
+      left_.WriteTo(output, _repeated_left_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -3455,6 +4838,19 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(48);
         output.WriteEnum((int) NextOpener);
       }
+      if (Ending != global::Hypedomino.V1.HandEnding.Unspecified) {
+        output.WriteRawTag(56);
+        output.WriteEnum((int) Ending);
+      }
+      if (HandPointsLocked != false) {
+        output.WriteRawTag(64);
+        output.WriteBool(HandPointsLocked);
+      }
+      if (CarriedIn != 0) {
+        output.WriteRawTag(72);
+        output.WriteUInt32(CarriedIn);
+      }
+      left_.WriteTo(ref output, _repeated_left_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -3483,6 +4879,16 @@ namespace Hypedomino.V1 {
       if (NextOpener != global::Hypedomino.V1.Team.Unspecified) {
         size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) NextOpener);
       }
+      if (Ending != global::Hypedomino.V1.HandEnding.Unspecified) {
+        size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) Ending);
+      }
+      if (HandPointsLocked != false) {
+        size += 1 + 1;
+      }
+      if (CarriedIn != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(CarriedIn);
+      }
+      size += left_.CalculateSize(_repeated_left_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -3522,6 +4928,16 @@ namespace Hypedomino.V1 {
       if (other.NextOpener != global::Hypedomino.V1.Team.Unspecified) {
         NextOpener = other.NextOpener;
       }
+      if (other.Ending != global::Hypedomino.V1.HandEnding.Unspecified) {
+        Ending = other.Ending;
+      }
+      if (other.HandPointsLocked != false) {
+        HandPointsLocked = other.HandPointsLocked;
+      }
+      if (other.CarriedIn != 0) {
+        CarriedIn = other.CarriedIn;
+      }
+      left_.Add(other.left_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -3572,6 +4988,22 @@ namespace Hypedomino.V1 {
           }
           case 48: {
             NextOpener = (global::Hypedomino.V1.Team) input.ReadEnum();
+            break;
+          }
+          case 56: {
+            Ending = (global::Hypedomino.V1.HandEnding) input.ReadEnum();
+            break;
+          }
+          case 64: {
+            HandPointsLocked = input.ReadBool();
+            break;
+          }
+          case 72: {
+            CarriedIn = input.ReadUInt32();
+            break;
+          }
+          case 82: {
+            left_.AddEntriesFrom(input, _repeated_left_codec);
             break;
           }
         }
@@ -3626,6 +5058,22 @@ namespace Hypedomino.V1 {
             NextOpener = (global::Hypedomino.V1.Team) input.ReadEnum();
             break;
           }
+          case 56: {
+            Ending = (global::Hypedomino.V1.HandEnding) input.ReadEnum();
+            break;
+          }
+          case 64: {
+            HandPointsLocked = input.ReadBool();
+            break;
+          }
+          case 72: {
+            CarriedIn = input.ReadUInt32();
+            break;
+          }
+          case 82: {
+            left_.AddEntriesFrom(ref input, _repeated_left_codec);
+            break;
+          }
         }
       }
     }
@@ -3648,7 +5096,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[14]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[19]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3677,6 +5125,7 @@ namespace Hypedomino.V1 {
       rankLabel_ = other.rankLabel_;
       emblems_ = other.emblems_.Clone();
       bot_ = other.bot_;
+      tile_ = other.tile_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -3725,6 +5174,7 @@ namespace Hypedomino.V1 {
     /// <summary>Field number for the "character" field.</summary>
     public const int CharacterFieldNumber = 4;
     private string character_ = "";
+    [global::System.ObsoleteAttribute]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public string Character {
@@ -3793,6 +5243,18 @@ namespace Hypedomino.V1 {
       }
     }
 
+    /// <summary>Field number for the "tile" field.</summary>
+    public const int TileFieldNumber = 10;
+    private string tile_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Tile {
+      get { return tile_; }
+      set {
+        tile_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -3817,6 +5279,7 @@ namespace Hypedomino.V1 {
       if (RankLabel != other.RankLabel) return false;
       if(!emblems_.Equals(other.emblems_)) return false;
       if (Bot != other.Bot) return false;
+      if (Tile != other.Tile) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -3833,6 +5296,7 @@ namespace Hypedomino.V1 {
       if (RankLabel.Length != 0) hash ^= RankLabel.GetHashCode();
       hash ^= emblems_.GetHashCode();
       if (Bot != false) hash ^= Bot.GetHashCode();
+      if (Tile.Length != 0) hash ^= Tile.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -3884,6 +5348,10 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(72);
         output.WriteBool(Bot);
       }
+      if (Tile.Length != 0) {
+        output.WriteRawTag(82);
+        output.WriteString(Tile);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -3927,6 +5395,10 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(72);
         output.WriteBool(Bot);
       }
+      if (Tile.Length != 0) {
+        output.WriteRawTag(82);
+        output.WriteString(Tile);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -3961,6 +5433,9 @@ namespace Hypedomino.V1 {
       size += emblems_.CalculateSize(_repeated_emblems_codec);
       if (Bot != false) {
         size += 1 + 1;
+      }
+      if (Tile.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Tile);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -3998,6 +5473,9 @@ namespace Hypedomino.V1 {
       emblems_.Add(other.emblems_);
       if (other.Bot != false) {
         Bot = other.Bot;
+      }
+      if (other.Tile.Length != 0) {
+        Tile = other.Tile;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -4052,6 +5530,10 @@ namespace Hypedomino.V1 {
           }
           case 72: {
             Bot = input.ReadBool();
+            break;
+          }
+          case 82: {
+            Tile = input.ReadString();
             break;
           }
         }
@@ -4109,6 +5591,10 @@ namespace Hypedomino.V1 {
             Bot = input.ReadBool();
             break;
           }
+          case 82: {
+            Tile = input.ReadString();
+            break;
+          }
         }
       }
     }
@@ -4131,7 +5617,7 @@ namespace Hypedomino.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[15]; }
+      get { return global::Hypedomino.V1.MatchReflection.Descriptor.MessageTypes[20]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4172,6 +5658,12 @@ namespace Hypedomino.V1 {
       roster_ = other.roster_.Clone();
       loadingDeadlineUnixMs_ = other.loadingDeadlineUnixMs_;
       table_ = other.table_;
+      afkConsecutiveTimeouts_ = other.afkConsecutiveTimeouts_;
+      targetScore_ = other.targetScore_;
+      handPointsLockThreshold_ = other.handPointsLockThreshold_;
+      lockedTeams_ = other.lockedTeams_.Clone();
+      turnSeconds_ = other.turnSeconds_;
+      turnWarningSeconds_ = other.turnWarningSeconds_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -4429,6 +5921,77 @@ namespace Hypedomino.V1 {
       }
     }
 
+    /// <summary>Field number for the "afk_consecutive_timeouts" field.</summary>
+    public const int AfkConsecutiveTimeoutsFieldNumber = 22;
+    private uint afkConsecutiveTimeouts_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint AfkConsecutiveTimeouts {
+      get { return afkConsecutiveTimeouts_; }
+      set {
+        afkConsecutiveTimeouts_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "target_score" field.</summary>
+    public const int TargetScoreFieldNumber = 23;
+    private uint targetScore_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint TargetScore {
+      get { return targetScore_; }
+      set {
+        targetScore_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "hand_points_lock_threshold" field.</summary>
+    public const int HandPointsLockThresholdFieldNumber = 24;
+    private uint handPointsLockThreshold_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint HandPointsLockThreshold {
+      get { return handPointsLockThreshold_; }
+      set {
+        handPointsLockThreshold_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "locked_teams" field.</summary>
+    public const int LockedTeamsFieldNumber = 25;
+    private static readonly pb::FieldCodec<global::Hypedomino.V1.Team> _repeated_lockedTeams_codec
+        = pb::FieldCodec.ForEnum(202, x => (int) x, x => (global::Hypedomino.V1.Team) x);
+    private readonly pbc::RepeatedField<global::Hypedomino.V1.Team> lockedTeams_ = new pbc::RepeatedField<global::Hypedomino.V1.Team>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<global::Hypedomino.V1.Team> LockedTeams {
+      get { return lockedTeams_; }
+    }
+
+    /// <summary>Field number for the "turn_seconds" field.</summary>
+    public const int TurnSecondsFieldNumber = 26;
+    private uint turnSeconds_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint TurnSeconds {
+      get { return turnSeconds_; }
+      set {
+        turnSeconds_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "turn_warning_seconds" field.</summary>
+    public const int TurnWarningSecondsFieldNumber = 27;
+    private uint turnWarningSeconds_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint TurnWarningSeconds {
+      get { return turnWarningSeconds_; }
+      set {
+        turnWarningSeconds_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -4465,6 +6028,12 @@ namespace Hypedomino.V1 {
       if(!roster_.Equals(other.roster_)) return false;
       if (LoadingDeadlineUnixMs != other.LoadingDeadlineUnixMs) return false;
       if (Table != other.Table) return false;
+      if (AfkConsecutiveTimeouts != other.AfkConsecutiveTimeouts) return false;
+      if (TargetScore != other.TargetScore) return false;
+      if (HandPointsLockThreshold != other.HandPointsLockThreshold) return false;
+      if(!lockedTeams_.Equals(other.lockedTeams_)) return false;
+      if (TurnSeconds != other.TurnSeconds) return false;
+      if (TurnWarningSeconds != other.TurnWarningSeconds) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -4493,6 +6062,12 @@ namespace Hypedomino.V1 {
       hash ^= roster_.GetHashCode();
       if (LoadingDeadlineUnixMs != 0UL) hash ^= LoadingDeadlineUnixMs.GetHashCode();
       if (Table.Length != 0) hash ^= Table.GetHashCode();
+      if (AfkConsecutiveTimeouts != 0) hash ^= AfkConsecutiveTimeouts.GetHashCode();
+      if (TargetScore != 0) hash ^= TargetScore.GetHashCode();
+      if (HandPointsLockThreshold != 0) hash ^= HandPointsLockThreshold.GetHashCode();
+      hash ^= lockedTeams_.GetHashCode();
+      if (TurnSeconds != 0) hash ^= TurnSeconds.GetHashCode();
+      if (TurnWarningSeconds != 0) hash ^= TurnWarningSeconds.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -4583,6 +6158,27 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(170, 1);
         output.WriteString(Table);
       }
+      if (AfkConsecutiveTimeouts != 0) {
+        output.WriteRawTag(176, 1);
+        output.WriteUInt32(AfkConsecutiveTimeouts);
+      }
+      if (TargetScore != 0) {
+        output.WriteRawTag(184, 1);
+        output.WriteUInt32(TargetScore);
+      }
+      if (HandPointsLockThreshold != 0) {
+        output.WriteRawTag(192, 1);
+        output.WriteUInt32(HandPointsLockThreshold);
+      }
+      lockedTeams_.WriteTo(output, _repeated_lockedTeams_codec);
+      if (TurnSeconds != 0) {
+        output.WriteRawTag(208, 1);
+        output.WriteUInt32(TurnSeconds);
+      }
+      if (TurnWarningSeconds != 0) {
+        output.WriteRawTag(216, 1);
+        output.WriteUInt32(TurnWarningSeconds);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -4665,6 +6261,27 @@ namespace Hypedomino.V1 {
         output.WriteRawTag(170, 1);
         output.WriteString(Table);
       }
+      if (AfkConsecutiveTimeouts != 0) {
+        output.WriteRawTag(176, 1);
+        output.WriteUInt32(AfkConsecutiveTimeouts);
+      }
+      if (TargetScore != 0) {
+        output.WriteRawTag(184, 1);
+        output.WriteUInt32(TargetScore);
+      }
+      if (HandPointsLockThreshold != 0) {
+        output.WriteRawTag(192, 1);
+        output.WriteUInt32(HandPointsLockThreshold);
+      }
+      lockedTeams_.WriteTo(ref output, _repeated_lockedTeams_codec);
+      if (TurnSeconds != 0) {
+        output.WriteRawTag(208, 1);
+        output.WriteUInt32(TurnSeconds);
+      }
+      if (TurnWarningSeconds != 0) {
+        output.WriteRawTag(216, 1);
+        output.WriteUInt32(TurnWarningSeconds);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -4729,6 +6346,22 @@ namespace Hypedomino.V1 {
       }
       if (Table.Length != 0) {
         size += 2 + pb::CodedOutputStream.ComputeStringSize(Table);
+      }
+      if (AfkConsecutiveTimeouts != 0) {
+        size += 2 + pb::CodedOutputStream.ComputeUInt32Size(AfkConsecutiveTimeouts);
+      }
+      if (TargetScore != 0) {
+        size += 2 + pb::CodedOutputStream.ComputeUInt32Size(TargetScore);
+      }
+      if (HandPointsLockThreshold != 0) {
+        size += 2 + pb::CodedOutputStream.ComputeUInt32Size(HandPointsLockThreshold);
+      }
+      size += lockedTeams_.CalculateSize(_repeated_lockedTeams_codec);
+      if (TurnSeconds != 0) {
+        size += 2 + pb::CodedOutputStream.ComputeUInt32Size(TurnSeconds);
+      }
+      if (TurnWarningSeconds != 0) {
+        size += 2 + pb::CodedOutputStream.ComputeUInt32Size(TurnWarningSeconds);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -4808,6 +6441,22 @@ namespace Hypedomino.V1 {
       }
       if (other.Table.Length != 0) {
         Table = other.Table;
+      }
+      if (other.AfkConsecutiveTimeouts != 0) {
+        AfkConsecutiveTimeouts = other.AfkConsecutiveTimeouts;
+      }
+      if (other.TargetScore != 0) {
+        TargetScore = other.TargetScore;
+      }
+      if (other.HandPointsLockThreshold != 0) {
+        HandPointsLockThreshold = other.HandPointsLockThreshold;
+      }
+      lockedTeams_.Add(other.lockedTeams_);
+      if (other.TurnSeconds != 0) {
+        TurnSeconds = other.TurnSeconds;
+      }
+      if (other.TurnWarningSeconds != 0) {
+        TurnWarningSeconds = other.TurnWarningSeconds;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -4924,6 +6573,31 @@ namespace Hypedomino.V1 {
             Table = input.ReadString();
             break;
           }
+          case 176: {
+            AfkConsecutiveTimeouts = input.ReadUInt32();
+            break;
+          }
+          case 184: {
+            TargetScore = input.ReadUInt32();
+            break;
+          }
+          case 192: {
+            HandPointsLockThreshold = input.ReadUInt32();
+            break;
+          }
+          case 202:
+          case 200: {
+            lockedTeams_.AddEntriesFrom(input, _repeated_lockedTeams_codec);
+            break;
+          }
+          case 208: {
+            TurnSeconds = input.ReadUInt32();
+            break;
+          }
+          case 216: {
+            TurnWarningSeconds = input.ReadUInt32();
+            break;
+          }
         }
       }
     #endif
@@ -5037,6 +6711,31 @@ namespace Hypedomino.V1 {
           }
           case 170: {
             Table = input.ReadString();
+            break;
+          }
+          case 176: {
+            AfkConsecutiveTimeouts = input.ReadUInt32();
+            break;
+          }
+          case 184: {
+            TargetScore = input.ReadUInt32();
+            break;
+          }
+          case 192: {
+            HandPointsLockThreshold = input.ReadUInt32();
+            break;
+          }
+          case 202:
+          case 200: {
+            lockedTeams_.AddEntriesFrom(ref input, _repeated_lockedTeams_codec);
+            break;
+          }
+          case 208: {
+            TurnSeconds = input.ReadUInt32();
+            break;
+          }
+          case 216: {
+            TurnWarningSeconds = input.ReadUInt32();
             break;
           }
         }

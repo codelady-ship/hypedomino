@@ -1,0 +1,56 @@
+{
+  "slug": "amethyst_filigree",
+  "canvas": [
+    1280,
+    720
+  ],
+  "seed": 17419,
+  "edges": {"depth": 138},
+  "back": {
+    "concept": "concept/20261115-01.png",
+    "threads": {
+      "hue": [
+        0.08,
+        0.17
+      ],
+      "saturation": 0.5,
+      "value": 0.45
+    }
+  },
+  "motion": {
+    "frames": 10,
+    "key": 4,
+    "parts": [
+      {
+        "kind": "shimmer",
+        "bands": 3,
+        "sharpness": 3,
+        "wave": 0.8,
+        "twinkle": 0.5,
+        "cell": 2,
+        "alpha": 0.8
+      },
+      {
+        "kind": "motes",
+        "count": 80,
+        "radius": [
+          3.0,
+          6.0
+        ],
+        "orbit": [
+          3,
+          9
+        ],
+        "alpha": [
+          0.4,
+          0.8
+        ],
+        "colour": [
+          255,
+          238,
+          206
+        ]
+      }
+    ]
+  }
+}

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 export const rarityIds = ["common", "rare", "epic", "legendary", "mythic"];
-export const itemTypes = ["avatar", "character", "frame", "table", "emoji", "action"];
+export const itemTypes = ["avatar", "frame", "table", "tile", "emoji"];
 
 const header = "key,value,unit,kind,section";
 const keyPattern = /^[A-Z][A-Za-z0-9]*$/;
@@ -18,8 +18,10 @@ const listLengths = {
   RankRewardCoins: 10,
   GuidePriceCoins: rarityIds.length,
   GuidePriceTypePercent: itemTypes.length,
-  CoinPackUsd: 5,
-  CoinPackCoins: 5,
+  GuidePriceCrystals: rarityIds.length,
+  ChestRarityPercent: 2,
+  CrystalPackUsd: 5,
+  CrystalPackCrystals: 5,
   SinkRatioAlertPercent: 2,
   ModelMatchMinutes: 2,
   ModelProfileHours: 3,
@@ -28,9 +30,9 @@ const listLengths = {
 
 const scalarKeys = [
   "DailyMatchCoinCap", "FirstWinBonusCoins", "DailyMissionCoinBudget", "WeeklyMissionCoinBudget",
-  "PassFreeTrackCoins", "PassPremiumTrackCoins", "PassLevelCoinPrice", "PassPremiumUsd",
-  "PassPremiumPlusUsd", "PassPremiumPlusLevels", "StarterOfferUsd", "StarterOfferCoins",
-  "ModelBetweenMatchMinutes", "ModelWinRatePercent", "ModelPassSeasonDays", "CoinsPerUsdReference",
+  "PassFreeTrackCoins", "PassPremiumTrackCrystals", "PassLevelCoinPrice", "PassLevelCrystalPrice", "PassPremiumUsd",
+  "PassPremiumPlusUsd", "PassPremiumPlusLevels", "StarterOfferUsd", "StarterOfferCrystals", "ChestCoinPrice",
+  "ModelBetweenMatchMinutes", "ModelWinRatePercent", "ModelPassSeasonDays", "CrystalsPerUsdReference",
 ];
 
 function rowErrors(fields, line, seen) {
@@ -111,14 +113,14 @@ function profileDays(get, rankedRate) {
 }
 
 function packRates(get) {
-  const reference = get("CoinsPerUsdReference")[0];
-  const coins = get("CoinPackCoins");
-  return get("CoinPackUsd").map((usd, index) => ({
+  const reference = get("CrystalsPerUsdReference")[0];
+  const crystals = get("CrystalPackCrystals");
+  return get("CrystalPackUsd").map((usd, index) => ({
     tier: index + 1,
     usd,
-    coins: coins[index],
-    bonus: coins[index] / (usd * reference) - 1,
-    perUsd: coins[index] / usd,
+    crystals: crystals[index],
+    bonus: crystals[index] / (usd * reference) - 1,
+    perUsd: crystals[index] / usd,
   }));
 }
 
@@ -135,8 +137,8 @@ function renderProfiles(profiles) {
 }
 
 function renderPacks(packs) {
-  const body = packs.map((pack) => [`coins_tier${pack.tier}`, fixed(pack.usd, 2), pack.coins, `${roundHalfAway(pack.bonus * 100)}%`, roundHalfAway(pack.perUsd)]);
-  return table(["Product", "USD reference", "Coins", "Bonus over reference rate", "Coins per USD"], body);
+  const body = packs.map((pack) => [`crystals_tier${pack.tier}`, fixed(pack.usd, 2), pack.crystals, `${roundHalfAway(pack.bonus * 100)}%`, roundHalfAway(pack.perUsd)]);
+  return table(["Product", "USD reference", "Crystals", "Bonus over reference rate", "Crystals per USD"], body);
 }
 
 function renderGuidePrices(get) {
@@ -148,28 +150,30 @@ function renderGuidePrices(get) {
 
 function renderPriceVsEarn(get, profiles, packs) {
   const base = get("GuidePriceCoins");
+  const crystals = get("GuidePriceCrystals");
   const bestRate = Math.max(...packs.map((pack) => pack.perUsd));
   const worstRate = Math.min(...packs.map((pack) => pack.perUsd));
   const body = rarityIds.map((rarity, index) => [
     `\`${rarity}\``,
     base[index],
     ...profiles.map((profile) => fixed(base[index] / profile.total, 1)),
-    `${fixed(base[index] / bestRate, 2)} to ${fixed(base[index] / worstRate, 2)}`,
+    crystals[index],
+    `${fixed(crystals[index] / bestRate, 2)} to ${fixed(crystals[index] / worstRate, 2)}`,
   ]);
-  return table(["Rarity", "Guide price (avatar, frame)", ...profiles.map((profile) => `Days at ${profile.hours} h/day`), "USD equivalent (best to smallest pack)"], body);
+  return table(["Rarity", "Guide price in coins (avatar, frame)", ...profiles.map((profile) => `Days at ${profile.hours} h/day`), "Guide price in crystals", "USD for the crystals (best to smallest pack)"], body);
 }
 
 function renderPassAndOffers(get) {
-  const reference = get("CoinsPerUsdReference")[0];
-  const levelPrice = get("PassLevelCoinPrice")[0];
-  const premiumCoins = get("PassPremiumTrackCoins")[0];
+  const reference = get("CrystalsPerUsdReference")[0];
+  const levelPrice = get("PassLevelCrystalPrice")[0];
+  const premiumCrystals = get("PassPremiumTrackCrystals")[0];
   const products = [
-    ["pass_premium", get("PassPremiumUsd")[0], premiumCoins],
-    ["pass_premium_plus", get("PassPremiumPlusUsd")[0], premiumCoins + get("PassPremiumPlusLevels")[0] * levelPrice],
-    ["offer_starter", get("StarterOfferUsd")[0], get("StarterOfferCoins")[0]],
+    ["pass_premium", get("PassPremiumUsd")[0], premiumCrystals],
+    ["pass_premium_plus", get("PassPremiumPlusUsd")[0], premiumCrystals + get("PassPremiumPlusLevels")[0] * levelPrice],
+    ["offer_starter", get("StarterOfferUsd")[0], get("StarterOfferCrystals")[0]],
   ];
-  const body = products.map(([id, usd, coins]) => [id, fixed(usd, 2), coins, fixed(coins / reference, 2), fixed(coins / reference / usd, 2)]);
-  return table(["Product", "USD reference", "Coin value (coins and levels, items excluded)", "USD at reference rate", "Value multiple"], body);
+  const body = products.map(([id, usd, crystals]) => [id, fixed(usd, 2), crystals, fixed(crystals / reference, 2), fixed(crystals / reference / usd, 2)]);
+  return table(["Product", "USD reference", "Crystal value (crystals and levels, items excluded)", "USD at reference rate", "Value multiple"], body);
 }
 
 export function renderBalance(rows) {
@@ -182,7 +186,7 @@ export function renderBalance(rows) {
     renderModes(modes),
     "#### Earn per day by player profile",
     renderProfiles(profiles),
-    "#### Coin packs",
+    "#### Crystal packs",
     renderPacks(packs),
     "#### Guide prices by rarity and type (coins)",
     renderGuidePrices(get),

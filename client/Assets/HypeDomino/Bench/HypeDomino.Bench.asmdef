@@ -1,0 +1,14 @@
+{
+    "name": "HypeDomino.Bench",
+    "rootNamespace": "HypeDomino.Bench",
+    "references": ["HypeDomino.Core", "HypeDomino.UI", "UnityEngine.UI"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

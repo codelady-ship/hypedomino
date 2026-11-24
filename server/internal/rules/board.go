@@ -177,6 +177,10 @@ func (b *Board) Bottom() []Oriented {
 	return b.bottom.tail()
 }
 
+func (b *Board) OpeningIndex() int {
+	return SetSize - b.head
+}
+
 func (b *Board) TileCount() int {
 	return b.tail - b.head + b.top.count + b.bottom.count
 }

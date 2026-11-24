@@ -1,0 +1,186 @@
+{
+  "sprites": [
+    {
+      "name": "backdrop_soft",
+      "width": 136,
+      "height": 128,
+      "border": [
+        64,
+        60,
+        64,
+        60
+      ],
+      "pixelsPerUnit": 200,
+      "use": "White soft pill behind seat names and hints; tint color.scrim at opacity.scrim"
+    },
+    {
+      "name": "button_primary",
+      "width": 256,
+      "height": 240,
+      "border": [
+        120,
+        116,
+        120,
+        116
+      ],
+      "pixelsPerUnit": 200,
+      "use": "Primary pill, role.primary fill with the gold gradient"
+    },
+    {
+      "name": "button_secondary",
+      "width": 80,
+      "height": 240,
+      "border": [
+        36,
+        116,
+        36,
+        116
+      ],
+      "pixelsPerUnit": 200,
+      "use": "Secondary button, radius.md, role.secondary fill"
+    },
+    {
+      "name": "button_tint",
+      "width": 80,
+      "height": 240,
+      "border": [
+        36,
+        116,
+        36,
+        116
+      ],
+      "pixelsPerUnit": 200,
+      "use": "Greyscale button, radius.md, tinted with a role fill"
+    },
+    {
+      "name": "divider",
+      "width": 128,
+      "height": 8,
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 200,
+      "use": "Gold divider line, stretched as a simple sprite"
+    },
+    {
+      "name": "icon_shadow",
+      "width": 96,
+      "height": 96,
+      "border": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pixelsPerUnit": 200,
+      "use": "White soft shadow behind an icon; tint color.shadow"
+    },
+    {
+      "name": "panel",
+      "width": 120,
+      "height": 120,
+      "border": [
+        56,
+        56,
+        56,
+        56
+      ],
+      "pixelsPerUnit": 200,
+      "use": "Panel, radius.lg, surface.default lacquer with a gold inlay line"
+    },
+    {
+      "name": "panel_raised",
+      "width": 88,
+      "height": 88,
+      "border": [
+        40,
+        40,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 200,
+      "use": "Panel inside a panel, list row, input; radius.md, surface.raised"
+    },
+    {
+      "name": "pill_fill",
+      "width": 136,
+      "height": 128,
+      "border": [
+        64,
+        60,
+        64,
+        60
+      ],
+      "pixelsPerUnit": 200,
+      "use": "White crisp pill: toggle track, progress bar, badge, dot"
+    },
+    {
+      "name": "shadow_lg",
+      "width": 168,
+      "height": 168,
+      "border": [
+        80,
+        80,
+        80,
+        80
+      ],
+      "pixelsPerUnit": 200,
+      "use": "White elevation shadow for radius.lg owners: panels; tint color.shadow at the elevation alpha, rect grown by 8 units per side"
+    },
+    {
+      "name": "shadow_md",
+      "width": 136,
+      "height": 136,
+      "border": [
+        64,
+        64,
+        64,
+        64
+      ],
+      "pixelsPerUnit": 200,
+      "use": "White elevation shadow for radius.md owners: secondary and tinted buttons, raised panels, tabs; tint color.shadow at the elevation alpha, rect grown by 8 units per side"
+    },
+    {
+      "name": "shadow_pill",
+      "width": 312,
+      "height": 272,
+      "border": [
+        152,
+        132,
+        152,
+        132
+      ],
+      "pixelsPerUnit": 200,
+      "use": "White elevation shadow for pill owners: the primary button; tint color.shadow at the elevation alpha, rect grown by 8 units per side"
+    },
+    {
+      "name": "tab_off",
+      "width": 88,
+      "height": 88,
+      "border": [
+        40,
+        40,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 200,
+      "use": "Tab at rest, radius.md, surface.default with a gold.lo rim"
+    },
+    {
+      "name": "tab_on",
+      "width": 88,
+      "height": 88,
+      "border": [
+        40,
+        40,
+        40,
+        40
+      ],
+      "pixelsPerUnit": 200,
+      "use": "Selected tab, radius.md, surface.raised with the gold rim"
+    }
+  ]
+}

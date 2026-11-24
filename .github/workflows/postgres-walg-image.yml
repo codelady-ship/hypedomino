@@ -1,0 +1,62 @@
+name: PostgreSQL WAL-G image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/backup-drill/Dockerfile'
+      - 'tools/backup-drill/image-tag.sh'
+      - '.github/workflows/postgres-walg-image.yml'
+  pull_request:
+    paths:
+      - 'tools/backup-drill/Dockerfile'
+      - 'tools/backup-drill/image-tag.sh'
+      - '.github/workflows/postgres-walg-image.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: postgres-walg-image-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/alievs-corp/hypedomino-postgres-walg
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve the tags
+        id: tags
+        run: |
+          stable=$(bash tools/backup-drill/image-tag.sh)
+          echo "stable=$stable" >> "$GITHUB_OUTPUT"
+          echo "Image $IMAGE tags $GITHUB_SHA and $stable" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Build
+        env:
+          STABLE_TAG: ${{ steps.tags.outputs.stable }}
+        run: |
+          docker build --pull \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.description=PostgreSQL with WAL-G for hypedomino, docs/backup-restore.md" \
+            -t "$IMAGE:$GITHUB_SHA" -t "$IMAGE:$STABLE_TAG" tools/backup-drill
+          docker run --rm --entrypoint wal-g "$IMAGE:$GITHUB_SHA" --version
+      - name: Push
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          STABLE_TAG: ${{ steps.tags.outputs.stable }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE:$GITHUB_SHA"
+          docker push "$IMAGE:$STABLE_TAG"
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$STABLE_TAG")
+          echo "Pushed $digest" | tee -a "$GITHUB_STEP_SUMMARY"

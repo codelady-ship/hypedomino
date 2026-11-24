@@ -1,6 +1,8 @@
 package profile
 
 import (
+	_ "embed"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -17,6 +19,7 @@ var (
 	ErrDigitsOnly        = errors.New("nickname.digits_only")
 	ErrTaken             = errors.New("nickname.taken")
 	ErrCooldown          = errors.New("nickname.cooldown")
+	ErrUnchanged         = errors.New("nickname.unchanged")
 )
 
 type Config struct {
@@ -36,7 +39,40 @@ func DefaultConfig() Config {
 	}
 }
 
-const separators = "_.- "
+//go:embed nickname-characters.json
+var nicknameCharactersJSON []byte
+
+type nicknameCharacters struct {
+	Letters    map[string]string `json:"letters"`
+	Digits     string            `json:"digits"`
+	Separators string            `json:"separators"`
+}
+
+var allowed = mustNicknameCharacters(nicknameCharactersJSON)
+
+var (
+	letters    = letterSet(allowed)
+	digits     = allowed.Digits
+	separators = allowed.Separators
+)
+
+func mustNicknameCharacters(data []byte) nicknameCharacters {
+	var set nicknameCharacters
+	if err := json.Unmarshal(data, &set); err != nil {
+		panic(err)
+	}
+	return set
+}
+
+func letterSet(set nicknameCharacters) map[rune]bool {
+	letters := map[rune]bool{}
+	for _, group := range set.Letters {
+		for _, r := range group {
+			letters[r] = true
+		}
+	}
+	return letters
+}
 
 var confusables = map[rune]rune{
 	'а': 'a', 'е': 'e', 'о': 'o', 'р': 'p', 'с': 'c', 'у': 'y', 'х': 'x', 'і': 'i',
@@ -79,26 +115,17 @@ func (c Config) Validate(display string) error {
 	if display == "" {
 		return ErrInvalidLength
 	}
-	length, digits, letters := 0, 0, 0
-	marks := 0
+	length, digitCount, letterCount := 0, 0, 0
 	run, last := 0, rune(0)
 	hasLatin, hasCyrillic := false, false
 	for _, r := range display {
 		switch {
-		case unicode.Is(unicode.Mn, r):
-			marks++
-			if marks > 1 || length == 0 {
-				return ErrInvalidCharacters
-			}
-			continue
-		case r >= '0' && r <= '9':
-			digits++
-		case unicode.Is(unicode.Latin, r) && unicode.IsLetter(r):
-			hasLatin = true
-			letters++
-		case unicode.Is(unicode.Cyrillic, r) && unicode.IsLetter(r):
-			hasCyrillic = true
-			letters++
+		case strings.ContainsRune(digits, r):
+			digitCount++
+		case letters[r]:
+			hasLatin = hasLatin || unicode.Is(unicode.Latin, r)
+			hasCyrillic = hasCyrillic || unicode.Is(unicode.Cyrillic, r)
+			letterCount++
 		case strings.ContainsRune(separators, r):
 			if length == 0 {
 				return ErrInvalidSeparators
@@ -110,7 +137,6 @@ func (c Config) Validate(display string) error {
 		default:
 			return ErrInvalidCharacters
 		}
-		marks = 0
 		if r == last && strings.ContainsRune(separators, r) {
 			run++
 			if run > 2 {
@@ -129,7 +155,7 @@ func (c Config) Validate(display string) error {
 		return ErrMixedScripts
 	case length < c.NicknameMinLength || length > c.NicknameMaxLength:
 		return ErrInvalidLength
-	case letters == 0 && digits > 0:
+	case letterCount == 0 && digitCount > 0:
 		return ErrDigitsOnly
 	}
 	return nil

@@ -83,7 +83,7 @@ Leaving: a tester leaves the testing program in the store at any time and delete
 |---|---|---|---|
 | FB-1 | In-game support form, Settings > Support, bug category | Primary bug and crash report path. Attaches player id, app version, build, platform, OS, device model, language and last match id (`docs/launch-runbook.md` 9.1) | Support tool (#144) |
 | FB-2 | TestFlight feedback (screenshot and crash feedback from the TestFlight app) | iOS reports with a screenshot | App Store Connect |
-| FB-3 | Play testing feedback channel (the feedback email or URL set on the testing track) | Android testers who prefer the store's channel | The support inbox `{filled by #144}` |
+| FB-3 | Play testing feedback channel (the feedback email or URL set on the testing track) | Android testers who prefer the store's channel | The support inbox (`docs/launch-runbook.md` section 10, owner input OI-13) |
 | FB-4 | External community channel, private and invite-only, one space per launch language (OQ-4) | Discussion, playtest window announcements, polls, build notes. Bug reports posted there are moved to FB-1 by the support lead | Not a record; summarised in the weekly report |
 | FB-5 | Crash groups and errors | Automatic, from testers with `diagnostics` consent | Sentry (#182) |
 

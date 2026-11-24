@@ -1,11 +1,11 @@
 # 0001. Client: Unity 6 LTS, URP 2D, IL2CPP
 
-Status: Accepted; the renderer choice is superseded by 0009
+Status: Accepted; the renderer choice was changed to the Universal Renderer by 0009. 0009 is itself superseded (no 3D characters, 2026-11-12), but the client keeps the Universal Renderer until a measured change says otherwise
 Date: 2026-10-25
 Issue: #10
 
 ## Context
-The client is a hyperactive, effect-heavy mobile game: particles, skeletal 2D characters, animated avatars, many cosmetic variants. Budgets from CLAUDE.md: stable 60 fps on mid-range Android, 120 fps option on capable devices, cold start under 3 s, match scene under 150 draw calls, 0 B GC allocation per frame during a match, install under 150 MB. The client only renders and sends intents (ADR 0003), so it holds no game rules, but it carries all visual and audio weight.
+The client is a hyperactive, effect-heavy mobile game: particles, animated avatars, frames and emoji, many cosmetic variants. Budgets from CLAUDE.md: stable 60 fps on mid-range Android, 120 fps option on capable devices, cold start under 3 s, match scene under 150 draw calls, 0 B GC allocation per frame during a match, install under 150 MB. The client only renders and sends intents (ADR 0003), so it holds no game rules, but it carries all visual and audio weight.
 
 ## Decision
 - Unity 6 LTS, Universal Render Pipeline in 2D renderer mode, C#.

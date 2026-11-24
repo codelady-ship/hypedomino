@@ -12,10 +12,10 @@
       { "seat": "SEAT_WEST", "controller": "CONTROLLER_PLAYER", "loadingProgress": 100, "ready": true }
     ],
     "roster": [
-      { "seat": "SEAT_NORTH", "team": "TEAM_A", "nickname": "ayla", "character": "nar", "frame": "frame.gold", "avatar": "avatar.fox", "rankLabel": "Silver II", "emblems": ["emblem.first-win"] },
-      { "seat": "SEAT_EAST", "team": "TEAM_B", "nickname": "ben", "character": "kaspi", "rankLabel": "Bronze I" },
-      { "seat": "SEAT_SOUTH", "team": "TEAM_A", "nickname": "ceyhun", "character": "nar", "rankLabel": "Silver III" },
-      { "seat": "SEAT_WEST", "team": "TEAM_B", "nickname": "bot", "character": "kaspi", "bot": true }
+      { "seat": "SEAT_NORTH", "team": "TEAM_A", "nickname": "ayla", "frame": "frame.gold", "avatar": "avatar.fox", "tile": "tile.storm_sapphire", "rankLabel": "Silver II", "emblems": ["emblem.first-win"] },
+      { "seat": "SEAT_EAST", "team": "TEAM_B", "nickname": "ben", "rankLabel": "Bronze I" },
+      { "seat": "SEAT_SOUTH", "team": "TEAM_A", "nickname": "ceyhun", "rankLabel": "Silver III" },
+      { "seat": "SEAT_WEST", "team": "TEAM_B", "nickname": "bot", "bot": true }
     ],
     "loadingDeadlineUnixMs": "1761480010000"
   }

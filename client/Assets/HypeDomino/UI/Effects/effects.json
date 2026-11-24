@@ -1,0 +1,299 @@
+{
+  "sprites": [
+    { "name": "dust", "material": "additive" },
+    { "name": "flake_leaf", "material": "alpha" },
+    { "name": "flake_paper", "material": "alpha" },
+    { "name": "flow_halo", "material": "additive" },
+    { "name": "glow", "material": "additive" },
+    { "name": "halo", "material": "additive" },
+    { "name": "rays", "material": "additive" },
+    { "name": "ring", "material": "additive" },
+    { "name": "sheen", "material": "additive" },
+    { "name": "spark", "material": "additive" },
+    { "name": "stamp", "material": "alpha" },
+    { "name": "star", "material": "additive" },
+    { "name": "streak", "material": "additive" },
+    { "name": "tile_shadow", "material": "alpha" }
+  ],
+  "effects": [
+    {
+      "name": "tilePlace",
+      "levels": {
+        "low": {
+          "sprites": [],
+          "particles": [{ "sprite": "dust", "count": 4, "tint": "color.gold.hi" }],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 1
+        },
+        "medium": {
+          "sprites": [],
+          "particles": [
+            { "sprite": "dust", "count": 8, "tint": "color.gold.hi" },
+            { "sprite": "spark", "count": 3, "tint": "color.gold.default" },
+            { "sprite": "streak", "count": 1, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 2
+        },
+        "high": {
+          "sprites": [],
+          "particles": [
+            { "sprite": "dust", "count": 15, "tint": "color.gold.hi" },
+            { "sprite": "spark", "count": 8, "tint": "color.gold.default" },
+            { "sprite": "streak", "count": 1, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 2
+        }
+      }
+    },
+    {
+      "name": "scorePopup",
+      "levels": {
+        "low": { "sprites": [], "particles": [], "interfaceDrawCalls": 1, "overdrawLayers": 1 },
+        "medium": { "sprites": [], "particles": [], "interfaceDrawCalls": 1, "overdrawLayers": 1 },
+        "high": {
+          "sprites": [],
+          "particles": [{ "sprite": "spark", "count": 8, "tint": "color.role.score.fill" }],
+          "interfaceDrawCalls": 1,
+          "overdrawLayers": 2
+        }
+      }
+    },
+    {
+      "name": "scoreCascade",
+      "stepMix": { "star": 20, "streak": 20, "spark": 60 },
+      "levels": {
+        "low": {
+          "sprites": [{ "sprite": "glow", "tint": "color.role.score.fill", "glow": "step" }],
+          "particles": [
+            { "sprite": "star", "count": 6, "tint": "color.role.score.fill" },
+            { "sprite": "streak", "count": 6, "tint": "color.role.score.fill" },
+            { "sprite": "spark", "count": 18, "tint": "color.role.score.fill" }
+          ],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 2
+        },
+        "medium": {
+          "sprites": [{ "sprite": "glow", "tint": "color.role.score.fill", "glow": "step" }],
+          "particles": [
+            { "sprite": "star", "count": 18, "tint": "color.role.score.fill" },
+            { "sprite": "streak", "count": 18, "tint": "color.role.score.fill" },
+            { "sprite": "spark", "count": 54, "tint": "color.role.score.fill" }
+          ],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 3
+        },
+        "high": {
+          "sprites": [{ "sprite": "glow", "tint": "color.role.score.fill", "glow": "step" }],
+          "particles": [
+            { "sprite": "star", "count": 36, "tint": "color.role.score.fill" },
+            { "sprite": "streak", "count": 36, "tint": "color.role.score.fill" },
+            { "sprite": "spark", "count": 108, "tint": "color.role.score.fill" }
+          ],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 4
+        }
+      }
+    },
+    {
+      "name": "spinnerFormation",
+      "levels": {
+        "low": {
+          "sprites": [{ "sprite": "ring", "tint": "color.gold.hi" }],
+          "particles": [{ "sprite": "streak", "count": 2, "tint": "color.role.secondary.fill" }],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 1
+        },
+        "medium": {
+          "sprites": [{ "sprite": "ring", "tint": "color.gold.hi" }],
+          "particles": [
+            { "sprite": "streak", "count": 2, "tint": "color.role.secondary.fill" },
+            { "sprite": "spark", "count": 28, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 2
+        },
+        "high": {
+          "sprites": [{ "sprite": "ring", "tint": "color.gold.hi" }],
+          "particles": [
+            { "sprite": "streak", "count": 2, "tint": "color.role.secondary.fill" },
+            { "sprite": "spark", "count": 46, "tint": "color.gold.default" },
+            { "sprite": "star", "count": 12, "tint": "color.gold.hi" }
+          ],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 3
+        }
+      }
+    },
+    {
+      "name": "domino",
+      "levels": {
+        "low": {
+          "sprites": [{ "sprite": "glow", "tint": "team", "glow": "intense" }],
+          "particles": [
+            { "sprite": "star", "count": 8, "tint": "color.gold.default" },
+            { "sprite": "spark", "count": 32, "tint": "team" }
+          ],
+          "interfaceDrawCalls": 2,
+          "overdrawLayers": 2
+        },
+        "medium": {
+          "sprites": [{ "sprite": "glow", "tint": "team", "glow": "intense" }],
+          "particles": [
+            { "sprite": "star", "count": 20, "tint": "color.gold.default" },
+            { "sprite": "spark", "count": 80, "tint": "team" },
+            { "sprite": "dust", "count": 20, "tint": "color.gold.hi" }
+          ],
+          "interfaceDrawCalls": 2,
+          "overdrawLayers": 3
+        },
+        "high": {
+          "sprites": [{ "sprite": "glow", "tint": "team", "glow": "intense" }],
+          "particles": [
+            { "sprite": "star", "count": 40, "tint": "color.gold.default" },
+            { "sprite": "spark", "count": 160, "tint": "team" },
+            { "sprite": "dust", "count": 40, "tint": "color.gold.hi" }
+          ],
+          "interfaceDrawCalls": 2,
+          "overdrawLayers": 4
+        }
+      }
+    },
+    {
+      "name": "block",
+      "levels": {
+        "low": {
+          "sprites": [{ "sprite": "stamp", "tint": "color.gold.default" }],
+          "particles": [],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 1
+        },
+        "medium": {
+          "sprites": [
+            { "sprite": "stamp", "tint": "color.gold.default" },
+            { "sprite": "ring", "tint": "color.gold.hi" }
+          ],
+          "particles": [{ "sprite": "dust", "count": 40, "tint": "color.gold.hi" }],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 2
+        },
+        "high": {
+          "sprites": [
+            { "sprite": "stamp", "tint": "color.gold.default" },
+            { "sprite": "ring", "tint": "color.gold.hi" }
+          ],
+          "particles": [{ "sprite": "dust", "count": 80, "tint": "color.gold.hi" }],
+          "interfaceDrawCalls": 0,
+          "overdrawLayers": 3
+        }
+      }
+    },
+    {
+      "name": "matchWin",
+      "levels": {
+        "low": {
+          "sprites": [],
+          "particles": [
+            { "sprite": "flake_paper", "count": 30, "tint": "team" },
+            { "sprite": "flake_leaf", "count": 20, "tint": "color.gold.default" },
+            { "sprite": "star", "count": 10, "tint": "color.gold.hi" }
+          ],
+          "interfaceDrawCalls": 2,
+          "overdrawLayers": 2
+        },
+        "medium": {
+          "sprites": [{ "sprite": "glow", "tint": "team", "glow": "strong" }],
+          "particles": [
+            { "sprite": "flake_paper", "count": 100, "tint": "team" },
+            { "sprite": "flake_leaf", "count": 60, "tint": "color.gold.default" },
+            { "sprite": "star", "count": 20, "tint": "color.gold.hi" },
+            { "sprite": "spark", "count": 20, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 2,
+          "overdrawLayers": 3
+        },
+        "high": {
+          "sprites": [{ "sprite": "glow", "tint": "team", "glow": "strong" }],
+          "particles": [
+            { "sprite": "flake_paper", "count": 200, "tint": "team" },
+            { "sprite": "flake_leaf", "count": 120, "tint": "color.gold.default" },
+            { "sprite": "star", "count": 40, "tint": "color.gold.hi" },
+            { "sprite": "spark", "count": 40, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 2,
+          "overdrawLayers": 4
+        }
+      }
+    },
+    {
+      "name": "rankUp",
+      "levels": {
+        "low": {
+          "sprites": [{ "sprite": "rays", "tint": "color.gold.default" }],
+          "particles": [
+            { "sprite": "star", "count": 10, "tint": "color.gold.hi" },
+            { "sprite": "spark", "count": 40, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 1,
+          "overdrawLayers": 2
+        },
+        "medium": {
+          "sprites": [
+            { "sprite": "rays", "tint": "color.gold.default" },
+            { "sprite": "glow", "tint": "color.gold.default", "glow": "strong" }
+          ],
+          "particles": [
+            { "sprite": "star", "count": 30, "tint": "color.gold.hi" },
+            { "sprite": "spark", "count": 130, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 1,
+          "overdrawLayers": 3
+        },
+        "high": {
+          "sprites": [
+            { "sprite": "rays", "tint": "color.gold.default" },
+            { "sprite": "glow", "tint": "color.gold.default", "glow": "strong" }
+          ],
+          "particles": [
+            { "sprite": "star", "count": 60, "tint": "color.gold.hi" },
+            { "sprite": "spark", "count": 260, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 1,
+          "overdrawLayers": 4
+        }
+      }
+    },
+    {
+      "name": "emoji",
+      "levels": {
+        "low": { "sprites": [], "particles": [], "interfaceDrawCalls": 4, "overdrawLayers": 1 },
+        "medium": {
+          "sprites": [],
+          "particles": [
+            { "sprite": "star", "count": 8, "tint": "color.gold.hi" },
+            { "sprite": "spark", "count": 24, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 4,
+          "overdrawLayers": 2
+        },
+        "high": {
+          "sprites": [],
+          "particles": [
+            { "sprite": "star", "count": 16, "tint": "color.gold.hi" },
+            { "sprite": "spark", "count": 48, "tint": "color.gold.default" }
+          ],
+          "interfaceDrawCalls": 4,
+          "overdrawLayers": 2
+        }
+      }
+    }
+  ],
+  "marks": [
+    { "name": "rarityHalo", "sprite": "halo", "tint": "rarity", "overdrawLayers": 1 },
+    { "name": "rarityFlowHalo", "sprite": "flow_halo", "tint": "rarity", "overdrawLayers": 1 },
+    { "name": "primaryGlow", "sprite": "glow", "tint": "color.role.primary.fill", "overdrawLayers": 1 },
+    { "name": "sheen", "sprite": "sheen", "tint": "color.gold.hi", "overdrawLayers": 1 },
+    { "name": "tileShadow", "sprite": "tile_shadow", "tint": "color.shadow", "overdrawLayers": 1 }
+  ]
+}

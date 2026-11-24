@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/coder/websocket"
 	"google.golang.org/protobuf/proto"
@@ -18,15 +19,17 @@ var (
 )
 
 type Client struct {
-	socket    *websocket.Conn
-	ctx       context.Context
-	buffer    []byte
-	Hello     *pb.ServerHello
-	Acked     uint64
-	Sequence  uint64
-	Sent      int
-	SentBytes int
-	Last      *pb.MatchView
+	socket        *websocket.Conn
+	ctx           context.Context
+	buffer        []byte
+	nonce         uint64
+	Hello         *pb.ServerHello
+	Acked         uint64
+	Sequence      uint64
+	Sent          int
+	SentBytes     int
+	ReceivedBytes int
+	Last          *pb.MatchView
 }
 
 type Options struct {
@@ -75,6 +78,7 @@ func (c *Client) handshake(options Options) error {
 	switch payload := reply.GetPayload().(type) {
 	case *pb.Envelope_ServerHello:
 		c.Hello = payload.ServerHello
+		c.nonce = payload.ServerHello.GetSessionNonce()
 		c.Acked = reply.GetAckedSequence()
 		c.Sequence = c.Acked
 		if payload.ServerHello.GetStatus() != pb.HelloStatus_HELLO_STATUS_ACCEPTED {
@@ -88,6 +92,9 @@ func (c *Client) handshake(options Options) error {
 }
 
 func (c *Client) write(frame *pb.Envelope) error {
+	if frame.GetClientHello() == nil {
+		frame.SessionNonce = c.nonce
+	}
 	data, err := proto.MarshalOptions{}.MarshalAppend(c.buffer[:0], frame)
 	if err != nil {
 		return err
@@ -140,6 +147,7 @@ func (c *Client) Receive() (*pb.Envelope, error) {
 	if kind != websocket.MessageBinary {
 		return nil, errors.New("botclient: text frame from the server")
 	}
+	c.ReceivedBytes += len(data)
 	frame := &pb.Envelope{}
 	if err := proto.Unmarshal(data, frame); err != nil {
 		return nil, err
@@ -149,6 +157,9 @@ func (c *Client) Receive() (*pb.Envelope, error) {
 
 func (c *Client) Observe(frame *pb.Envelope) {
 	if view := frame.GetMatchView(); view != nil {
+		if view.GetRoster() == nil && c.Last != nil {
+			view.Roster, view.Table = c.Last.GetRoster(), c.Last.GetTable()
+		}
 		c.Acked = frame.GetAckedSequence()
 		c.Sequence = max(c.Sequence, c.Acked)
 		c.Last = view
@@ -237,4 +248,16 @@ func (c *Client) Close() error {
 
 func (c *Client) Drop() {
 	c.socket.CloseNow()
+}
+
+func (c *Client) Nonce() uint64 {
+	return c.nonce
+}
+
+func (c *Client) LastSent() []byte {
+	return slices.Clone(c.buffer)
+}
+
+func (c *Client) WriteRaw(kind websocket.MessageType, data []byte) error {
+	return c.socket.Write(c.ctx, kind, data)
 }

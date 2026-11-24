@@ -121,18 +121,96 @@ func TestMatchSimulation(t *testing.T) {
 	}
 	for _, mode := range []Mode{Mode1v1, Mode2v2} {
 		hands := 0
+		var seen handEndsSeen
 		for seed := uint64(1); seed <= uint64(matches); seed++ {
-			hands += simulateMatch(t, mode, seed)
+			hands += simulateMatch(t, mode, seed, &seen)
 		}
 		if hands < matches {
 			t.Fatalf("%s: %d matches played only %d hands", mode, matches, hands)
 		}
+		if seen.dominoes == 0 || seen.blocks == 0 || seen.locked == 0 || (!testing.Short() && seen.carriedIn == 0) {
+			t.Fatalf("%s: the simulation did not reach every kind of hand end: %+v", mode, seen)
+		}
 	}
 }
 
-func simulateMatch(t *testing.T, mode Mode, seed uint64) int {
+type handEndsSeen struct {
+	dominoes, blocks, locked, carriedIn int
+}
+
+func checkHandEnd(t *testing.T, m *Match, mode Mode, seed uint64, seen *handEndsSeen) {
 	t.Helper()
+	result, _ := m.LastResult()
+	end, ok := m.LastHandEnd()
+	if !ok {
+		t.Fatalf("%s seed %d: a hand ended without a hand end", mode, seed)
+	}
+	var pips TeamPoints
+	emptied := false
+	for _, seat := range mode.Seats() {
+		pips[seat.Team()] += end.Left[seat].Pips()
+		emptied = emptied || len(end.Left[seat]) == 0
+	}
+	if pips != result.Pips {
+		t.Fatalf("%s seed %d: tiles left count %v pips, result says %v", mode, seed, pips, result.Pips)
+	}
+	switch {
+	case end.Status == HandDomino && emptied:
+		seen.dominoes++
+	case end.Status == HandBlocked && !emptied:
+		seen.blocks++
+	default:
+		t.Fatalf("%s seed %d: hand end %s with an emptied hand %v", mode, seed, end.Status, emptied)
+	}
+	if !result.HasWinner && (end.Locked || end.CarriedIn != 0) {
+		t.Fatalf("%s seed %d: a tied block is locked or carries in: %+v", mode, seed, end)
+	}
+	if end.Locked {
+		seen.locked++
+		if result.Awarded != (TeamPoints{}) || end.CarriedIn != 0 {
+			t.Fatalf("%s seed %d: a locked hand awarded %v and carried in %d", mode, seed, result.Awarded, end.CarriedIn)
+		}
+	}
+	if end.CarriedIn > 0 {
+		seen.carriedIn++
+		if end.CarriedIn > result.Awarded[result.Winner] {
+			t.Fatalf("%s seed %d: carried in %d is more than the award %v", mode, seed, end.CarriedIn, result.Awarded)
+		}
+	}
+}
+
+func checkNoSeatHoldsRedealDoubles(t *testing.T, m *Match, seed uint64) {
+	t.Helper()
+	for _, seat := range m.Mode().Seats() {
+		doubles := 0
+		for _, tile := range m.Hand(seat) {
+			if tile.Low == tile.High {
+				doubles++
+			}
+		}
+		if doubles >= m.Config().RedealDoublesThreshold {
+			t.Fatalf("%s seed %d hand %d: seat %s opens with %d doubles", m.Mode(), seed, m.HandsPlayed(), seat, doubles)
+		}
+	}
+}
+
+func TestEveryHandIsRedealtWhileASeatHoldsTooManyDoubles(t *testing.T) {
 	config := DefaultConfig()
+	config.RedealDoublesThreshold = 3
+	for _, mode := range []Mode{Mode1v1, Mode2v2} {
+		for seed := uint64(1); seed <= 100; seed++ {
+			simulateMatchWith(t, mode, config, seed, &handEndsSeen{})
+		}
+	}
+}
+
+func simulateMatch(t *testing.T, mode Mode, seed uint64, seen *handEndsSeen) int {
+	t.Helper()
+	return simulateMatchWith(t, mode, DefaultConfig(), seed, seen)
+}
+
+func simulateMatchWith(t *testing.T, mode Mode, config Config, seed uint64, seen *handEndsSeen) int {
+	t.Helper()
 	random := seeded(seed)
 	m := NewMatch(mode, config, random)
 	var buffer [4 * SetSize]Move
@@ -142,8 +220,20 @@ func simulateMatch(t *testing.T, mode Mode, seed uint64) int {
 			t.Fatalf("%s seed %d: match does not end", mode, seed)
 		}
 		checkTileConservation(t, m, mode, seed)
+		played := m.HandsPlayed()
+		if m.Phase() == PhaseOpening {
+			checkNoSeatHoldsRedealDoubles(t, m, seed)
+			for _, team := range []Team{TeamA, TeamB} {
+				if m.HandPointsLocked(team) != (m.Scores()[team] >= config.HandPointsLockThreshold) {
+					t.Fatalf("%s seed %d: team %s locked %v with %v at hand start", mode, seed, team, m.HandPointsLocked(team), m.Scores())
+				}
+			}
+		}
 		if err := simulateStep(m, random, buffer[:0]); err != nil {
 			t.Fatalf("%s seed %d step %d: %v", mode, seed, step, err)
+		}
+		if m.HandsPlayed() != played {
+			checkHandEnd(t, m, mode, seed, seen)
 		}
 		scores := m.Scores()
 		if scores[TeamA] < previous[TeamA] || scores[TeamB] < previous[TeamB] {

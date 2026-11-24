@@ -2,7 +2,10 @@ package gateway
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
+	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -14,6 +17,7 @@ import (
 	"github.com/coder/websocket"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/panics"
 	pb "github.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1"
 	"github.com/Alievs-corp/hypedomino/server/internal/replay"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
@@ -52,8 +56,11 @@ type recordingSession struct {
 	mu       sync.Mutex
 	intents  []received
 	loading  []loadingReport
+	emojis   []string
+	quick    []string
 	inMatch  bool
 	attached bool
+	replays  int
 	closed   chan struct{}
 }
 
@@ -65,6 +72,18 @@ func (s *recordingSession) Loading(progress int, ready bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.loading = append(s.loading, loadingReport{progress: progress, ready: ready})
+}
+
+func (s *recordingSession) Emoji(item string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.emojis = append(s.emojis, item)
+}
+
+func (s *recordingSession) QuickMessage(key string, teamOnly bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.quick = append(s.quick, fmt.Sprint(key, " ", teamOnly))
 }
 
 func (s *recordingSession) loadingReports() []loadingReport {
@@ -104,6 +123,18 @@ func (s *recordingSession) Intent(sequence uint64, intent replay.Intent) {
 
 func (s *recordingSession) Close() { close(s.closed) }
 
+func (s *recordingSession) Replayed() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.replays++
+}
+
+func (s *recordingSession) replayCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.replays
+}
+
 func (s *recordingSession) received() []received {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -122,7 +153,7 @@ func (s *recordingSession) awaitIntents(t *testing.T, count int) {
 }
 
 type harness struct {
-	t        *testing.T
+	t        testing.TB
 	server   *httptest.Server
 	clock    *fakeClock
 	config   Config
@@ -130,10 +161,10 @@ type harness struct {
 	sessions map[string]*recordingSession
 }
 
-func newHarness(t *testing.T, config Config) *harness {
+func newHarness(t testing.TB, config Config) *harness {
 	t.Helper()
 	h := &harness{t: t, clock: &fakeClock{now: time.UnixMilli(1761480000000)}, config: config, sessions: map[string]*recordingSession{}}
-	gateway := New(Options{Config: config, Handler: HandlerFunc(h.connect), Clock: h.clock})
+	gateway := New(Options{Config: config, Handler: HandlerFunc(h.connect), Clock: h.clock, Strings: activeStrings, Cosmetics: activeManifest, Analytics: activeAnalytics})
 	h.server = httptest.NewServer(gateway)
 	t.Cleanup(h.server.Close)
 	return h
@@ -145,6 +176,12 @@ func (h *harness) connect(ctx context.Context, conn *Conn, hello *pb.ClientHello
 	}
 	if hello.GetSessionToken() == "ok-broken" {
 		return nil, errors.New("storage down")
+	}
+	if hello.GetSessionToken() == "ok-panic" {
+		panic("handler broke")
+	}
+	if hello.GetSessionToken() == "ok-tampered" {
+		return nil, ErrIntegrityFailed
 	}
 	session := &recordingSession{acked: hello.GetLastAckedSequence(), conn: conn, closed: make(chan struct{}), inMatch: hello.GetSessionToken() == "ok-playing"}
 	h.mu.Lock()
@@ -160,9 +197,10 @@ func (h *harness) session(token string) *recordingSession {
 }
 
 type client struct {
-	t      *testing.T
+	t      testing.TB
 	socket *websocket.Conn
 	ctx    context.Context
+	nonce  uint64
 }
 
 func (h *harness) dial() *client {
@@ -179,6 +217,9 @@ func (h *harness) dial() *client {
 
 func (c *client) send(frame *pb.Envelope) {
 	c.t.Helper()
+	if frame.GetClientHello() == nil && frame.SessionNonce == 0 {
+		frame.SessionNonce = c.nonce
+	}
 	data, err := proto.Marshal(frame)
 	if err != nil {
 		c.t.Fatal(err)
@@ -248,6 +289,7 @@ func (c *client) handshake(token string) *pb.ServerHello {
 	if reply == nil || reply.GetStatus() != pb.HelloStatus_HELLO_STATUS_ACCEPTED {
 		c.t.Fatalf("handshake answered %v", frame)
 	}
+	c.nonce = reply.GetSessionNonce()
 	return reply
 }
 
@@ -261,9 +303,25 @@ func place(sequence uint64, low, high uint32, end pb.BoardEnd) *pb.Envelope {
 	return intentFrame(sequence, &pb.Envelope{Payload: &pb.Envelope_PlaceTileIntent{PlaceTileIntent: &pb.PlaceTileIntent{Tile: &pb.Tile{Low: low, High: high}, End: end}}})
 }
 
+func activeStrings() Strings {
+	return Strings{
+		Bundles: []*pb.StringBundle{{Language: "en", Version: 4, Hash: "e4"}},
+		Chains:  []*pb.FallbackChain{{Language: "en", Languages: []string{"en"}}},
+	}
+}
+
+func activeManifest() *pb.CosmeticsManifest {
+	return &pb.CosmeticsManifest{Version: 7, Hash: "c7"}
+}
+
+func activeAnalytics() *pb.AnalyticsConfig {
+	return &pb.AnalyticsConfig{BatchSize: 50, QueueLimit: 500, FlushSeconds: 60}
+}
+
 func testConfig() Config {
 	config := DefaultConfig()
 	config.CatalogVersion = "2026.10.26-1"
+	config.ContentBaseURL = "https://content.example.com/staging"
 	config.HelloTimeout = 200 * time.Millisecond
 	config.CloseTimeout = 500 * time.Millisecond
 	return config
@@ -284,11 +342,17 @@ func TestHelloIsAcceptedWithServerTimeAndAckedSequence(t *testing.T) {
 	if reply.GetStatus() != pb.HelloStatus_HELLO_STATUS_ACCEPTED || frame.GetAckedSequence() != 41 {
 		t.Fatalf("accepted hello: %v", frame)
 	}
-	if reply.GetServerTimeUnixMs() != 1761480000000 || reply.GetCatalogVersion() != "2026.10.26-1" || reply.GetMinimumAppVersion() != "1.0.0" {
+	if reply.GetServerTimeUnixMs() != 1761480000000 || reply.GetCatalogVersion() != "2026.10.26-1" || reply.GetContentBaseUrl() != "https://content.example.com/staging" || reply.GetMinimumAppVersion() != "1.0.0" {
 		t.Fatalf("server hello carries %v", reply)
 	}
 	if frame.GetProtocolVersion() != ProtocolVersion {
 		t.Fatalf("protocol version %d", frame.GetProtocolVersion())
+	}
+	if want := activeStrings(); !proto.Equal(reply, &pb.ServerHello{
+		Status: reply.GetStatus(), MinimumAppVersion: "1.0.0", ServerTimeUnixMs: 1761480000000, CatalogVersion: "2026.10.26-1", ContentBaseUrl: "https://content.example.com/staging",
+		StringBundles: want.Bundles, FallbackChains: want.Chains, SessionNonce: reply.GetSessionNonce(), CosmeticsManifest: activeManifest(), AnalyticsConfig: activeAnalytics(),
+	}) || reply.GetSessionNonce() == 0 {
+		t.Fatalf("server hello carries the active string bundles, cosmetics manifest and analytics config: %v", reply)
 	}
 	h.session("ok-resume").awaitAttached(t)
 }
@@ -302,6 +366,9 @@ func TestOldClientGetsUpdateRequiredAndIsClosed(t *testing.T) {
 	frame := c.recv()
 	if frame.GetServerHello().GetStatus() != pb.HelloStatus_HELLO_STATUS_UPDATE_REQUIRED || frame.GetServerHello().GetMinimumAppVersion() != "1.4.0" {
 		t.Fatalf("old client answered %v", frame)
+	}
+	if len(frame.GetServerHello().GetStringBundles()) != 0 || frame.GetServerHello().GetCosmeticsManifest() != nil || frame.GetServerHello().GetAnalyticsConfig() != nil {
+		t.Fatalf("an old client gets no string bundles, cosmetics manifest or analytics config: %v", frame)
 	}
 	c.expectClose(websocket.StatusNormalClosure)
 	if h.session("ok") != nil {
@@ -338,6 +405,23 @@ func TestHandlerFailureClosesWithInternalError(t *testing.T) {
 	c := h.dial()
 	c.send(hello("ok-broken", "1.2.3", 3))
 	c.expectClose(websocket.StatusInternalError)
+}
+
+func TestHandlerPanicClosesOnlyThatConnectionAndIsCounted(t *testing.T) {
+	h := newHarness(t, testConfig())
+	c := h.dial()
+	c.send(hello("ok-panic", "1.2.3", 3))
+	c.expectClose(websocket.StatusInternalError)
+	var metrics strings.Builder
+	panics.WriteTo(&metrics)
+	if !strings.Contains(metrics.String(), `hd_panics_total{where="gateway read"}`) {
+		t.Fatalf("metrics:\n%s", metrics.String())
+	}
+	other := h.dial()
+	other.send(hello("ok-after", "1.2.3", 3))
+	if other.recv().GetServerHello() == nil {
+		t.Fatal("the gateway stopped serving after a connection panicked")
+	}
 }
 
 func TestFirstFrameMustBeTheHello(t *testing.T) {
@@ -578,11 +662,13 @@ func TestHelloTellsAResumingClientWhetherItIsInAMatch(t *testing.T) {
 	}
 }
 
-func TestLoadingReportsReachTheSessionWithoutASequence(t *testing.T) {
+func TestLoadingReportsEmojiAndQuickMessagesReachTheSessionWithoutASequence(t *testing.T) {
 	h := newHarness(t, testConfig())
 	c := h.dial()
 	c.handshake("ok")
 	c.send(intentFrame(0, &pb.Envelope{Payload: &pb.Envelope_LoadingIntent{LoadingIntent: &pb.LoadingIntent{Progress: 40}}}))
+	c.send(intentFrame(0, &pb.Envelope{Payload: &pb.Envelope_EmojiIntent{EmojiIntent: &pb.EmojiIntent{ItemId: "emoji.laugh"}}}))
+	c.send(intentFrame(0, &pb.Envelope{Payload: &pb.Envelope_QuickMessageIntent{QuickMessageIntent: &pb.QuickMessageIntent{Key: "quick.hello", TeamOnly: true}}}))
 	c.send(intentFrame(0, &pb.Envelope{Payload: &pb.Envelope_LoadingIntent{LoadingIntent: &pb.LoadingIntent{Progress: 100, Ready: true}}}))
 	c.send(place(1, 2, 3, pb.BoardEnd_BOARD_END_UNSPECIFIED))
 	h.session("ok").awaitIntents(t, 1)
@@ -590,7 +676,157 @@ func TestLoadingReportsReachTheSessionWithoutASequence(t *testing.T) {
 	if got := h.session("ok").loadingReports(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("session received loading reports %+v", got)
 	}
+	h.session("ok").mu.Lock()
+	emojis := h.session("ok").emojis
+	quick := h.session("ok").quick
+	h.session("ok").mu.Unlock()
+	if !reflect.DeepEqual(emojis, []string{"emoji.laugh"}) {
+		t.Fatalf("session received emoji %v", emojis)
+	}
+	if !reflect.DeepEqual(quick, []string{"quick.hello true"}) {
+		t.Fatalf("session received quick messages %v", quick)
+	}
 	if got := h.session("ok").received(); len(got) != 1 || got[0].sequence != 1 {
 		t.Fatalf("session received intents %+v", got)
+	}
+}
+
+func TestFramesWithoutTheConnectionNonceAreRejectedAndCounted(t *testing.T) {
+	h := newHarness(t, testConfig())
+	first := h.dial()
+	firstNonce := first.handshake("ok-a").GetSessionNonce()
+	second := h.dial()
+	secondNonce := second.handshake("ok-b").GetSessionNonce()
+	if firstNonce == secondNonce {
+		t.Fatalf("two connections share the nonce %d", firstNonce)
+	}
+	cases := []struct {
+		name  string
+		nonce uint64
+	}{
+		{"another connection", secondNonce},
+		{"missing", 0},
+		{"guessed", firstNonce + 1},
+	}
+	for i, c := range cases {
+		frame := place(uint64(i+1), 0, 1, pb.BoardEnd_BOARD_END_LEFT)
+		frame.SessionNonce = c.nonce
+		if c.nonce == 0 {
+			data, _ := proto.Marshal(frame)
+			first.sendBytes(data)
+		} else {
+			first.send(frame)
+		}
+		reply := first.recv()
+		if reply.GetError().GetCode() != pb.ErrorCode_ERROR_CODE_REPLAY_REJECTED || reply.GetError().GetRejectedSequence() != uint64(i+1) {
+			t.Fatalf("%s: answered %v", c.name, reply)
+		}
+	}
+	first.send(&pb.Envelope{SessionNonce: secondNonce, Payload: &pb.Envelope_LoadingIntent{LoadingIntent: &pb.LoadingIntent{Progress: 50}}})
+	if reply := first.recv(); reply.GetError().GetCode() != pb.ErrorCode_ERROR_CODE_REPLAY_REJECTED {
+		t.Fatalf("loading report with a foreign nonce answered %v", reply)
+	}
+	first.send(place(4, 0, 1, pb.BoardEnd_BOARD_END_LEFT))
+	session := h.session("ok-a")
+	session.awaitIntents(t, 1)
+	if got := session.received(); got[0].sequence != 4 || session.replayCount() != 4 || len(session.loadingReports()) != 0 {
+		t.Fatalf("session got %+v after %d replays", got, session.replayCount())
+	}
+	if h.session("ok-b").replayCount() != 0 {
+		t.Fatal("the other session was counted")
+	}
+}
+
+func TestTheHelloMayCarryAnIntegrityTokenLargerThanAnIntent(t *testing.T) {
+	config := testConfig()
+	config.MaxFrameBytes = 256
+	config.MaxHelloBytes = 4096
+	h := newHarness(t, config)
+	withToken := func(token string, size int) *pb.Envelope {
+		frame := hello(token, "1.2.3", 1)
+		frame.GetClientHello().Integrity = &pb.IntegrityProof{Proof: &pb.IntegrityProof_PlayIntegrityToken{PlayIntegrityToken: strings.Repeat("t", size)}}
+		return frame
+	}
+	c := h.dial()
+	c.send(withToken("ok", 3000))
+	reply := c.recv().GetServerHello()
+	if reply.GetStatus() != pb.HelloStatus_HELLO_STATUS_ACCEPTED {
+		t.Fatalf("hello with a token answered %v", reply)
+	}
+	c.nonce = reply.GetSessionNonce()
+	join := &pb.JoinQueueIntent{Mode: pb.Mode_MODE_1V1, Queue: pb.QueueKind_QUEUE_KIND_RANKED, Integrity: &pb.IntegrityProof{Proof: &pb.IntegrityProof_PlayIntegrityToken{PlayIntegrityToken: strings.Repeat("t", 3000)}}}
+	c.send(intentFrame(0, &pb.Envelope{Payload: &pb.Envelope_JoinQueueIntent{JoinQueueIntent: join}}))
+	if state := c.recv().GetQueueState(); state.GetStatus() != pb.QueueStatus_QUEUE_STATUS_REFUSED {
+		t.Fatalf("queue entry with a token answered %v", state)
+	}
+	c.sendBytes(make([]byte, 257))
+	c.expectClose(websocket.StatusMessageTooBig)
+	big := h.dial()
+	big.send(withToken("ok", 5000))
+	big.expectClose(websocket.StatusMessageTooBig)
+	tampered := h.dial()
+	tampered.send(withToken("ok-tampered", 10))
+	if code := tampered.recv().GetError().GetCode(); code != pb.ErrorCode_ERROR_CODE_INTEGRITY_FAILED {
+		t.Fatalf("tampered device answered %v", code)
+	}
+	tampered.expectClose(websocket.StatusPolicyViolation)
+}
+
+func TestAQueueIntentToASessionWithoutMatchmakingIsRefusedAsUnavailable(t *testing.T) {
+	h := newHarness(t, testConfig())
+	c := h.dial()
+	c.handshake("ok")
+	c.send(intentFrame(0, &pb.Envelope{Payload: &pb.Envelope_JoinQueueIntent{JoinQueueIntent: &pb.JoinQueueIntent{Mode: pb.Mode_MODE_1V1, Queue: pb.QueueKind_QUEUE_KIND_CASUAL}}}))
+	state := c.recv().GetQueueState()
+	if state.GetStatus() != pb.QueueStatus_QUEUE_STATUS_REFUSED || state.GetRefusal() != pb.QueueRefusal_QUEUE_REFUSAL_UNAVAILABLE {
+		t.Fatalf("queue state %v", state)
+	}
+}
+
+func TestAStalledWriteClosesTheConnectionAfterTheWriteTimeout(t *testing.T) {
+	config := testConfig()
+	config.WriteQueue = 1024
+	config.WriteTimeout = 300 * time.Millisecond
+	h := newHarness(t, config)
+	c := h.dial()
+	c.handshake("ok-stalled")
+	session := h.session("ok-stalled")
+	noise := make([]byte, 256<<10)
+	rand.NewChaCha8([32]byte{}).Read(noise)
+	large := hex.EncodeToString(noise)
+	stalledAt := time.Now()
+	for range 128 {
+		if err := session.conn.Send(&pb.Envelope{Payload: &pb.Envelope_EmojiShown{EmojiShown: &pb.EmojiShown{ItemId: large}}}); err != nil {
+			t.Fatalf("a queued frame was refused before the write stalled: %v", err)
+		}
+	}
+	select {
+	case <-session.closed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("a client that stopped reading kept its connection past the write timeout")
+	}
+	if elapsed := time.Since(stalledAt); elapsed < config.WriteTimeout {
+		t.Fatalf("closed after %s, before the write timeout %s", elapsed, config.WriteTimeout)
+	}
+	select {
+	case <-session.conn.Done():
+	default:
+		t.Fatal("the connection is not closed")
+	}
+}
+
+func BenchmarkSendToAReadingClient(b *testing.B) {
+	h := newHarness(b, testConfig())
+	c := h.dial()
+	c.handshake("ok-bench")
+	conn := h.session("ok-bench").conn
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := conn.Send(&pb.Envelope{AckedSequence: 1, Payload: &pb.Envelope_EmojiShown{EmojiShown: &pb.EmojiShown{ItemId: "emoji"}}}); err != nil {
+			b.Fatal(err)
+		}
+		if _, _, err := c.socket.Read(c.ctx); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

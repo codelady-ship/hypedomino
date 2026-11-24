@@ -76,6 +76,7 @@ const (
 	HelloStatus_HELLO_STATUS_UNSPECIFIED     HelloStatus = 0
 	HelloStatus_HELLO_STATUS_ACCEPTED        HelloStatus = 1
 	HelloStatus_HELLO_STATUS_UPDATE_REQUIRED HelloStatus = 2
+	HelloStatus_HELLO_STATUS_MAINTENANCE     HelloStatus = 3
 )
 
 // Enum value maps for HelloStatus.
@@ -84,11 +85,13 @@ var (
 		0: "HELLO_STATUS_UNSPECIFIED",
 		1: "HELLO_STATUS_ACCEPTED",
 		2: "HELLO_STATUS_UPDATE_REQUIRED",
+		3: "HELLO_STATUS_MAINTENANCE",
 	}
 	HelloStatus_value = map[string]int32{
 		"HELLO_STATUS_UNSPECIFIED":     0,
 		"HELLO_STATUS_ACCEPTED":        1,
 		"HELLO_STATUS_UPDATE_REQUIRED": 2,
+		"HELLO_STATUS_MAINTENANCE":     3,
 	}
 )
 
@@ -128,6 +131,10 @@ type ClientHello struct {
 	DeviceModel       string                 `protobuf:"bytes,5,opt,name=device_model,json=deviceModel,proto3" json:"device_model,omitempty"`
 	SessionToken      string                 `protobuf:"bytes,6,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
 	LastAckedSequence uint64                 `protobuf:"varint,7,opt,name=last_acked_sequence,json=lastAckedSequence,proto3" json:"last_acked_sequence,omitempty"`
+	ClientTimeUnixMs  uint64                 `protobuf:"varint,8,opt,name=client_time_unix_ms,json=clientTimeUnixMs,proto3" json:"client_time_unix_ms,omitempty"`
+	Integrity         *IntegrityProof        `protobuf:"bytes,9,opt,name=integrity,proto3" json:"integrity,omitempty"`
+	DeviceRiskSignals []string               `protobuf:"bytes,10,rep,name=device_risk_signals,json=deviceRiskSignals,proto3" json:"device_risk_signals,omitempty"`
+	HookSignals       []string               `protobuf:"bytes,11,rep,name=hook_signals,json=hookSignals,proto3" json:"hook_signals,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -211,20 +218,197 @@ func (x *ClientHello) GetLastAckedSequence() uint64 {
 	return 0
 }
 
+func (x *ClientHello) GetClientTimeUnixMs() uint64 {
+	if x != nil {
+		return x.ClientTimeUnixMs
+	}
+	return 0
+}
+
+func (x *ClientHello) GetIntegrity() *IntegrityProof {
+	if x != nil {
+		return x.Integrity
+	}
+	return nil
+}
+
+func (x *ClientHello) GetDeviceRiskSignals() []string {
+	if x != nil {
+		return x.DeviceRiskSignals
+	}
+	return nil
+}
+
+func (x *ClientHello) GetHookSignals() []string {
+	if x != nil {
+		return x.HookSignals
+	}
+	return nil
+}
+
+type IntegrityProof struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Proof:
+	//
+	//	*IntegrityProof_PlayIntegrityToken
+	//	*IntegrityProof_AppAttest
+	Proof         isIntegrityProof_Proof `protobuf_oneof:"proof"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IntegrityProof) Reset() {
+	*x = IntegrityProof{}
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IntegrityProof) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IntegrityProof) ProtoMessage() {}
+
+func (x *IntegrityProof) ProtoReflect() protoreflect.Message {
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IntegrityProof.ProtoReflect.Descriptor instead.
+func (*IntegrityProof) Descriptor() ([]byte, []int) {
+	return file_hypedomino_v1_hello_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *IntegrityProof) GetProof() isIntegrityProof_Proof {
+	if x != nil {
+		return x.Proof
+	}
+	return nil
+}
+
+func (x *IntegrityProof) GetPlayIntegrityToken() string {
+	if x != nil {
+		if x, ok := x.Proof.(*IntegrityProof_PlayIntegrityToken); ok {
+			return x.PlayIntegrityToken
+		}
+	}
+	return ""
+}
+
+func (x *IntegrityProof) GetAppAttest() *AppAttestAssertion {
+	if x != nil {
+		if x, ok := x.Proof.(*IntegrityProof_AppAttest); ok {
+			return x.AppAttest
+		}
+	}
+	return nil
+}
+
+type isIntegrityProof_Proof interface {
+	isIntegrityProof_Proof()
+}
+
+type IntegrityProof_PlayIntegrityToken struct {
+	PlayIntegrityToken string `protobuf:"bytes,1,opt,name=play_integrity_token,json=playIntegrityToken,proto3,oneof"`
+}
+
+type IntegrityProof_AppAttest struct {
+	AppAttest *AppAttestAssertion `protobuf:"bytes,2,opt,name=app_attest,json=appAttest,proto3,oneof"`
+}
+
+func (*IntegrityProof_PlayIntegrityToken) isIntegrityProof_Proof() {}
+
+func (*IntegrityProof_AppAttest) isIntegrityProof_Proof() {}
+
+type AppAttestAssertion struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	KeyId         []byte                 `protobuf:"bytes,1,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
+	Nonce         string                 `protobuf:"bytes,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	Assertion     []byte                 `protobuf:"bytes,3,opt,name=assertion,proto3" json:"assertion,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AppAttestAssertion) Reset() {
+	*x = AppAttestAssertion{}
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AppAttestAssertion) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AppAttestAssertion) ProtoMessage() {}
+
+func (x *AppAttestAssertion) ProtoReflect() protoreflect.Message {
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AppAttestAssertion.ProtoReflect.Descriptor instead.
+func (*AppAttestAssertion) Descriptor() ([]byte, []int) {
+	return file_hypedomino_v1_hello_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AppAttestAssertion) GetKeyId() []byte {
+	if x != nil {
+		return x.KeyId
+	}
+	return nil
+}
+
+func (x *AppAttestAssertion) GetNonce() string {
+	if x != nil {
+		return x.Nonce
+	}
+	return ""
+}
+
+func (x *AppAttestAssertion) GetAssertion() []byte {
+	if x != nil {
+		return x.Assertion
+	}
+	return nil
+}
+
 type ServerHello struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Status            HelloStatus            `protobuf:"varint,1,opt,name=status,proto3,enum=hypedomino.v1.HelloStatus" json:"status,omitempty"`
-	MinimumAppVersion string                 `protobuf:"bytes,2,opt,name=minimum_app_version,json=minimumAppVersion,proto3" json:"minimum_app_version,omitempty"`
-	ServerTimeUnixMs  uint64                 `protobuf:"varint,3,opt,name=server_time_unix_ms,json=serverTimeUnixMs,proto3" json:"server_time_unix_ms,omitempty"`
-	CatalogVersion    string                 `protobuf:"bytes,4,opt,name=catalog_version,json=catalogVersion,proto3" json:"catalog_version,omitempty"`
-	InMatch           bool                   `protobuf:"varint,5,opt,name=in_match,json=inMatch,proto3" json:"in_match,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	Status                HelloStatus            `protobuf:"varint,1,opt,name=status,proto3,enum=hypedomino.v1.HelloStatus" json:"status,omitempty"`
+	MinimumAppVersion     string                 `protobuf:"bytes,2,opt,name=minimum_app_version,json=minimumAppVersion,proto3" json:"minimum_app_version,omitempty"`
+	ServerTimeUnixMs      uint64                 `protobuf:"varint,3,opt,name=server_time_unix_ms,json=serverTimeUnixMs,proto3" json:"server_time_unix_ms,omitempty"`
+	CatalogVersion        string                 `protobuf:"bytes,4,opt,name=catalog_version,json=catalogVersion,proto3" json:"catalog_version,omitempty"`
+	InMatch               bool                   `protobuf:"varint,5,opt,name=in_match,json=inMatch,proto3" json:"in_match,omitempty"`
+	StringBundles         []*StringBundle        `protobuf:"bytes,6,rep,name=string_bundles,json=stringBundles,proto3" json:"string_bundles,omitempty"`
+	FallbackChains        []*FallbackChain       `protobuf:"bytes,7,rep,name=fallback_chains,json=fallbackChains,proto3" json:"fallback_chains,omitempty"`
+	SessionNonce          uint64                 `protobuf:"fixed64,8,opt,name=session_nonce,json=sessionNonce,proto3" json:"session_nonce,omitempty"`
+	ContentBaseUrl        string                 `protobuf:"bytes,9,opt,name=content_base_url,json=contentBaseUrl,proto3" json:"content_base_url,omitempty"`
+	MaintenanceEndsUnixMs uint64                 `protobuf:"varint,10,opt,name=maintenance_ends_unix_ms,json=maintenanceEndsUnixMs,proto3" json:"maintenance_ends_unix_ms,omitempty"`
+	CosmeticsManifest     *CosmeticsManifest     `protobuf:"bytes,11,opt,name=cosmetics_manifest,json=cosmeticsManifest,proto3" json:"cosmetics_manifest,omitempty"`
+	AnalyticsConfig       *AnalyticsConfig       `protobuf:"bytes,12,opt,name=analytics_config,json=analyticsConfig,proto3" json:"analytics_config,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *ServerHello) Reset() {
 	*x = ServerHello{}
-	mi := &file_hypedomino_v1_hello_proto_msgTypes[1]
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -236,7 +420,7 @@ func (x *ServerHello) String() string {
 func (*ServerHello) ProtoMessage() {}
 
 func (x *ServerHello) ProtoReflect() protoreflect.Message {
-	mi := &file_hypedomino_v1_hello_proto_msgTypes[1]
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -249,7 +433,7 @@ func (x *ServerHello) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerHello.ProtoReflect.Descriptor instead.
 func (*ServerHello) Descriptor() ([]byte, []int) {
-	return file_hypedomino_v1_hello_proto_rawDescGZIP(), []int{1}
+	return file_hypedomino_v1_hello_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ServerHello) GetStatus() HelloStatus {
@@ -287,11 +471,284 @@ func (x *ServerHello) GetInMatch() bool {
 	return false
 }
 
+func (x *ServerHello) GetStringBundles() []*StringBundle {
+	if x != nil {
+		return x.StringBundles
+	}
+	return nil
+}
+
+func (x *ServerHello) GetFallbackChains() []*FallbackChain {
+	if x != nil {
+		return x.FallbackChains
+	}
+	return nil
+}
+
+func (x *ServerHello) GetSessionNonce() uint64 {
+	if x != nil {
+		return x.SessionNonce
+	}
+	return 0
+}
+
+func (x *ServerHello) GetContentBaseUrl() string {
+	if x != nil {
+		return x.ContentBaseUrl
+	}
+	return ""
+}
+
+func (x *ServerHello) GetMaintenanceEndsUnixMs() uint64 {
+	if x != nil {
+		return x.MaintenanceEndsUnixMs
+	}
+	return 0
+}
+
+func (x *ServerHello) GetCosmeticsManifest() *CosmeticsManifest {
+	if x != nil {
+		return x.CosmeticsManifest
+	}
+	return nil
+}
+
+func (x *ServerHello) GetAnalyticsConfig() *AnalyticsConfig {
+	if x != nil {
+		return x.AnalyticsConfig
+	}
+	return nil
+}
+
+type StringBundle struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Language      string                 `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
+	Version       uint32                 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	Hash          string                 `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StringBundle) Reset() {
+	*x = StringBundle{}
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StringBundle) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StringBundle) ProtoMessage() {}
+
+func (x *StringBundle) ProtoReflect() protoreflect.Message {
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StringBundle.ProtoReflect.Descriptor instead.
+func (*StringBundle) Descriptor() ([]byte, []int) {
+	return file_hypedomino_v1_hello_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *StringBundle) GetLanguage() string {
+	if x != nil {
+		return x.Language
+	}
+	return ""
+}
+
+func (x *StringBundle) GetVersion() uint32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *StringBundle) GetHash() string {
+	if x != nil {
+		return x.Hash
+	}
+	return ""
+}
+
+type CosmeticsManifest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	Hash          string                 `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CosmeticsManifest) Reset() {
+	*x = CosmeticsManifest{}
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CosmeticsManifest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CosmeticsManifest) ProtoMessage() {}
+
+func (x *CosmeticsManifest) ProtoReflect() protoreflect.Message {
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CosmeticsManifest.ProtoReflect.Descriptor instead.
+func (*CosmeticsManifest) Descriptor() ([]byte, []int) {
+	return file_hypedomino_v1_hello_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CosmeticsManifest) GetVersion() uint32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *CosmeticsManifest) GetHash() string {
+	if x != nil {
+		return x.Hash
+	}
+	return ""
+}
+
+type AnalyticsConfig struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BatchSize     uint32                 `protobuf:"varint,1,opt,name=batch_size,json=batchSize,proto3" json:"batch_size,omitempty"`
+	QueueLimit    uint32                 `protobuf:"varint,2,opt,name=queue_limit,json=queueLimit,proto3" json:"queue_limit,omitempty"`
+	FlushSeconds  uint32                 `protobuf:"varint,3,opt,name=flush_seconds,json=flushSeconds,proto3" json:"flush_seconds,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AnalyticsConfig) Reset() {
+	*x = AnalyticsConfig{}
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnalyticsConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnalyticsConfig) ProtoMessage() {}
+
+func (x *AnalyticsConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnalyticsConfig.ProtoReflect.Descriptor instead.
+func (*AnalyticsConfig) Descriptor() ([]byte, []int) {
+	return file_hypedomino_v1_hello_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *AnalyticsConfig) GetBatchSize() uint32 {
+	if x != nil {
+		return x.BatchSize
+	}
+	return 0
+}
+
+func (x *AnalyticsConfig) GetQueueLimit() uint32 {
+	if x != nil {
+		return x.QueueLimit
+	}
+	return 0
+}
+
+func (x *AnalyticsConfig) GetFlushSeconds() uint32 {
+	if x != nil {
+		return x.FlushSeconds
+	}
+	return 0
+}
+
+type FallbackChain struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Language      string                 `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
+	Languages     []string               `protobuf:"bytes,2,rep,name=languages,proto3" json:"languages,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FallbackChain) Reset() {
+	*x = FallbackChain{}
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FallbackChain) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FallbackChain) ProtoMessage() {}
+
+func (x *FallbackChain) ProtoReflect() protoreflect.Message {
+	mi := &file_hypedomino_v1_hello_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FallbackChain.ProtoReflect.Descriptor instead.
+func (*FallbackChain) Descriptor() ([]byte, []int) {
+	return file_hypedomino_v1_hello_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *FallbackChain) GetLanguage() string {
+	if x != nil {
+		return x.Language
+	}
+	return ""
+}
+
+func (x *FallbackChain) GetLanguages() []string {
+	if x != nil {
+		return x.Languages
+	}
+	return nil
+}
+
 var File_hypedomino_v1_hello_proto protoreflect.FileDescriptor
 
 const file_hypedomino_v1_hello_proto_rawDesc = "" +
 	"\n" +
-	"\x19hypedomino/v1/hello.proto\x12\rhypedomino.v1\"\x99\x02\n" +
+	"\x19hypedomino/v1/hello.proto\x12\rhypedomino.v1\"\xd8\x03\n" +
 	"\vClientHello\x12\x1f\n" +
 	"\vapp_version\x18\x01 \x01(\tR\n" +
 	"appVersion\x12\x1d\n" +
@@ -302,21 +759,60 @@ const file_hypedomino_v1_hello_proto_rawDesc = "" +
 	"os_version\x18\x04 \x01(\tR\tosVersion\x12!\n" +
 	"\fdevice_model\x18\x05 \x01(\tR\vdeviceModel\x12#\n" +
 	"\rsession_token\x18\x06 \x01(\tR\fsessionToken\x12.\n" +
-	"\x13last_acked_sequence\x18\a \x01(\x04R\x11lastAckedSequence\"\xe4\x01\n" +
+	"\x13last_acked_sequence\x18\a \x01(\x04R\x11lastAckedSequence\x12-\n" +
+	"\x13client_time_unix_ms\x18\b \x01(\x04R\x10clientTimeUnixMs\x12;\n" +
+	"\tintegrity\x18\t \x01(\v2\x1d.hypedomino.v1.IntegrityProofR\tintegrity\x12.\n" +
+	"\x13device_risk_signals\x18\n" +
+	" \x03(\tR\x11deviceRiskSignals\x12!\n" +
+	"\fhook_signals\x18\v \x03(\tR\vhookSignals\"\x91\x01\n" +
+	"\x0eIntegrityProof\x122\n" +
+	"\x14play_integrity_token\x18\x01 \x01(\tH\x00R\x12playIntegrityToken\x12B\n" +
+	"\n" +
+	"app_attest\x18\x02 \x01(\v2!.hypedomino.v1.AppAttestAssertionH\x00R\tappAttestB\a\n" +
+	"\x05proof\"_\n" +
+	"\x12AppAttestAssertion\x12\x15\n" +
+	"\x06key_id\x18\x01 \x01(\fR\x05keyId\x12\x14\n" +
+	"\x05nonce\x18\x02 \x01(\tR\x05nonce\x12\x1c\n" +
+	"\tassertion\x18\x03 \x01(\fR\tassertion\"\x93\x05\n" +
 	"\vServerHello\x122\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1a.hypedomino.v1.HelloStatusR\x06status\x12.\n" +
 	"\x13minimum_app_version\x18\x02 \x01(\tR\x11minimumAppVersion\x12-\n" +
 	"\x13server_time_unix_ms\x18\x03 \x01(\x04R\x10serverTimeUnixMs\x12'\n" +
 	"\x0fcatalog_version\x18\x04 \x01(\tR\x0ecatalogVersion\x12\x19\n" +
-	"\bin_match\x18\x05 \x01(\bR\ainMatch*L\n" +
+	"\bin_match\x18\x05 \x01(\bR\ainMatch\x12B\n" +
+	"\x0estring_bundles\x18\x06 \x03(\v2\x1b.hypedomino.v1.StringBundleR\rstringBundles\x12E\n" +
+	"\x0ffallback_chains\x18\a \x03(\v2\x1c.hypedomino.v1.FallbackChainR\x0efallbackChains\x12#\n" +
+	"\rsession_nonce\x18\b \x01(\x06R\fsessionNonce\x12(\n" +
+	"\x10content_base_url\x18\t \x01(\tR\x0econtentBaseUrl\x127\n" +
+	"\x18maintenance_ends_unix_ms\x18\n" +
+	" \x01(\x04R\x15maintenanceEndsUnixMs\x12O\n" +
+	"\x12cosmetics_manifest\x18\v \x01(\v2 .hypedomino.v1.CosmeticsManifestR\x11cosmeticsManifest\x12I\n" +
+	"\x10analytics_config\x18\f \x01(\v2\x1e.hypedomino.v1.AnalyticsConfigR\x0fanalyticsConfig\"X\n" +
+	"\fStringBundle\x12\x1a\n" +
+	"\blanguage\x18\x01 \x01(\tR\blanguage\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\rR\aversion\x12\x12\n" +
+	"\x04hash\x18\x03 \x01(\tR\x04hash\"A\n" +
+	"\x11CosmeticsManifest\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\rR\aversion\x12\x12\n" +
+	"\x04hash\x18\x02 \x01(\tR\x04hash\"v\n" +
+	"\x0fAnalyticsConfig\x12\x1d\n" +
+	"\n" +
+	"batch_size\x18\x01 \x01(\rR\tbatchSize\x12\x1f\n" +
+	"\vqueue_limit\x18\x02 \x01(\rR\n" +
+	"queueLimit\x12#\n" +
+	"\rflush_seconds\x18\x03 \x01(\rR\fflushSeconds\"I\n" +
+	"\rFallbackChain\x12\x1a\n" +
+	"\blanguage\x18\x01 \x01(\tR\blanguage\x12\x1c\n" +
+	"\tlanguages\x18\x02 \x03(\tR\tlanguages*L\n" +
 	"\bPlatform\x12\x18\n" +
 	"\x14PLATFORM_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10PLATFORM_ANDROID\x10\x01\x12\x10\n" +
-	"\fPLATFORM_IOS\x10\x02*h\n" +
+	"\fPLATFORM_IOS\x10\x02*\x86\x01\n" +
 	"\vHelloStatus\x12\x1c\n" +
 	"\x18HELLO_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15HELLO_STATUS_ACCEPTED\x10\x01\x12 \n" +
-	"\x1cHELLO_STATUS_UPDATE_REQUIRED\x10\x02B\xc5\x01\n" +
+	"\x1cHELLO_STATUS_UPDATE_REQUIRED\x10\x02\x12\x1c\n" +
+	"\x18HELLO_STATUS_MAINTENANCE\x10\x03B\xc5\x01\n" +
 	"\x11com.hypedomino.v1B\n" +
 	"HelloProtoP\x01ZOgithub.com/Alievs-corp/hypedomino/server/internal/pb/hypedomino/v1;hypedominov1\xa2\x02\x03HXX\xaa\x02\rHypedomino.V1\xca\x02\rHypedomino\\V1\xe2\x02\x19Hypedomino\\V1\\GPBMetadata\xea\x02\x0eHypedomino::V1b\x06proto3"
 
@@ -333,21 +829,33 @@ func file_hypedomino_v1_hello_proto_rawDescGZIP() []byte {
 }
 
 var file_hypedomino_v1_hello_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_hypedomino_v1_hello_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_hypedomino_v1_hello_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_hypedomino_v1_hello_proto_goTypes = []any{
-	(Platform)(0),       // 0: hypedomino.v1.Platform
-	(HelloStatus)(0),    // 1: hypedomino.v1.HelloStatus
-	(*ClientHello)(nil), // 2: hypedomino.v1.ClientHello
-	(*ServerHello)(nil), // 3: hypedomino.v1.ServerHello
+	(Platform)(0),              // 0: hypedomino.v1.Platform
+	(HelloStatus)(0),           // 1: hypedomino.v1.HelloStatus
+	(*ClientHello)(nil),        // 2: hypedomino.v1.ClientHello
+	(*IntegrityProof)(nil),     // 3: hypedomino.v1.IntegrityProof
+	(*AppAttestAssertion)(nil), // 4: hypedomino.v1.AppAttestAssertion
+	(*ServerHello)(nil),        // 5: hypedomino.v1.ServerHello
+	(*StringBundle)(nil),       // 6: hypedomino.v1.StringBundle
+	(*CosmeticsManifest)(nil),  // 7: hypedomino.v1.CosmeticsManifest
+	(*AnalyticsConfig)(nil),    // 8: hypedomino.v1.AnalyticsConfig
+	(*FallbackChain)(nil),      // 9: hypedomino.v1.FallbackChain
 }
 var file_hypedomino_v1_hello_proto_depIdxs = []int32{
 	0, // 0: hypedomino.v1.ClientHello.platform:type_name -> hypedomino.v1.Platform
-	1, // 1: hypedomino.v1.ServerHello.status:type_name -> hypedomino.v1.HelloStatus
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 1: hypedomino.v1.ClientHello.integrity:type_name -> hypedomino.v1.IntegrityProof
+	4, // 2: hypedomino.v1.IntegrityProof.app_attest:type_name -> hypedomino.v1.AppAttestAssertion
+	1, // 3: hypedomino.v1.ServerHello.status:type_name -> hypedomino.v1.HelloStatus
+	6, // 4: hypedomino.v1.ServerHello.string_bundles:type_name -> hypedomino.v1.StringBundle
+	9, // 5: hypedomino.v1.ServerHello.fallback_chains:type_name -> hypedomino.v1.FallbackChain
+	7, // 6: hypedomino.v1.ServerHello.cosmetics_manifest:type_name -> hypedomino.v1.CosmeticsManifest
+	8, // 7: hypedomino.v1.ServerHello.analytics_config:type_name -> hypedomino.v1.AnalyticsConfig
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_hypedomino_v1_hello_proto_init() }
@@ -355,13 +863,17 @@ func file_hypedomino_v1_hello_proto_init() {
 	if File_hypedomino_v1_hello_proto != nil {
 		return
 	}
+	file_hypedomino_v1_hello_proto_msgTypes[1].OneofWrappers = []any{
+		(*IntegrityProof_PlayIntegrityToken)(nil),
+		(*IntegrityProof_AppAttest)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hypedomino_v1_hello_proto_rawDesc), len(file_hypedomino_v1_hello_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   2,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

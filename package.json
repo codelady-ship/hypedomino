@@ -10,6 +10,10 @@
     "lint": "node tools/comment-lint/comment-lint.mjs",
     "lint:proto": "node tools/proto-lint/proto-lint.mjs proto",
     "proto:gen": "buf generate proto --template proto/buf.gen.yaml",
-    "test:tools": "node --test \"tools/**/*.test.mjs\""
+    "tokens:gen": "node tools/design-tokens/design-tokens.mjs --csharp",
+    "test:tools": "node --test \"tools/**/*.test.mjs\"",
+    "asset:add": "node tools/asset-export/asset-export.mjs add",
+    "asset:check": "node tools/asset-export/asset-export.mjs check",
+    "asset:emoji": "node tools/asset-export/emoji-batch.mjs"
   }
 }

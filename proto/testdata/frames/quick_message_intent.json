@@ -1,0 +1,4 @@
+{
+  "protocolVersion": 1,
+  "quickMessageIntent": { "key": "quick.well_played", "teamOnly": true }
+}

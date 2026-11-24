@@ -8,7 +8,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
-const Version = 2
+const Version = 3
 
 var (
 	ErrBadRecord     = errors.New("replay: malformed record")
@@ -85,7 +85,7 @@ func (r *Record) MarshalBinary() ([]byte, error) {
 }
 
 func appendConfig(data []byte, c rules.Config) []byte {
-	for _, value := range []int{c.HandSize, c.TargetScore, c.ScoringMultiple, c.HandPointsLockThreshold, c.ScoringOpeningPoints, c.TurnSeconds, c.AfkConsecutiveTimeouts} {
+	for _, value := range []int{c.HandSize, c.RedealDoublesThreshold, c.TargetScore, c.ScoringMultiple, c.HandPointsLockThreshold, c.ScoringOpeningPoints, c.TurnSeconds, c.AfkConsecutiveTimeouts} {
 		data = binary.AppendUvarint(data, uint64(value))
 	}
 	return append(data, packTile(c.FirstHandOpeningTile), packTile(c.ScoringOpeningTile))
@@ -162,6 +162,7 @@ func (r *Record) UnmarshalBinary(data []byte) error {
 	in.data = in.data[40:]
 	config := rules.Config{
 		HandSize:                in.uvarint(),
+		RedealDoublesThreshold:  in.uvarint(),
 		TargetScore:             in.uvarint(),
 		ScoringMultiple:         in.uvarint(),
 		HandPointsLockThreshold: in.uvarint(),
@@ -174,7 +175,7 @@ func (r *Record) UnmarshalBinary(data []byte) error {
 	if in.err != nil {
 		return in.err
 	}
-	if config.HandSize < 1 || config.HandSize*mode.Players() > rules.SetSize || config.ScoringMultiple < 1 {
+	if config.HandSize < 1 || config.HandSize*mode.Players() > rules.SetSize || config.ScoringMultiple < 1 || !rules.DoublesRedealCanEnd(mode, config) {
 		return fmt.Errorf("%w: bad config", ErrBadRecord)
 	}
 	count := in.uvarint()

@@ -1,0 +1,459 @@
+{
+  "schema": 1,
+  "dailySlots": [
+    {
+      "coins": 30,
+      "xp": 100
+    },
+    {
+      "coins": 40,
+      "xp": 150
+    },
+    {
+      "coins": 50,
+      "xp": 200
+    }
+  ],
+  "weeklySlots": [
+    {
+      "coins": 150,
+      "xp": 600
+    },
+    {
+      "coins": 150,
+      "xp": 600
+    },
+    {
+      "coins": 150,
+      "xp": 600
+    },
+    {
+      "coins": 150,
+      "xp": 600
+    }
+  ],
+  "dailyCoinBudget": 120,
+  "weeklyCoinBudget": 600,
+  "dailyXpBudget": 450,
+  "weeklyXpBudget": 2400,
+  "dailyRerolls": 1,
+  "weeklyRerolls": 1,
+  "eventXpBudget": 3000,
+  "missions": [
+    {
+      "id": "mission.daily_play_1",
+      "revision": 1,
+      "type": "daily",
+      "nameKey": "mission.daily_play_1.name",
+      "event": "match_completed",
+      "target": 1,
+      "filters": {},
+      "slot": 1,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.daily_points_30",
+      "revision": 1,
+      "type": "daily",
+      "nameKey": "mission.daily_points_30.name",
+      "event": "board_points",
+      "target": 30,
+      "filters": {},
+      "slot": 1,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.daily_hands_3",
+      "revision": 1,
+      "type": "daily",
+      "nameKey": "mission.daily_hands_3.name",
+      "event": "hand_won",
+      "target": 3,
+      "filters": {},
+      "slot": 1,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.daily_play_3",
+      "revision": 1,
+      "type": "daily",
+      "nameKey": "mission.daily_play_3.name",
+      "event": "match_completed",
+      "target": 3,
+      "filters": {},
+      "slot": 2,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.daily_win_1",
+      "revision": 1,
+      "type": "daily",
+      "nameKey": "mission.daily_win_1.name",
+      "event": "match_won",
+      "target": 1,
+      "filters": {},
+      "slot": 2,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.daily_domino_2",
+      "revision": 1,
+      "type": "daily",
+      "nameKey": "mission.daily_domino_2.name",
+      "event": "domino",
+      "target": 2,
+      "filters": {},
+      "slot": 2,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.daily_win_3",
+      "revision": 1,
+      "type": "daily",
+      "nameKey": "mission.daily_win_3.name",
+      "event": "match_won",
+      "target": 3,
+      "filters": {},
+      "slot": 3,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.daily_points_150",
+      "revision": 1,
+      "type": "daily",
+      "nameKey": "mission.daily_points_150.name",
+      "event": "board_points",
+      "target": 150,
+      "filters": {},
+      "slot": 3,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.daily_play_2v2_4",
+      "revision": 1,
+      "type": "daily",
+      "nameKey": "mission.daily_play_2v2_4.name",
+      "event": "match_completed",
+      "target": 4,
+      "filters": {
+        "mode": "2v2"
+      },
+      "slot": 3,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.weekly_play_15",
+      "revision": 1,
+      "type": "weekly",
+      "nameKey": "mission.weekly_play_15.name",
+      "event": "match_completed",
+      "target": 15,
+      "filters": {},
+      "slot": 1,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.weekly_hands_40",
+      "revision": 1,
+      "type": "weekly",
+      "nameKey": "mission.weekly_hands_40.name",
+      "event": "hand_won",
+      "target": 40,
+      "filters": {},
+      "slot": 1,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.weekly_win_8",
+      "revision": 1,
+      "type": "weekly",
+      "nameKey": "mission.weekly_win_8.name",
+      "event": "match_won",
+      "target": 8,
+      "filters": {},
+      "slot": 2,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.weekly_ranked_win_5",
+      "revision": 1,
+      "type": "weekly",
+      "nameKey": "mission.weekly_ranked_win_5.name",
+      "event": "match_won",
+      "target": 5,
+      "filters": {
+        "queue": "ranked"
+      },
+      "slot": 2,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.weekly_points_600",
+      "revision": 1,
+      "type": "weekly",
+      "nameKey": "mission.weekly_points_600.name",
+      "event": "board_points",
+      "target": 600,
+      "filters": {},
+      "slot": 3,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.weekly_domino_10",
+      "revision": 1,
+      "type": "weekly",
+      "nameKey": "mission.weekly_domino_10.name",
+      "event": "domino",
+      "target": 10,
+      "filters": {},
+      "slot": 3,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.weekly_chain_3",
+      "revision": 1,
+      "type": "weekly",
+      "nameKey": "mission.weekly_chain_3.name",
+      "event": "double_chain",
+      "target": 3,
+      "filters": {},
+      "slot": 4,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.weekly_win_2v2_5",
+      "revision": 1,
+      "type": "weekly",
+      "nameKey": "mission.weekly_win_2v2_5.name",
+      "event": "match_won",
+      "target": 5,
+      "filters": {
+        "mode": "2v2"
+      },
+      "slot": 4,
+      "weight": 1,
+      "availability": "live"
+    },
+    {
+      "id": "mission.win_5_matches",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.win_5_matches.name",
+      "event": "match_won",
+      "target": 5,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_win_5_matches",
+        "revision": 1,
+        "coins": 100,
+        "cosmetics": [
+          "emoji.laugh_spin"
+        ]
+      },
+      "availability": "live",
+      "next": "mission.win_50"
+    },
+    {
+      "id": "mission.win_50",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.win_50.name",
+      "event": "match_won",
+      "target": 50,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_win_50",
+        "revision": 1,
+        "coins": 200,
+        "medals": [
+          "medal.wins_50"
+        ]
+      },
+      "availability": "live",
+      "next": "mission.win_250"
+    },
+    {
+      "id": "mission.win_250",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.win_250.name",
+      "event": "match_won",
+      "target": 250,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_win_250",
+        "revision": 1,
+        "coins": 500,
+        "medals": [
+          "medal.wins_250"
+        ]
+      },
+      "availability": "live",
+      "next": "mission.win_1000"
+    },
+    {
+      "id": "mission.win_1000",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.win_1000.name",
+      "event": "match_won",
+      "target": 1000,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_win_1000",
+        "revision": 1,
+        "coins": 1000,
+        "medals": [
+          "medal.wins_1000"
+        ]
+      },
+      "availability": "live",
+      "next": "mission.win_5000"
+    },
+    {
+      "id": "mission.win_5000",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.win_5000.name",
+      "event": "match_won",
+      "target": 5000,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_win_5000",
+        "revision": 1,
+        "coins": 2000,
+        "medals": [
+          "medal.wins_5000"
+        ]
+      },
+      "availability": "live"
+    },
+    {
+      "id": "mission.domino_100",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.domino_100.name",
+      "event": "domino",
+      "target": 100,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_domino_100",
+        "revision": 1,
+        "coins": 200,
+        "medals": [
+          "medal.domino_100"
+        ]
+      },
+      "availability": "live",
+      "next": "mission.domino_1000"
+    },
+    {
+      "id": "mission.domino_1000",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.domino_1000.name",
+      "event": "domino",
+      "target": 1000,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_domino_1000",
+        "revision": 1,
+        "coins": 1000,
+        "medals": [
+          "medal.domino_1000"
+        ]
+      },
+      "availability": "live"
+    },
+    {
+      "id": "mission.chain_1",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.chain_1.name",
+      "event": "double_chain",
+      "target": 1,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_chain_1",
+        "revision": 1,
+        "coins": 100,
+        "medals": [
+          "medal.chain_first"
+        ]
+      },
+      "availability": "live",
+      "next": "mission.chain_100"
+    },
+    {
+      "id": "mission.chain_100",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.chain_100.name",
+      "event": "double_chain",
+      "target": 100,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_chain_100",
+        "revision": 1,
+        "coins": 1000,
+        "medals": [
+          "medal.chain_100"
+        ]
+      },
+      "availability": "live"
+    },
+    {
+      "id": "mission.points_10000",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.points_10000.name",
+      "event": "board_points",
+      "target": 10000,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_points_10000",
+        "revision": 1,
+        "coins": 300,
+        "medals": [
+          "medal.points_10k"
+        ]
+      },
+      "availability": "live",
+      "next": "mission.points_100000"
+    },
+    {
+      "id": "mission.points_100000",
+      "revision": 1,
+      "type": "achievement",
+      "nameKey": "mission.points_100000.name",
+      "event": "board_points",
+      "target": 100000,
+      "filters": {},
+      "bundle": {
+        "id": "bundle.mission_points_100000",
+        "revision": 1,
+        "coins": 1500,
+        "medals": [
+          "medal.points_100k"
+        ]
+      },
+      "availability": "live"
+    }
+  ]
+}

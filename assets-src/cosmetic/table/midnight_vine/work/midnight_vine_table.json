@@ -1,0 +1,72 @@
+{
+  "slug": "midnight_vine",
+  "canvas": [
+    1280,
+    720
+  ],
+  "seed": 17413,
+  "edges": {"depth": 216},
+  "back": {
+    "concept": "concept/20261115-01.png",
+    "threads": {
+      "hue": [
+        0.08,
+        0.17
+      ],
+      "saturation": 0.5,
+      "value": 0.45
+    }
+  },
+  "motion": {
+    "frames": 10,
+    "key": 3,
+    "parts": [
+      {
+        "kind": "shimmer",
+        "bands": 2,
+        "sharpness": 3,
+        "wave": 0.8,
+        "twinkle": 0.5,
+        "cell": 2,
+        "alpha": 0.8
+      },
+      {
+        "kind": "tassels",
+        "places": "ends",
+        "inset": [
+          136,
+          126
+        ],
+        "silk": [
+          [
+            222,
+            214,
+            196
+          ],
+          [
+            176,
+            170,
+            160
+          ],
+          [
+            204,
+            196,
+            180
+          ],
+          [
+            150,
+            146,
+            140
+          ]
+        ],
+        "strands": 13,
+        "spread": 20,
+        "length": 66,
+        "cap": 8,
+        "thread": 2.6,
+        "sway": 11,
+        "bend": 6
+      }
+    ]
+  }
+}

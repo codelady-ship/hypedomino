@@ -12,6 +12,7 @@ enum HelloStatus {
   HELLO_STATUS_UNSPECIFIED = 0;
   HELLO_STATUS_ACCEPTED = 1;
   HELLO_STATUS_UPDATE_REQUIRED = 2;
+  HELLO_STATUS_MAINTENANCE = 3;
 }
 
 message ClientHello {
@@ -22,6 +23,23 @@ message ClientHello {
   string device_model = 5;
   string session_token = 6;
   uint64 last_acked_sequence = 7;
+  uint64 client_time_unix_ms = 8;
+  IntegrityProof integrity = 9;
+  repeated string device_risk_signals = 10;
+  repeated string hook_signals = 11;
+}
+
+message IntegrityProof {
+  oneof proof {
+    string play_integrity_token = 1;
+    AppAttestAssertion app_attest = 2;
+  }
+}
+
+message AppAttestAssertion {
+  bytes key_id = 1;
+  string nonce = 2;
+  bytes assertion = 3;
 }
 
 message ServerHello {
@@ -30,4 +48,33 @@ message ServerHello {
   uint64 server_time_unix_ms = 3;
   string catalog_version = 4;
   bool in_match = 5;
+  repeated StringBundle string_bundles = 6;
+  repeated FallbackChain fallback_chains = 7;
+  fixed64 session_nonce = 8;
+  string content_base_url = 9;
+  uint64 maintenance_ends_unix_ms = 10;
+  CosmeticsManifest cosmetics_manifest = 11;
+  AnalyticsConfig analytics_config = 12;
+}
+
+message StringBundle {
+  string language = 1;
+  uint32 version = 2;
+  string hash = 3;
+}
+
+message CosmeticsManifest {
+  uint32 version = 1;
+  string hash = 2;
+}
+
+message AnalyticsConfig {
+  uint32 batch_size = 1;
+  uint32 queue_limit = 2;
+  uint32 flush_seconds = 3;
+}
+
+message FallbackChain {
+  string language = 1;
+  repeated string languages = 2;
 }

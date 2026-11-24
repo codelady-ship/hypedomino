@@ -21,23 +21,6 @@
       "culturalReview": "approved"
     },
     {
-      "id": "character.starter",
-      "type": "character",
-      "revision": 1,
-      "nameKey": "cosmetic.character.starter.name",
-      "rarityId": "common",
-      "animated": false,
-      "staticAddress": "cosmetic/character/starter/static",
-      "availability": "live",
-      "sources": [
-        {
-          "type": "default"
-        }
-      ],
-      "artSource": "handmade",
-      "culturalReview": "approved"
-    },
-    {
       "id": "frame.starter",
       "type": "frame",
       "revision": 1,
@@ -57,11 +40,28 @@
     {
       "id": "table.starter",
       "type": "table",
-      "revision": 1,
+      "revision": 2,
       "nameKey": "cosmetic.table.starter.name",
       "rarityId": "common",
       "animated": false,
       "staticAddress": "cosmetic/table/starter/static",
+      "availability": "live",
+      "sources": [
+        {
+          "type": "default"
+        }
+      ],
+      "artSource": "ai_assisted",
+      "culturalReview": "approved"
+    },
+    {
+      "id": "tile.starter",
+      "type": "tile",
+      "revision": 1,
+      "nameKey": "cosmetic.tile.starter.name",
+      "rarityId": "common",
+      "animated": false,
+      "staticAddress": "cosmetic/tile/starter/static",
       "availability": "live",
       "sources": [
         {

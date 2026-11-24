@@ -52,6 +52,7 @@ type Ladder struct {
 	DelaySeconds     int
 	Bans             []time.Time
 	BanUntil         time.Time
+	BanSanction      int64
 	UnderReview      bool
 }
 
@@ -257,6 +258,7 @@ func (r *Record) Banned(now time.Time) (time.Time, bool) {
 func (r *Record) Lift() {
 	r.Ranked.UnderReview = false
 	r.Ranked.BanUntil = time.Time{}
+	r.Ranked.BanSanction = 0
 	r.Ranked.DelayMatchesLeft = 0
 	r.Casual.DelayMatchesLeft = 0
 }

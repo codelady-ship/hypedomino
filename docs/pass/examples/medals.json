@@ -1,0 +1,156 @@
+{
+  "schema": 1,
+  "profileMedalSlots": 3,
+  "medals": [
+    {
+      "id": "medal.wins_50",
+      "revision": 1,
+      "nameKey": "medal.wins_50.name",
+      "descriptionKey": "medal.wins_50.description",
+      "rarityId": "common",
+      "staticAddress": "medal/wins_50/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.win_50"
+        }
+      ],
+      "availability": "live"
+    },
+    {
+      "id": "medal.wins_250",
+      "revision": 1,
+      "nameKey": "medal.wins_250.name",
+      "descriptionKey": "medal.wins_250.description",
+      "rarityId": "rare",
+      "staticAddress": "medal/wins_250/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.win_250"
+        }
+      ],
+      "availability": "live"
+    },
+    {
+      "id": "medal.wins_1000",
+      "revision": 1,
+      "nameKey": "medal.wins_1000.name",
+      "descriptionKey": "medal.wins_1000.description",
+      "rarityId": "epic",
+      "staticAddress": "medal/wins_1000/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.win_1000"
+        }
+      ],
+      "availability": "live"
+    },
+    {
+      "id": "medal.wins_5000",
+      "revision": 1,
+      "nameKey": "medal.wins_5000.name",
+      "descriptionKey": "medal.wins_5000.description",
+      "rarityId": "legendary",
+      "staticAddress": "medal/wins_5000/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.win_5000"
+        }
+      ],
+      "availability": "live"
+    },
+    {
+      "id": "medal.domino_100",
+      "revision": 1,
+      "nameKey": "medal.domino_100.name",
+      "descriptionKey": "medal.domino_100.description",
+      "rarityId": "common",
+      "staticAddress": "medal/domino_100/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.domino_100"
+        }
+      ],
+      "availability": "live"
+    },
+    {
+      "id": "medal.domino_1000",
+      "revision": 1,
+      "nameKey": "medal.domino_1000.name",
+      "descriptionKey": "medal.domino_1000.description",
+      "rarityId": "epic",
+      "staticAddress": "medal/domino_1000/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.domino_1000"
+        }
+      ],
+      "availability": "live"
+    },
+    {
+      "id": "medal.chain_first",
+      "revision": 1,
+      "nameKey": "medal.chain_first.name",
+      "descriptionKey": "medal.chain_first.description",
+      "rarityId": "common",
+      "staticAddress": "medal/chain_first/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.chain_1"
+        }
+      ],
+      "availability": "live"
+    },
+    {
+      "id": "medal.chain_100",
+      "revision": 1,
+      "nameKey": "medal.chain_100.name",
+      "descriptionKey": "medal.chain_100.description",
+      "rarityId": "epic",
+      "staticAddress": "medal/chain_100/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.chain_100"
+        }
+      ],
+      "availability": "live"
+    },
+    {
+      "id": "medal.points_10k",
+      "revision": 1,
+      "nameKey": "medal.points_10k.name",
+      "descriptionKey": "medal.points_10k.description",
+      "rarityId": "rare",
+      "staticAddress": "medal/points_10k/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.points_10000"
+        }
+      ],
+      "availability": "live"
+    },
+    {
+      "id": "medal.points_100k",
+      "revision": 1,
+      "nameKey": "medal.points_100k.name",
+      "descriptionKey": "medal.points_100k.description",
+      "rarityId": "legendary",
+      "staticAddress": "medal/points_100k/static",
+      "sources": [
+        {
+          "type": "mission",
+          "ref": "mission.points_100000"
+        }
+      ],
+      "availability": "live"
+    }
+  ]
+}

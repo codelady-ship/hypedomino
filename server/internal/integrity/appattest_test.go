@@ -1,6 +1,7 @@
 package integrity
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -204,7 +205,7 @@ type attestationParts struct {
 
 func (f *attestFixture) issueNonce(t *testing.T, binding Binding) string {
 	t.Helper()
-	nonce, err := f.nonces.Issue(binding)
+	nonce, err := f.nonces.Issue(context.Background(), binding)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +288,7 @@ func TestAppAttestAttestation(t *testing.T) {
 			if tc.keyID != nil {
 				keyID = tc.keyID(fixture)
 			}
-			decision, key, err := fixture.verifier.Attest(strictPolicy(), sessionBinding(), nonce, keyID, attestation)
+			decision, key, err := fixture.verifier.Attest(context.Background(), strictPolicy(), sessionBinding(), nonce, keyID, attestation)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -312,7 +313,7 @@ func TestAppAttestAttestationRejectsBadNonces(t *testing.T) {
 	keyID := keyIDOf(t, fixture.credential)
 	issued := fixture.issueNonce(t, sessionBinding())
 	attestation := fixture.attestation(t, issued, nil)
-	first, _, err := fixture.verifier.Attest(strictPolicy(), sessionBinding(), issued, keyID, attestation)
+	first, _, err := fixture.verifier.Attest(context.Background(), strictPolicy(), sessionBinding(), issued, keyID, attestation)
 	if err != nil || !first.Passed() {
 		t.Fatalf("first = %+v, %v", first, err)
 	}
@@ -328,7 +329,7 @@ func TestAppAttestAttestationRejectsBadNonces(t *testing.T) {
 		"other accounts": {fixture.issueNonce(t, sessionBinding()), Binding{Account: "account-2", Session: "session-1", Purpose: PurposeSessionStart}, ReasonNonceBindingMismatch},
 	}
 	for name, tc := range cases {
-		decision, _, err := fixture.verifier.Attest(strictPolicy(), tc.binding, tc.nonce, keyID, fixture.attestation(t, tc.nonce, nil))
+		decision, _, err := fixture.verifier.Attest(context.Background(), strictPolicy(), tc.binding, tc.nonce, keyID, fixture.attestation(t, tc.nonce, nil))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -349,7 +350,7 @@ func TestAppAttestAttestationRejectsGarbage(t *testing.T) {
 		"short authdat": cborMapOf(cborTextString("fmt"), cborTextString(appAttestFormat), cborTextString("attStmt"), cborMapOf(cborTextString("x5c"), cborArrayOf(), cborTextString("receipt"), cborByteString(nil)), cborTextString("authData"), cborByteString(make([]byte, 10))),
 	} {
 		nonce := fixture.issueNonce(t, sessionBinding())
-		decision, _, err := fixture.verifier.Attest(strictPolicy(), sessionBinding(), nonce, keyID, attestation)
+		decision, _, err := fixture.verifier.Attest(context.Background(), strictPolicy(), sessionBinding(), nonce, keyID, attestation)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -405,7 +406,7 @@ func TestAppAttestAssertion(t *testing.T) {
 				clientData = []byte("other request")
 			}
 			assertion := signAssertion(t, signer, assertionAuthData(tc.appID, tc.counter), clientData)
-			decision, counter, err := fixture.verifier.Assert(strictPolicy(), binding, nonce, fixture.attestedKey(t, tc.stored), assertion)
+			decision, counter, err := fixture.verifier.Assert(context.Background(), strictPolicy(), binding, nonce, fixture.attestedKey(t, tc.stored), assertion)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -427,11 +428,11 @@ func TestAppAttestAssertionRejectsReplayedNonce(t *testing.T) {
 	fixture := newAttestFixture(t, false)
 	nonce := fixture.issueNonce(t, sessionBinding())
 	assertion := signAssertion(t, fixture.credential, assertionAuthData(testAppID, 1), []byte(nonce))
-	first, counter, err := fixture.verifier.Assert(strictPolicy(), sessionBinding(), nonce, fixture.attestedKey(t, 0), assertion)
+	first, counter, err := fixture.verifier.Assert(context.Background(), strictPolicy(), sessionBinding(), nonce, fixture.attestedKey(t, 0), assertion)
 	if err != nil || !first.Passed() || counter != 1 {
 		t.Fatalf("first = %+v, counter %d, %v", first, counter, err)
 	}
-	replay, _, err := fixture.verifier.Assert(strictPolicy(), sessionBinding(), nonce, fixture.attestedKey(t, 0), assertion)
+	replay, _, err := fixture.verifier.Assert(context.Background(), strictPolicy(), sessionBinding(), nonce, fixture.attestedKey(t, 0), assertion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -446,7 +447,7 @@ func TestAppAttestAssertionRejectsDevelopmentKeyInProduction(t *testing.T) {
 	key := fixture.attestedKey(t, 0)
 	key.Development = true
 	assertion := signAssertion(t, fixture.credential, assertionAuthData(testAppID, 1), []byte(nonce))
-	decision, _, err := fixture.verifier.Assert(strictPolicy(), sessionBinding(), nonce, key, assertion)
+	decision, _, err := fixture.verifier.Assert(context.Background(), strictPolicy(), sessionBinding(), nonce, key, assertion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -463,7 +464,7 @@ func TestAppAttestAssertionRejectsMalformedInput(t *testing.T) {
 		"short authdata": cborMapOf(cborTextString("signature"), cborByteString([]byte{1}), cborTextString("authenticatorData"), cborByteString([]byte{1, 2})),
 	} {
 		nonce := fixture.issueNonce(t, sessionBinding())
-		decision, _, err := fixture.verifier.Assert(strictPolicy(), sessionBinding(), nonce, fixture.attestedKey(t, 0), assertion)
+		decision, _, err := fixture.verifier.Assert(context.Background(), strictPolicy(), sessionBinding(), nonce, fixture.attestedKey(t, 0), assertion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -471,7 +472,7 @@ func TestAppAttestAssertionRejectsMalformedInput(t *testing.T) {
 			t.Errorf("%s: reasons = %v", name, decision.Reasons)
 		}
 	}
-	if _, _, err := fixture.verifier.Assert(strictPolicy(), sessionBinding(), "n", AttestedKey{PublicKey: []byte{4, 1}}, nil); err == nil {
+	if _, _, err := fixture.verifier.Assert(context.Background(), strictPolicy(), sessionBinding(), "n", AttestedKey{PublicKey: []byte{4, 1}}, nil); err == nil {
 		t.Fatal("invalid stored key accepted")
 	}
 }

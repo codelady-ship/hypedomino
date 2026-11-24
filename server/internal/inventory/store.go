@@ -28,12 +28,11 @@ var (
 )
 
 type Config struct {
-	EmojiSlots  int
-	ActionSlots int
+	EmojiSlots int
 }
 
 func DefaultConfig() Config {
-	return Config{EmojiSlots: 6, ActionSlots: 4}
+	return Config{EmojiSlots: 6}
 }
 
 type Owned struct {
@@ -46,6 +45,7 @@ type Owned struct {
 type Store struct {
 	pool    *pgxpool.Pool
 	catalog *cosmetics.Catalog
+	live    func() (*cosmetics.Catalog, int64, bool)
 	config  Config
 }
 
@@ -53,13 +53,26 @@ func NewStore(pool *pgxpool.Pool, catalog *cosmetics.Catalog, config Config) *St
 	return &Store{pool: pool, catalog: catalog, config: config}
 }
 
+func (s *Store) Follow(live func() (*cosmetics.Catalog, int64, bool)) {
+	s.live = live
+}
+
+func (s *Store) EmojiSlots() int {
+	return s.config.EmojiSlots
+}
+
 func (s *Store) Catalog() *cosmetics.Catalog {
+	if s.live != nil {
+		if catalog, _, ok := s.live(); ok {
+			return catalog
+		}
+	}
 	return s.catalog
 }
 
 func (s *Store) Owned(ctx context.Context, account string) ([]Owned, error) {
 	var owned []Owned
-	for _, item := range s.catalog.Defaults() {
+	for _, item := range s.Catalog().Defaults() {
 		owned = append(owned, Owned{ID: item.ID, Type: item.Type, Source: cosmetics.Source{Type: cosmetics.SourceDefault}})
 	}
 	rows, err := s.pool.Query(ctx, `select item_id, source_type, source_ref, granted_at from inventory_items where account_id = $1 and revoked_at is null order by granted_at, item_id`, account)
@@ -88,7 +101,7 @@ func (s *Store) OwnsIn(ctx context.Context, tx pgx.Tx, account, id string) (bool
 }
 
 func (s *Store) ownsIn(ctx context.Context, q querier, account, id string) (bool, error) {
-	item, ok := s.catalog.Item(id)
+	item, ok := s.Catalog().Item(id)
 	if !ok {
 		return false, nil
 	}
@@ -112,7 +125,7 @@ func (s *Store) Grant(ctx context.Context, account, id string, source cosmetics.
 }
 
 func (s *Store) GrantIn(ctx context.Context, tx pgx.Tx, account, id string, source cosmetics.Source, now time.Time) (bool, error) {
-	item, ok := s.catalog.Item(id)
+	item, ok := s.Catalog().Item(id)
 	switch {
 	case !ok:
 		return false, ErrUnknownItem
@@ -150,7 +163,7 @@ func (s *Store) Revoke(ctx context.Context, account, id string, now time.Time) e
 }
 
 func (s *Store) RevokeIn(ctx context.Context, tx pgx.Tx, account, id string, now time.Time) error {
-	if item, ok := s.catalog.Item(id); ok && item.Default() {
+	if item, ok := s.Catalog().Item(id); ok && item.Default() {
 		return ErrDefaultItem
 	}
 	tag, err := tx.Exec(ctx, `update inventory_items set revoked_at = $3 where account_id = $1 and item_id = $2 and revoked_at is null`, account, id, now)
@@ -216,17 +229,13 @@ func (s *Store) Freeze(ctx context.Context, account string) (profile.Loadout, er
 
 func (s *Store) fits(slot string, ids []string) error {
 	switch slot {
-	case cosmetics.TypeAvatar, cosmetics.TypeFrame, cosmetics.TypeCharacter, cosmetics.TypeTable:
+	case cosmetics.TypeAvatar, cosmetics.TypeFrame, cosmetics.TypeTable, cosmetics.TypeTile:
 		if len(ids) != 1 {
 			return fmt.Errorf("%w: %s takes exactly one item", ErrTooMany, slot)
 		}
 	case cosmetics.TypeEmoji:
 		if len(ids) > s.config.EmojiSlots {
 			return fmt.Errorf("%w: at most %d emojis", ErrTooMany, s.config.EmojiSlots)
-		}
-	case cosmetics.TypeAction:
-		if len(ids) > s.config.ActionSlots {
-			return fmt.Errorf("%w: at most %d actions", ErrTooMany, s.config.ActionSlots)
 		}
 	default:
 		return fmt.Errorf("%w: %q", ErrUnknownSlot, slot)
@@ -242,7 +251,7 @@ type querier interface {
 }
 
 func (s *Store) equippable(ctx context.Context, q querier, account, slot, id string) error {
-	item, ok := s.catalog.Item(id)
+	item, ok := s.Catalog().Item(id)
 	switch {
 	case !ok:
 		return fmt.Errorf("%w: %s", ErrUnknownItem, id)
@@ -273,9 +282,9 @@ func (s *Store) resolve(ctx context.Context, q querier, account string, loadout 
 	for _, slot := range []struct {
 		name string
 		id   *string
-	}{{cosmetics.TypeAvatar, &loadout.Avatar}, {cosmetics.TypeFrame, &loadout.Frame}, {cosmetics.TypeCharacter, &loadout.Character}, {cosmetics.TypeTable, &loadout.Table}} {
+	}{{cosmetics.TypeAvatar, &loadout.Avatar}, {cosmetics.TypeFrame, &loadout.Frame}, {cosmetics.TypeTable, &loadout.Table}, {cosmetics.TypeTile, &loadout.Tile}} {
 		if *slot.id == "" || s.equippable(ctx, q, account, slot.name, *slot.id) != nil {
-			if def, ok := s.catalog.Default(slot.name); ok {
+			if def, ok := s.Catalog().Default(slot.name); ok {
 				*slot.id = def.ID
 			} else {
 				*slot.id = ""
@@ -283,7 +292,6 @@ func (s *Store) resolve(ctx context.Context, q querier, account string, loadout 
 		}
 	}
 	loadout.Emojis = s.keep(ctx, q, account, cosmetics.TypeEmoji, loadout.Emojis)
-	loadout.Actions = s.keep(ctx, q, account, cosmetics.TypeAction, loadout.Actions)
 	return loadout
 }
 
@@ -303,14 +311,12 @@ func set(loadout *profile.Loadout, slot string, ids []string) {
 		loadout.Avatar = ids[0]
 	case cosmetics.TypeFrame:
 		loadout.Frame = ids[0]
-	case cosmetics.TypeCharacter:
-		loadout.Character = ids[0]
 	case cosmetics.TypeTable:
 		loadout.Table = ids[0]
+	case cosmetics.TypeTile:
+		loadout.Tile = ids[0]
 	case cosmetics.TypeEmoji:
 		loadout.Emojis = slices.Clone(ids)
-	case cosmetics.TypeAction:
-		loadout.Actions = slices.Clone(ids)
 	}
 }
 

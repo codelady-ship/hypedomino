@@ -14,7 +14,7 @@ import (
 const HistoryPage = 50
 
 type Wallet interface {
-	Balance(ctx context.Context, account string) (int64, error)
+	Balance(ctx context.Context, account string, currency Currency) (int64, error)
 	History(ctx context.Context, account string, limit int) ([]Applied, error)
 }
 
@@ -29,18 +29,20 @@ func NewHandler(verifier token.Verifier, wallet Wallet, logger *slog.Logger) *Ha
 }
 
 type entryView struct {
-	ID           int64  `json:"id"`
-	Amount       int64  `json:"amount"`
-	Reason       Reason `json:"reason"`
-	SourceType   string `json:"source_type"`
-	SourceRef    string `json:"source_ref"`
-	BalanceAfter int64  `json:"balance_after"`
-	At           string `json:"at"`
+	ID           int64    `json:"id"`
+	Currency     Currency `json:"currency"`
+	Amount       int64    `json:"amount"`
+	Reason       Reason   `json:"reason"`
+	SourceType   string   `json:"source_type"`
+	SourceRef    string   `json:"source_ref"`
+	BalanceAfter int64    `json:"balance_after"`
+	At           string   `json:"at"`
 }
 
 type walletView struct {
-	Balance int64       `json:"balance"`
-	Entries []entryView `json:"entries"`
+	Coins    int64       `json:"coins"`
+	Crystals int64       `json:"crystals"`
+	Entries  []entryView `json:"entries"`
 }
 
 type errorResponse struct {
@@ -61,7 +63,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reply(w, http.StatusUnauthorized, errorResponse{Error: "access_rejected"})
 		return
 	}
-	balance, err := h.wallet.Balance(r.Context(), claims.Account)
+	coins, err := h.wallet.Balance(r.Context(), claims.Account, Coin)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	crystals, err := h.wallet.Balance(r.Context(), claims.Account, Crystal)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -71,9 +78,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	view := walletView{Balance: balance, Entries: make([]entryView, 0, len(history))}
+	view := walletView{Coins: coins, Crystals: crystals, Entries: make([]entryView, 0, len(history))}
 	for _, e := range history {
-		view.Entries = append(view.Entries, entryView{ID: e.ID, Amount: e.Amount, Reason: e.Reason, SourceType: e.Source.Type, SourceRef: e.Source.Ref, BalanceAfter: e.BalanceAfter, At: e.At.UTC().Format(time.RFC3339)})
+		view.Entries = append(view.Entries, entryView{ID: e.ID, Currency: e.Currency, Amount: e.Amount, Reason: e.Reason, SourceType: e.Source.Type, SourceRef: e.Source.Ref, BalanceAfter: e.BalanceAfter, At: e.At.UTC().Format(time.RFC3339)})
 	}
 	reply(w, http.StatusOK, view)
 }
