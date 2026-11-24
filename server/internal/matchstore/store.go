@@ -124,19 +124,24 @@ func (s *Store) Begin(ctx context.Context, m Started) error {
 	if tag.RowsAffected() == 0 {
 		return nil
 	}
-	for _, p := range m.Participants {
-		var account *string
+	count := len(m.Participants)
+	seats, teams := make([]int16, count), make([]int16, count)
+	accounts, bots, loadouts := make([]*string, count), make([]bool, count), make([]string, count)
+	for i, p := range m.Participants {
 		if !p.Bot && p.Account != "" {
-			account = &p.Account
+			accounts[i] = &p.Account
 		}
 		loadout, err := json.Marshal(p.Loadout)
 		if err != nil {
 			return err
 		}
-		if _, err := tx.Exec(ctx, `insert into match_participants (match_id, started_at, seat, team, account_id, bot, loadout)
-			values ($1, $2, $3, $4, $5, $6, $7)`, m.ID, m.StartedAt, int16(p.Seat), int16(p.Seat.Team()), account, p.Bot, loadout); err != nil {
-			return err
-		}
+		seats[i], teams[i], bots[i], loadouts[i] = int16(p.Seat), int16(p.Seat.Team()), p.Bot, string(loadout)
+	}
+	if _, err := tx.Exec(ctx, `insert into match_participants (match_id, started_at, seat, team, account_id, bot, loadout)
+		select $1, $2, p.seat, p.team, p.account::uuid, p.bot, p.loadout::jsonb
+		from unnest($3::smallint[], $4::smallint[], $5::text[], $6::boolean[], $7::text[]) as p (seat, team, account, bot, loadout)`,
+		m.ID, m.StartedAt, seats, teams, accounts, bots, loadouts); err != nil {
+		return err
 	}
 	return tx.Commit(ctx)
 }

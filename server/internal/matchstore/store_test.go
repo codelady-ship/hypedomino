@@ -3,6 +3,7 @@ package matchstore_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/Alievs-corp/hypedomino/server/internal/db/dbtest"
 	"github.com/Alievs-corp/hypedomino/server/internal/matchstore"
 	"github.com/Alievs-corp/hypedomino/server/internal/partnerfit"
+	"github.com/Alievs-corp/hypedomino/server/internal/profile"
 	"github.com/Alievs-corp/hypedomino/server/internal/rules"
 )
 
@@ -22,7 +24,7 @@ func TestMain(m *testing.M) {
 
 var start = time.Date(2026, 10, 28, 12, 0, 0, 0, time.UTC)
 
-func accounts(t *testing.T, pool *pgxpool.Pool, n int) []string {
+func accounts(t testing.TB, pool *pgxpool.Pool, n int) []string {
 	t.Helper()
 	ids := make([]string, 0, n)
 	for i := 0; i < n; i++ {
@@ -100,6 +102,38 @@ func TestBeginWritesTheMatchAndItsParticipantsOnce(t *testing.T) {
 	}
 	bad := started(uuid.NewString(), matchstore.KindRanked, players)
 	bad.Participants = bad.Participants[:2]
+	dressed := started(uuid.NewString(), matchstore.KindRanked, players)
+	dressed.Participants[0].Loadout = profile.Loadout{Avatar: "avatar.comet_fox", Emojis: []string{"emoji.wave", "emoji.laugh"}}
+	if err := store.Begin(ctx, dressed); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := pool.Query(ctx, `select seat, team, coalesce(account_id::text, ''), bot, loadout::text from match_participants where match_id = $1 order by seat`, dressed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored := map[int16]string{}
+	for rows.Next() {
+		var seat, team int16
+		var account, loadout string
+		var bot bool
+		if err := rows.Scan(&seat, &team, &account, &bot, &loadout); err != nil {
+			t.Fatal(err)
+		}
+		stored[seat] = fmt.Sprintf("%d %s %t %s", team, account, bot, loadout)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	for index, p := range dressed.Participants {
+		loadout := `{}`
+		if index == 0 {
+			loadout = `{"avatar": "avatar.comet_fox", "emojis": ["emoji.wave", "emoji.laugh"]}`
+		}
+		want := fmt.Sprintf("%d %s %t %s", p.Seat.Team(), p.Account, p.Bot, loadout)
+		if got := stored[int16(p.Seat)]; got != want {
+			t.Fatalf("seat %d stored %q, want %q", p.Seat, got, want)
+		}
+	}
 	if err := store.Begin(ctx, bad); !errors.Is(err, matchstore.ErrInvalid) {
 		t.Fatalf("a 2v2 with two participants accepted: %v", err)
 	}
@@ -343,5 +377,18 @@ func TestRunningSeesAnUnfinishedMatchUntilItEndsOrGoesStale(t *testing.T) {
 	}
 	if running(players[0], start.Add(-2*time.Hour)) {
 		t.Fatal("a finished match still counts")
+	}
+}
+
+func BenchmarkBeginA2v2Match(b *testing.B) {
+	_, pool := dbtest.Fresh(b)
+	store := matchstore.New(pool)
+	ctx := context.Background()
+	players := accounts(b, pool, 4)
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := store.Begin(ctx, started(uuid.NewString(), matchstore.KindRanked, players)); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
