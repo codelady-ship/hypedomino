@@ -142,6 +142,10 @@ func build(ctx context.Context, config app.Config, logger *slog.Logger, sessions
 	critical := func(next http.Handler) http.Handler { return token.RequireMac(tokens, macFailures, next) }
 	limiter.Authenticate(tokens)
 	accounts := account.New(pool)
+	if err := trackBanEvasion(accounts, config.BanEvasionKey); err != nil {
+		pool.Close()
+		return nil, nil, err
+	}
 	signIn := auth.New(verifier, accounts, tokens, sessions, logger)
 	signIn.SetCountryHeader(config.CountryHeader)
 	a.Handle("POST /auth/", signIn)
@@ -494,6 +498,18 @@ func promos(pool *pgxpool.Pool, engine *reward.Engine, catalog *cosmetics.Catalo
 	store := promo.NewStore(pool, engine, catalog, hasher, config.Promo)
 	store.WithPass(passes)
 	return store, nil
+}
+
+func trackBanEvasion(accounts *account.Store, key string) error {
+	if key == "" {
+		return nil
+	}
+	hasher, err := account.NewIdentityHasher(key)
+	if err != nil {
+		return fmt.Errorf("HD_BAN_EVASION_KEY: %w", err)
+	}
+	accounts.EnableBanEvasion(account.BanEvasion{Hasher: hasher})
+	return nil
 }
 
 func loadCatalog(path string) (*cosmetics.Catalog, error) {

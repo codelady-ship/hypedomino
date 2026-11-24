@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Alievs-corp/hypedomino/server/internal/account"
 	"github.com/Alievs-corp/hypedomino/server/internal/cluster"
 	"github.com/Alievs-corp/hypedomino/server/internal/cosmetics"
 	"github.com/Alievs-corp/hypedomino/server/internal/dataexport"
@@ -67,6 +68,7 @@ type Config struct {
 	CountryHeader   string
 	CountryCooldown time.Duration
 	DeletionGrace   time.Duration
+	BanEvasionKey   string
 	StaleMatchAfter time.Duration
 	Export          dataexport.Settings
 	ExportStore     objectstore.Config
@@ -310,6 +312,12 @@ func ConfigFromEnv(lookup Lookup) (Config, error) {
 	r.duration("HD_COUNTRY_CHANGE_COOLDOWN", &config.CountryCooldown)
 	r.duration("HD_ACCOUNT_DELETION_GRACE", &config.DeletionGrace)
 	r.duration("HD_STALE_MATCH_AFTER", &config.StaleMatchAfter)
+	r.text("HD_BAN_EVASION_KEY", &config.BanEvasionKey)
+	if config.BanEvasionKey != "" {
+		if _, err := account.NewIdentityHasher(config.BanEvasionKey); err != nil {
+			r.errs = append(r.errs, fmt.Errorf("HD_BAN_EVASION_KEY: %w", err))
+		}
+	}
 	r.integer("HD_DUPLICATE_COMPENSATION_PERCENT", &config.Reward.DuplicateCompensationPercent)
 	r.text("HD_SENTRY_DSN", &config.SentryDSN)
 	r.text("HD_SENTRY_ENVIRONMENT", &config.SentryEnv)

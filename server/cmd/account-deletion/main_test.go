@@ -194,20 +194,78 @@ func TestBadInvocationsAreUsageErrors(t *testing.T) {
 		args   []string
 		getenv func(string) string
 	}{
-		"no command":              {nil, with("", "")},
-		"unknown command":         {[]string{"purge"}, with("", "")},
-		"run with arguments":      {[]string{"run", "now"}, with("", "")},
-		"replay without since":    {[]string{"replay"}, with("", "")},
-		"replay with a bad time":  {[]string{"replay", "-since", "yesterday"}, with("", "")},
-		"no database":             {[]string{"run"}, with("HD_DATABASE_URL", "")},
-		"no log store":            {[]string{"run"}, with("HD_DELETION_LOG_URL", "")},
-		"no log secret":           {[]string{"replay", "-since", "2026-11-10T12:00:00Z"}, with("HD_DELETION_LOG_SECRET_KEY", "")},
-		"bad grace":               {[]string{"run"}, with("HD_ACCOUNT_DELETION_GRACE", "-1h")},
-		"bad retention":           {[]string{"run"}, with("HD_DELETION_LOG_RETENTION", "35 days")},
-		"bad analytics retention": {[]string{"run"}, with("HD_ANALYTICS_RAW_RETENTION", "0s")},
+		"no command":                {nil, with("", "")},
+		"unknown command":           {[]string{"purge"}, with("", "")},
+		"run with arguments":        {[]string{"run", "now"}, with("", "")},
+		"replay without since":      {[]string{"replay"}, with("", "")},
+		"replay with a bad time":    {[]string{"replay", "-since", "yesterday"}, with("", "")},
+		"no database":               {[]string{"run"}, with("HD_DATABASE_URL", "")},
+		"no log store":              {[]string{"run"}, with("HD_DELETION_LOG_URL", "")},
+		"no log secret":             {[]string{"replay", "-since", "2026-11-10T12:00:00Z"}, with("HD_DELETION_LOG_SECRET_KEY", "")},
+		"bad grace":                 {[]string{"run"}, with("HD_ACCOUNT_DELETION_GRACE", "-1h")},
+		"bad retention":             {[]string{"run"}, with("HD_DELETION_LOG_RETENTION", "35 days")},
+		"bad analytics retention":   {[]string{"run"}, with("HD_ANALYTICS_RAW_RETENTION", "0s")},
+		"short ban-evasion key":     {[]string{"run"}, with("HD_BAN_EVASION_KEY", "0123456789abcdef")},
+		"bad ban-evasion retention": {[]string{"run"}, with("HD_PERMANENT_BAN_EVASION_RETENTION", "-1h")},
 	} {
 		if err := dispatch(context.Background(), c.args, c.getenv, io.Discard, time.Now); !errors.Is(err, errUsage) {
 			t.Errorf("%s: %v", name, err)
 		}
+	}
+}
+
+func TestTheBanEvasionHashIsOffWithoutAKeyAndKeepsPermanentBansForTheRetention(t *testing.T) {
+	env := map[string]string{"HD_DATABASE_URL": "postgres://localhost/hd", "HD_DELETION_LOG_URL": "https://store.example/hd-deletion-log"}
+	off, err := settingsFrom(func(name string) string { return env[name] })
+	if err != nil || off.banEvasion != nil || off.banEvasionRetention != 26280*time.Hour {
+		t.Fatalf("without a key: %+v %v", off, err)
+	}
+	env["HD_BAN_EVASION_KEY"] = "0123456789abcdef0123456789abcdef"
+	env["HD_PERMANENT_BAN_EVASION_RETENTION"] = "720h"
+	on, err := settingsFrom(func(name string) string { return env[name] })
+	if err != nil || on.banEvasion == nil || on.banEvasion.PermanentRetention != 720*time.Hour {
+		t.Fatalf("with a key: %+v %v", on, err)
+	}
+}
+
+func TestRunHashesABannedAccountAndPurgesExpiredHashes(t *testing.T) {
+	_, pool := dbtest.Fresh(t)
+	hasher, err := account.NewIdentityHasher("0123456789abcdef0123456789abcdef")
+	if err != nil {
+		t.Fatal(err)
+	}
+	accounts := account.New(pool)
+	accounts.EnableBanEvasion(account.BanEvasion{Hasher: hasher, PermanentRetention: defaultBanEvasionRetention})
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	cheater := signedUp(t, accounts, pool, "g-cheater", "Cheater")
+	if _, err := pool.Exec(ctx, `update accounts set state = 'banned' where id = $1`, cheater); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `insert into account_sanctions (account_id, kind, category, starts_at) values ($1, 'permanent_ban', 'cheating', $2)`, cheater, now.Add(-time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := accounts.RequestDeletion(ctx, cheater, now.Add(-31*24*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `insert into ban_evasion_hashes (identity_hash, category, ban_ends_at, expires_at) values ($1, 'other', $2, $2)`, hasher.Hash("google", "g-gone"), now.Add(-time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	log := deletionlog.New(&bucket{objects: map[string][]byte{}}, func() time.Time { return now })
+	config := settings{grace: defaultGrace, retention: defaultRetention, analyticsRetention: defaultAnalyticsRetention}
+	var out bytes.Buffer
+	if err := run(ctx, accounts, log, analytics.NewStore(pool), config, now, &out); err != nil {
+		t.Fatalf("run: %v %q", err, out.String())
+	}
+	if !strings.Contains(out.String(), "1 deletion(s) erased and logged") || !strings.Contains(out.String(), "1 expired ban-evasion hash(es) deleted") {
+		t.Fatalf("run output %q", out.String())
+	}
+	var expires time.Time
+	if err := pool.QueryRow(ctx, `select expires_at from ban_evasion_hashes where identity_hash = $1 and ban_ends_at is null`, hasher.Hash("google", "g-cheater")).Scan(&expires); err != nil || !expires.Equal(now.Add(defaultBanEvasionRetention)) {
+		t.Fatalf("hash of the deleted cheater: %v %v", expires, err)
+	}
+	out.Reset()
+	if err := run(ctx, accounts, log, analytics.NewStore(pool), config, now, &out); err != nil || !strings.Contains(out.String(), "0 expired ban-evasion hash(es) deleted") {
+		t.Fatalf("second run: %v %q", err, out.String())
 	}
 }

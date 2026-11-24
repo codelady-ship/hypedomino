@@ -17,8 +17,9 @@ import (
 )
 
 type fakeDeletions struct {
-	requested map[string]time.Time
-	banned    map[string]bool
+	requested        map[string]time.Time
+	banned           map[string]bool
+	tracksBanEvasion bool
 }
 
 func (d *fakeDeletions) Lookup(_ context.Context, identity idtoken.Identity) (account.Account, error) {
@@ -26,7 +27,9 @@ func (d *fakeDeletions) Lookup(_ context.Context, identity idtoken.Identity) (ac
 	switch at, pending := d.requested[id]; {
 	case identity.Subject == "nobody":
 		return account.Account{}, account.ErrUnknown
-	case d.banned[id]:
+	case d.banned[id] && d.tracksBanEvasion && !pending:
+		return account.Account{ID: id, State: account.StateBanned}, nil
+	case d.banned[id] && !pending:
 		return account.Account{ID: id, State: account.StateBanned}, account.ErrBanned
 	case pending:
 		return account.Account{ID: id, State: account.StateDeleting, DeletionAt: &at}, account.ErrDeletionPending
@@ -125,5 +128,27 @@ func TestSignInDuringTheGraceShowsOnlyThePendingState(t *testing.T) {
 	status, body := f.post("/auth/signin", `{"provider":"google","id_token":"good","nonce":"n","device_id":"d"}`)
 	if status != http.StatusConflict || body["error"] != "deletion_pending" || body["delete_at"] != "2026-12-01T08:30:00Z" || len(f.tokens.issued) != 0 {
 		t.Fatalf("sign-in while pending answered %d %v, issued %v", status, body, f.tokens.issued)
+	}
+}
+
+func TestABannedAccountMayRequestDeletionOnceTheStoreTracksBanEvasion(t *testing.T) {
+	f := newFixture(t)
+	f.verifier.identities["banned"] = idtoken.Identity{Subject: "banned"}
+	deletions := &fakeDeletions{requested: map[string]time.Time{}, banned: map[string]bool{"google-banned": true}, tracksBanEvasion: true}
+	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
+	handler := auth.New(f.verifier, f.accounts, f.tokens, f.connections, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	handler.EnableDeletion(auth.Deletion{Accounts: deletions, Grace: 30 * 24 * time.Hour, Now: func() time.Time { return now }})
+	mux := http.NewServeMux()
+	mux.Handle("POST /auth/", handler)
+	f.server = httptest.NewServer(mux)
+	t.Cleanup(f.server.Close)
+	if status, body := f.post("/auth/deletion", `{"provider":"google","id_token":"banned","nonce":"n"}`); status != http.StatusAccepted || body["delete_at"] != "2026-12-10T09:00:00Z" {
+		t.Fatalf("request of a banned account answered %d %v", status, body)
+	}
+	if _, pending := deletions.requested["google-banned"]; !pending || strings.Join(f.tokens.loggedOut, " ") != "google-banned" {
+		t.Fatalf("pending %v, logged out %v", deletions.requested, f.tokens.loggedOut)
+	}
+	if status, _ := f.post("/auth/deletion/cancel", `{"provider":"google","id_token":"banned","nonce":"n"}`); status != http.StatusNoContent || len(deletions.requested) != 0 {
+		t.Fatalf("cancel answered %d, pending %v", status, deletions.requested)
 	}
 }

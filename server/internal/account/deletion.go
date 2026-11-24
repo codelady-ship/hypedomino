@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/Alievs-corp/hypedomino/server/internal/idtoken"
+	"github.com/Alievs-corp/hypedomino/server/internal/sanction"
 )
 
 var ErrNoDeletionPending = errors.New("account: no deletion pending")
@@ -92,16 +93,20 @@ func (s *Store) Lookup(ctx context.Context, identity idtoken.Identity) (Account,
 	if !found {
 		return Account{}, ErrUnknown
 	}
-	return a, admitted(a, time.Now())
+	err = admitted(a, time.Now())
+	if s.evasion != nil && errors.Is(err, ErrBanned) {
+		return a, nil
+	}
+	return a, err
 }
 
 func (s *Store) RequestDeletion(ctx context.Context, id string, now time.Time) (time.Time, error) {
 	var requested time.Time
 	err := s.pool.QueryRow(ctx, `with requested as (update accounts set state = $2, deletion_requested_at = $3
-		where id = $1 and state = $4 and (banned_until is null or banned_until <= $3) returning id, deletion_requested_at),
+		where id = $1 and (state = $4 or ($6 and state = $5)) and ($6 or banned_until is null or banned_until <= $3) returning id, deletion_requested_at),
 		unregistered as (delete from push_devices where account_id in (select id from requested))
 		select deletion_requested_at from requested`,
-		id, StateDeleting, now.UTC(), StateActive).Scan(&requested)
+		id, StateDeleting, now.UTC(), StateActive, StateBanned, s.evasion != nil).Scan(&requested)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return time.Time{}, ErrBanned
 	}
@@ -109,7 +114,9 @@ func (s *Store) RequestDeletion(ctx context.Context, id string, now time.Time) (
 }
 
 func (s *Store) CancelDeletion(ctx context.Context, id string) error {
-	tag, err := s.pool.Exec(ctx, `update accounts set state = $2, deletion_requested_at = null where id = $1 and state = $3`, id, StateActive, StateDeleting)
+	tag, err := s.pool.Exec(ctx, `update accounts set deletion_requested_at = null,
+		state = case when exists (select 1 from account_sanctions where account_id = $1 and kind = $5 and lifted_at is null) then $4 else $2 end
+		where id = $1 and state = $3`, id, StateActive, StateDeleting, StateBanned, string(sanction.PermanentBan))
 	if err != nil {
 		return err
 	}
@@ -185,7 +192,7 @@ func (s *Store) Reapply(ctx context.Context, d Deletion) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if _, err := erase(ctx, tx, d); err != nil {
+	if _, err := s.erase(ctx, tx, d); err != nil {
 		return false, err
 	}
 	return true, tx.Commit(ctx)
@@ -205,7 +212,7 @@ func (s *Store) eraseDue(ctx context.Context, id string, requestedBefore, now ti
 	if err != nil {
 		return err
 	}
-	d, err := erase(ctx, tx, Deletion{Account: id, At: now})
+	d, err := s.erase(ctx, tx, Deletion{Account: id, At: now})
 	if err != nil {
 		return err
 	}
@@ -215,7 +222,7 @@ func (s *Store) eraseDue(ctx context.Context, id string, requestedBefore, now ti
 	return tx.Commit(ctx)
 }
 
-func erase(ctx context.Context, tx pgx.Tx, d Deletion) (Deletion, error) {
+func (s *Store) erase(ctx context.Context, tx pgx.Tx, d Deletion) (Deletion, error) {
 	references, err := accountReferences(ctx, tx)
 	if err != nil {
 		return Deletion{}, err
@@ -226,6 +233,9 @@ func erase(ctx context.Context, tx pgx.Tx, d Deletion) (Deletion, error) {
 		return Deletion{}, err
 	}
 	if err := holdNickname(ctx, tx, d.Account, d.Tombstone, d.At); err != nil {
+		return Deletion{}, err
+	}
+	if err := s.recordBanEvasion(ctx, tx, d); err != nil {
 		return Deletion{}, err
 	}
 	for _, r := range references {

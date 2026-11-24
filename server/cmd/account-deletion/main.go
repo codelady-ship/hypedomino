@@ -19,20 +19,23 @@ import (
 )
 
 const (
-	urlLifetime               = 15 * time.Minute
-	defaultGrace              = 30 * 24 * time.Hour
-	defaultRetention          = 35 * 24 * time.Hour
-	defaultAnalyticsRetention = 395 * 24 * time.Hour
+	urlLifetime                = 15 * time.Minute
+	defaultGrace               = 30 * 24 * time.Hour
+	defaultRetention           = 35 * 24 * time.Hour
+	defaultAnalyticsRetention  = 395 * 24 * time.Hour
+	defaultBanEvasionRetention = 1095 * 24 * time.Hour
 )
 
 var errUsage = errors.New("account-deletion")
 
 type settings struct {
-	databaseURL        string
-	grace              time.Duration
-	retention          time.Duration
-	analyticsRetention time.Duration
-	store              objectstore.Config
+	databaseURL         string
+	grace               time.Duration
+	retention           time.Duration
+	analyticsRetention  time.Duration
+	banEvasionRetention time.Duration
+	banEvasion          *account.BanEvasion
+	store               objectstore.Config
 }
 
 func main() {
@@ -84,6 +87,9 @@ func dispatch(ctx context.Context, args []string, getenv func(string) string, ou
 	}
 	defer pool.Close()
 	accounts, log := account.New(pool), deletionlog.New(store, now)
+	if config.banEvasion != nil {
+		accounts.EnableBanEvasion(*config.banEvasion)
+	}
 	if command == "replay" {
 		return replay(ctx, accounts, log, since, out)
 	}
@@ -106,10 +112,11 @@ func parseSince(args []string) (time.Time, error) {
 
 func settingsFrom(getenv func(string) string) (settings, error) {
 	config := settings{
-		databaseURL:        getenv("HD_DATABASE_URL"),
-		grace:              defaultGrace,
-		retention:          defaultRetention,
-		analyticsRetention: defaultAnalyticsRetention,
+		databaseURL:         getenv("HD_DATABASE_URL"),
+		grace:               defaultGrace,
+		retention:           defaultRetention,
+		analyticsRetention:  defaultAnalyticsRetention,
+		banEvasionRetention: defaultBanEvasionRetention,
 		store: objectstore.Config{
 			BaseURL:   getenv("HD_DELETION_LOG_URL"),
 			Region:    getenv("HD_DELETION_LOG_REGION"),
@@ -124,10 +131,17 @@ func settingsFrom(getenv func(string) string) (settings, error) {
 	if config.store.BaseURL == "" {
 		return settings{}, fmt.Errorf("%w: HD_DELETION_LOG_URL is not set; a deletion is complete only once it is logged", errUsage)
 	}
-	for name, target := range map[string]*time.Duration{"HD_ACCOUNT_DELETION_GRACE": &config.grace, "HD_DELETION_LOG_RETENTION": &config.retention, "HD_ANALYTICS_RAW_RETENTION": &config.analyticsRetention} {
+	for name, target := range map[string]*time.Duration{"HD_ACCOUNT_DELETION_GRACE": &config.grace, "HD_DELETION_LOG_RETENTION": &config.retention, "HD_ANALYTICS_RAW_RETENTION": &config.analyticsRetention, "HD_PERMANENT_BAN_EVASION_RETENTION": &config.banEvasionRetention} {
 		if err := positiveDuration(getenv(name), target); err != nil {
 			return settings{}, fmt.Errorf("%w: %s: %v", errUsage, name, err)
 		}
+	}
+	if key := getenv("HD_BAN_EVASION_KEY"); key != "" {
+		hasher, err := account.NewIdentityHasher(key)
+		if err != nil {
+			return settings{}, fmt.Errorf("%w: HD_BAN_EVASION_KEY: %v", errUsage, err)
+		}
+		config.banEvasion = &account.BanEvasion{Hasher: hasher, PermanentRetention: config.banEvasionRetention}
 	}
 	return config, nil
 }
@@ -148,7 +162,13 @@ func positiveDuration(value string, target *time.Duration) error {
 }
 
 func run(ctx context.Context, accounts *account.Store, log *deletionlog.Log, events *analytics.Store, config settings, now time.Time, out io.Writer) error {
-	return errors.Join(erase(ctx, accounts, log, config, now, out), purgeAnalytics(ctx, events, config, now, out))
+	return errors.Join(erase(ctx, accounts, log, config, now, out), purgeAnalytics(ctx, events, config, now, out), purgeBanEvasion(ctx, accounts, now, out))
+}
+
+func purgeBanEvasion(ctx context.Context, accounts *account.Store, now time.Time, out io.Writer) error {
+	purged, err := accounts.PurgeBanEvasion(ctx, now)
+	fmt.Fprintf(out, "%d expired ban-evasion hash(es) deleted\n", purged)
+	return err
 }
 
 func erase(ctx context.Context, accounts *account.Store, log *deletionlog.Log, config settings, now time.Time, out io.Writer) error {

@@ -55,7 +55,8 @@ func (e *BannedError) Is(target error) bool {
 }
 
 type Store struct {
-	pool *pgxpool.Pool
+	pool    *pgxpool.Pool
+	evasion *BanEvasion
 }
 
 func New(pool *pgxpool.Pool) *Store {
@@ -67,19 +68,20 @@ func (s *Store) SignIn(ctx context.Context, identity idtoken.Identity) (Account,
 		return Account{}, false, ErrInvalidIdentity
 	}
 	for {
+		now := time.Now()
 		a, found, err := s.find(ctx, identity)
 		if err != nil {
 			return Account{}, false, err
 		}
 		if found {
-			return a, false, admitted(a, time.Now())
+			return a, false, admitted(a, now)
 		}
-		a, created, err := s.create(ctx, identity)
+		a, created, err := s.create(ctx, identity, now)
 		if err != nil {
 			return Account{}, false, err
 		}
 		if created {
-			return a, true, nil
+			return a, true, admitted(a, now)
 		}
 	}
 }
@@ -99,7 +101,7 @@ func (s *Store) find(ctx context.Context, identity idtoken.Identity) (Account, b
 	return a, err == nil, err
 }
 
-func (s *Store) create(ctx context.Context, identity idtoken.Identity) (Account, bool, error) {
+func (s *Store) create(ctx context.Context, identity idtoken.Identity, now time.Time) (Account, bool, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return Account{}, false, err
@@ -115,6 +117,9 @@ func (s *Store) create(ctx context.Context, identity idtoken.Identity) (Account,
 		return Account{}, false, nil
 	}
 	if err != nil {
+		return Account{}, false, err
+	}
+	if err := s.inheritBan(ctx, tx, &a, identity.Provider.String(), identity.Subject, now); err != nil {
 		return Account{}, false, err
 	}
 	return a, true, tx.Commit(ctx)
