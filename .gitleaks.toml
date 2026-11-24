@@ -4,3 +4,12 @@ useDefault = true
 [[allowlists]]
 description = "Fixed UUID namespace of shop.AccountToken, used as the expected account token in store receipt tests; not a credential"
 regexes = ['''(?i)5f0d6a2e-3c7b-4e1a-9d8f-2b6c4a1e7f30''']
+
+[[allowlists]]
+description = "Fixed test keys of the ban-evasion hash tests in commit 9cfdba11, replaced by strings.Repeat in a later commit; not credentials"
+condition = "AND"
+commits = ["9cfdba11285f14b75b5431695098ca9002f3f1a6"]
+paths = [
+  '''^server/internal/account/banevasion_test\.go$''',
+  '''^server/cmd/account-deletion/main_test\.go$''',
+]
